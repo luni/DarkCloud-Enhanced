@@ -1,45 +1,49 @@
-﻿using Dark_Cloud_Improved_Version.Properties;
-using System;
-using System.CodeDom;
+﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
-using System.Diagnostics.PerformanceData;
-using System.IO;
 using System.Linq;
-using System.Resources;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Forms;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
 
 namespace Dark_Cloud_Improved_Version
 {
     class Memory
     {
-        internal static Process process;
-        internal static string procName = "pcsx2";
-        internal static long EEMem_Address, EEMem_Offset;
-        internal static long Check_EEMem_Address, Check_EEMem_Offset;
+        internal static Process emulatorProcess;
+        internal static string emulatorName = "pcsx2";
+        internal static long EEMemAddress, EEMemOffset;
+        internal static long CheckEEMemAddress, CheckEEMemOffset;
 
-        //Define some needed flags
-        internal const uint FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100;
-        internal const uint FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
-        internal const uint FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
+        internal static class WinAPIFlags
+        {
+            [Flags]
+            internal enum SystemMessageOptions : uint
+            {
+                FormatMessageAllocateBuffer = 0x0000010,
+                FormatMessageIgnoreInserts = 0x0000020,
+                FormatMessageFromSystem = 0x00001000,
+                All = FormatMessageAllocateBuffer | FormatMessageFromSystem | FormatMessageIgnoreInserts
+            }
 
-        internal const uint PROCESS_VM_READ = 0x0010;
-        internal const uint PROCESS_VM_WRITE = 0x0020;
-        internal const uint PROCESS_VM_OPERATION = 0x0008;
-        internal const uint PROCESS_SUSPEND_RESUME = 0x0800;
+            [Flags]
+            internal enum ProcessModes : ushort
+            {
+                VMRead = 0x0010,
+                VMWrite = 0x0020,
+                VMOperation = 0x0008,
+                SuspendResume = 0x0800,
+                VMReadWrite = VMRead | VMWrite,
+                VMOperationSuspendResume = VMOperation | SuspendResume,
+                All = VMOperationSuspendResume | VMReadWrite
+            }
 
-        internal const uint PAGE_EXECUTE_READWRITE = 0x40;
+            [Flags]
+            internal enum MemoryPageProtectionModes : byte
+            {
+                ExecuteReadWrite = 0x40
+            }
+
+        }
 
         [DllImport("\\Resources\\pcsx2_offsetreader.dll", EntryPoint = "?GetEEMem@@YAJH@Z", CallingConvention = CallingConvention.Cdecl)]
         private static extern long GetEEMem(int procID);
@@ -82,66 +86,46 @@ namespace Dark_Cloud_Improved_Version
 
         public static void SuspendProcess()
         {
-            DebugActiveProcess(process.Id);
+            DebugActiveProcess(emulatorProcess.Id);
             DebugSetProcessKillOnExit(false);
         }
 
-        public static void ResumeProcess()
-        {
-            DebugActiveProcessStop(process.Id);
-        }
+        public static void ResumeProcess() => DebugActiveProcessStop(emulatorProcess.Id);
 
         internal static string GetSystemMessage(uint errorCode)
         {
-            IntPtr lpMsgBuf = IntPtr.Zero;
+            IntPtr messageBuffer = IntPtr.Zero;
 
-            int dwChars = FormatMessage(
-                FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, IntPtr.Zero, (uint)errorCode, 0, ref lpMsgBuf, 0, IntPtr.Zero);
+            _ = FormatMessage(
+                (uint) WinAPIFlags.SystemMessageOptions.All,
+                IntPtr.Zero,
+                errorCode,
+                0,
+                ref messageBuffer,
+                0,
+                IntPtr.Zero
+            );
 
-            string sRet = Marshal.PtrToStringAnsi(lpMsgBuf);
-            return sRet;
+            return Marshal.PtrToStringAnsi(messageBuffer);
         }
-
-        //private static IntPtr GetEEmemAddress()
-        //{
-        //    switch(process.ProcessName)
-        //    {
-        //        case "pcsx2": //Most likely 1.6 or below version of pcsx2
-        //            return (IntPtr)0x20000000; //Our addresses already include the previous fixed offset, so, return 0.
-
-        //        case "pcsx2-qtx64":
-        //            break;
-
-        //        case "pcsx2x64-avx2":
-        //            break;
-
-        //        default:
-        //            return IntPtr.Zero;
-        //    }
-
-        //    return GetProcAddressEx(process.MainModule.BaseAddress, process.Handle, "EEmem".ToCharArray());
-        //}
 
         public static int Initialize()
         {
-            process = GetProcess(procName);
+            emulatorProcess = GetProcess(emulatorName);
 
-            if (process != null)
-            {
-                Check_EEMem_Address = ReadLong(GetEEMem(process.Id));
-                Check_EEMem_Offset = Check_EEMem_Address - 0x20000000;
+            if (emulatorProcess != null) {
+                CheckEEMemAddress = ReadLong(GetEEMem(emulatorProcess.Id));
+                CheckEEMemOffset = CheckEEMemAddress - 0x20000000;
 
-                switch (process.ProcessName)
-                {
+                switch (emulatorProcess.ProcessName) {
                     case "pcsx2":
-                        EEMem_Offset = 0x00000000;
+                        EEMemOffset = 0x00000000;
                         break;
                 }
 
-                if (Check_EEMem_Address > 0x0)
-                {
-                    EEMem_Address = Check_EEMem_Address;
-                    EEMem_Offset = Check_EEMem_Offset;
+                if (CheckEEMemAddress > 0x0) {
+                    EEMemAddress = CheckEEMemAddress;
+                    EEMemOffset = CheckEEMemOffset;
                     ModWindow.NightlyVersionCheck();
                 }
             }
@@ -149,203 +133,133 @@ namespace Dark_Cloud_Improved_Version
             return 0;
         }
 
-        public static Process GetProcess(string procName) //Function for retrieving process from running processes.
+        /// <summary>
+        /// Function for retrieving the emulator process from running process list
+        /// </summary>
+        /// <param name="processToFind"></param>
+        /// <returns></returns>
+        public static Process GetProcess(string processToFind = "pcsx2")
         {
-            Process[] processes = Process.GetProcesses(); //Fetch the array of running processes
-            Process foundProcess = null;
-            int processInstances = 0;
+            var found = Process.GetProcesses()
+                .Where(p => p.ProcessName
+                    .Contains(processToFind))
+                .ToList();
 
-            procName = procName.ToLowerInvariant().Trim();
-
-            foreach(Process process in processes)
-            {
-                if(process.ProcessName.ToLowerInvariant().Trim().Contains(procName)) //If we found the process, continue.
-                {
-                    foundProcess = process;
-                    processInstances++;
-                }
+            if (found.Count > 1) {
+                Console.WriteLine("Found {0} running instances of {1}. Using the last instance found...",
+                    found.Count, found[-1].ProcessName);
             }
 
-            if(processInstances > 1)
-            {
-                Console.WriteLine("Found {0} running instances of {1}. Using the last instance found...", processInstances, foundProcess.ProcessName);
-            }
-
-            return foundProcess; //Return our process or default null if not found
+            return found.LastOrDefault();
         }
 
-        public static IntPtr GetProcessHandle(int PID)
-        {
-            IntPtr processH = OpenProcess(PROCESS_VM_OPERATION | PROCESS_SUSPEND_RESUME | PROCESS_VM_READ | PROCESS_VM_WRITE, false, PID);
-            return processH;
-        }
+        public static IntPtr GetProcessHandle(int processId) => OpenProcess((uint) WinAPIFlags.ProcessModes.All, false, processId);
 
-        internal static byte ReadByte(long address)  //Read byte from address + EEMem_Offset
-        {
-            byte[] dataBuffer = new byte[1];
-
-            ReadProcessMemory(process.Handle, address + EEMem_Offset, dataBuffer, dataBuffer.Length, out _); //_ seems to act as NULL, we don't need numOfBytesRead
-
-            return dataBuffer[0];
-        }
 
         internal static byte[] ReadByteArray(long address, long numBytes)  //Read byte array from address + EEMem_Offset
         {
             byte[] dataBuffer = new byte[numBytes];
-
-            ReadProcessMemory(process.Handle, address + EEMem_Offset, dataBuffer, dataBuffer.LongLength, out _); //_ seems to act as NULL, we don't need numOfBytesRead
-
+            ReadProcessMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out _); //_ seems to act as NULL, we don't need numOfBytesRead
             return dataBuffer;
+        }
+
+        internal static byte ReadByte(long address)  //Read byte from address + EEMem_Offset
+        {
+            var dataBuffer = ReadByteArray(address, 1);
+            return dataBuffer[0];
         }
 
         internal static ushort ReadUShort(long address)  //Read unsigned short from address + EEMem_Offset
         {
-            byte[] dataBuffer = new byte[2];
-
-            ReadProcessMemory(process.Handle, address + EEMem_Offset, dataBuffer, dataBuffer.Length, out _);
-
+            var dataBuffer = ReadByteArray(address, 2);
             return BitConverter.ToUInt16(dataBuffer, 0);
         }
 
         internal static short ReadShort(long address)
         {
-            byte[] dataBuffer = new byte[2]; //Read this many bytes of the address + EEMem_Offset
-
-            ReadProcessMemory(process.Handle, address + EEMem_Offset, dataBuffer, dataBuffer.Length, out _); //_ seems to act as NULL, we don't need numOfBytesRead
-
-            return BitConverter.ToInt16(dataBuffer, 0); //Convert Bit Array to 16-bit Int (short) and return it
+            var dataBuffer = ReadByteArray(address, 2);
+            return BitConverter.ToInt16(dataBuffer, 0);
         }
 
         internal static uint ReadUInt(long address)
         {
-            byte[] dataBuffer = new byte[4];
-
-            ReadProcessMemory(process.Handle, address + EEMem_Offset, dataBuffer, dataBuffer.Length, out _); //_ seems to act as NULL, we don't need numOfBytesRead
-
+            var dataBuffer = ReadByteArray(address, 4);
             return BitConverter.ToUInt32(dataBuffer, 0);
         }
 
         internal static int ReadInt(long address)
         {
-            byte[] dataBuffer = new byte[4];
-
-            ReadProcessMemory(process.Handle, address + EEMem_Offset, dataBuffer, dataBuffer.Length, out _); //_ seems to act as NULL, we don't need numOfBytesRead
-
+            var dataBuffer = ReadByteArray(address, 4);
             return BitConverter.ToInt32(dataBuffer, 0);
         }
 
         internal static float ReadFloat(long address)
         {
-            byte[] dataBuffer = new byte[4];
-
-            ReadProcessMemory(process.Handle, address + EEMem_Offset, dataBuffer, dataBuffer.Length, out _);
-
+            var dataBuffer = ReadByteArray(address, 4);
             return BitConverter.ToSingle(dataBuffer, 0);
         }
 
         internal static double ReadDouble(long address)
         {
-            byte[] dataBuffer = new byte[8];
-
-            ReadProcessMemory(process.Handle, address + EEMem_Offset, dataBuffer, dataBuffer.Length, out _);
-
-            return BitConverter.ToDouble(dataBuffer, 0); ;
+            var dataBuffer = ReadByteArray(address, 8);
+            return BitConverter.ToDouble(dataBuffer, 0);
         }
 
         internal static long ReadLong(long address)
         {
-            byte[] dataBuffer = new byte[8];
-
-            ReadProcessMemory(process.Handle, address + EEMem_Offset, dataBuffer, dataBuffer.Length, out _); //_ seems to act as NULL, we don't need numOfBytesRead
-
+            var dataBuffer = ReadByteArray(address, 8);
             return BitConverter.ToInt64(dataBuffer, 0);
         }
 
         internal static string ReadString(long address, long length)
         {
-            //http://stackoverflow.com/questions/1003275/how-to-convert-byte-to-string
+            // http://stackoverflow.com/questions/1003275/how-to-convert-byte-to-string
             byte[] dataBuffer = new byte[length];
-
-            ReadProcessMemory(process.Handle, address + EEMem_Offset, dataBuffer, length, out _);
-
+            ReadProcessMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, length, out _);
             return Encoding.GetEncoding(10000).GetString(dataBuffer);
-        }
-
-        internal static bool Write(long address, byte[] value)
-        {
-            return WriteProcessMemory(process.Handle, address + EEMem_Offset, value, value.LongLength, out _);
-        }
-
-        internal static bool WriteOneByte(long address, byte[] value)
-        {
-            return WriteProcessMemory(process.Handle, address + EEMem_Offset, value, sizeof(byte), out _);
         }
 
         internal static bool WriteString(long address, string stringToWrite) //Untested
         {
             // http://stackoverflow.com/questions/16072709/converting-string-to-byte-array-in-c-sharp
             byte[] dataBuffer = Encoding.GetEncoding(10000).GetBytes(stringToWrite); //Western European (Mac) Encoding Table
-
-            return WriteProcessMemory(process.Handle, address + EEMem_Offset, dataBuffer, dataBuffer.LongLength, out _);
+            return WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out _);
         }
 
-        internal static bool WriteByte(long address, byte value)
-        {
-            //return Write(address + EEMem_Offset + EEMem_Offset, BitConverter.GetBytes(value));
-            return WriteOneByte(address, BitConverter.GetBytes(value));
-        }
+        internal static bool Write(long address, byte[] value) => WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, value, value.LongLength, out _);
+
+        internal static bool WriteOneByte(long address, byte[] value) => WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, value, sizeof(byte), out _);
+
+        internal static bool WriteByte(long address, byte value) => WriteOneByte(address, BitConverter.GetBytes(value));
 
         internal static void WriteByteArray(long address, byte[] byteArray)  //Write byte array at address + EEMem_Offset
         {
-            bool successful;
+            bool successful = WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, byteArray, byteArray.LongLength, out _);
 
-            //successful = VirtualProtectEx(process.Handle, address + EEMem_Offset, byteArray.LongLength, PAGE_EXECUTE_READWRITE, out _);
-
-            //if (successful == false) //There was an error
-                //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + GetLastError() + " - " + GetSystemMessage(GetLastError())); //Get the last error code and write out the message associated with it.
-
-            successful = WriteProcessMemory(process.Handle, address + EEMem_Offset, byteArray, byteArray.LongLength, out _);
-
-            if (successful == false)
+            if (!successful)
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + GetLastError() + " - " + GetSystemMessage(GetLastError()));
         }
 
-        internal static bool WriteUShort(long address, ushort value)
-        {
-            return Write(address, BitConverter.GetBytes(value));
-        }
+        internal static bool WriteUShort(long address, ushort value) => Write(address, BitConverter.GetBytes(value));
 
-        internal static bool WriteInt(long address, int value)
-        {
-            return Write(address, BitConverter.GetBytes(value));
-        }
+        internal static bool WriteInt(long address, int value) => Write(address, BitConverter.GetBytes(value));
 
-        internal static bool WriteUInt(long address, uint value)
-        {
-            return Write(address, BitConverter.GetBytes(value));
-        }
+        internal static bool WriteUInt(long address, uint value) => Write(address, BitConverter.GetBytes(value));
 
-        internal static bool WriteFloat(long address, float value)
-        {
-            return Write(address, BitConverter.GetBytes(value));
-        }
+        internal static bool WriteFloat(long address, float value) => Write(address, BitConverter.GetBytes(value));
 
-        internal static bool WriteDouble(long address, double value)
-        {
-            return Write(address, BitConverter.GetBytes(value));
-        }
+        internal static bool WriteDouble(long address, double value) => Write(address, BitConverter.GetBytes(value));
 
         internal static List<long> StringSearch(long startOffset, long stopOffset, string searchString)
         {
             byte[] stringBuffer = new byte[searchString.LongCount()];
             List<long> resultsList = new List<long>();
 
-            VirtualProtectEx(process.Handle, startOffset, stopOffset - startOffset, PAGE_EXECUTE_READWRITE, out _); //Change our protection first
+            VirtualProtectEx(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _); //Change our protection first
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchString + ". This may take awhile.");
 
-            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++)
-            {
+            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++) {
                 if (ReadString(currentOffset, stringBuffer.LongLength) == searchString) //If we found a match
                     resultsList.Add(currentOffset); //Add it to the list
 
@@ -358,16 +272,13 @@ namespace Dark_Cloud_Improved_Version
         {
             List<long> resultsList = new List<long>();
 
-            VirtualProtectEx(process.Handle, startOffset, stopOffset - startOffset, PAGE_EXECUTE_READWRITE, out _); //Change our protection first
+            VirtualProtectEx(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _); //Change our protection first
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchValue + ". This may take awhile.");
 
-            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++)
-            {
+            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++) {
                 if (ReadInt(currentOffset) == searchValue)
                     resultsList.Add(currentOffset);
-
-                //ReadInt(currentOffset);
             }
             return resultsList;
         }
@@ -376,12 +287,10 @@ namespace Dark_Cloud_Improved_Version
         {
             List<long> resultsList = new List<long>();
 
-            VirtualProtectEx(process.Handle, startOffset, stopOffset - startOffset, PAGE_EXECUTE_READWRITE, out _);
+            VirtualProtectEx(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
 
-            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++)
-            {
-                if (ReadByteArray(currentOffset, byteArray.LongLength).SequenceEqual(byteArray))
-                {
+            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++) {
+                if (ReadByteArray(currentOffset, byteArray.LongLength).SequenceEqual(byteArray)) {
                     resultsList.Add(currentOffset);
                 }
 

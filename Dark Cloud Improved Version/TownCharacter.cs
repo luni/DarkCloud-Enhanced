@@ -26,7 +26,7 @@ namespace Dark_Cloud_Improved_Version
         static byte checkByte;
         static byte[] townDialogueIDs = { 247, 167, 87, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 200, 0, 0, 0, 0, 0, 0, 0, 0, 240, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 101, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         static byte[] fishArray = new byte[5];
-        
+
         static string cfgFile;
         static string chrFilePath;
         static string currentCharacter = "chara/c01d.chr";
@@ -70,7 +70,7 @@ namespace Dark_Cloud_Improved_Version
         public static bool fishingQuestDeviaActive = false;
         public static bool hasMardanSword = false;
         public static byte mardanMultiplier;
-        
+
         public static int onDialogueFlag = 0;
         public static int sidequestonDialogueFlag = 0;
         public static int itsfinishedonDialogueFlag = 0;
@@ -102,7 +102,7 @@ namespace Dark_Cloud_Improved_Version
         public static void MainScript()
         {
 
-            Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Towncharacter running");
+            Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Towncharacter setup...");
 
             Dialogues.InitializeDialogues(); //pre-loads all custom dialogue
             Memory.WriteByte(0x2027DD50, 0); //make shell ring discardable
@@ -142,10 +142,10 @@ namespace Dark_Cloud_Improved_Version
             //THE FOLLOWING CODE UP TO WHILE LOOP is for setting up ally switching in the overworld, by editing
             //some of the game's code that handles the character files
 
-            Memory.VirtualProtect(Memory.process.Handle, Addresses.chrConfigFileOffset, 8, Memory.PAGE_EXECUTE_READWRITE, out _);
-            successful = Memory.VirtualProtectEx(Memory.process.Handle, Addresses.chrConfigFileOffset, 8, Memory.PAGE_EXECUTE_READWRITE, out _);
-            
-            if (successful == false) //There was an error
+            Memory.VirtualProtect(Memory.emulatorProcess.Handle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
+            successful = Memory.VirtualProtectEx(Memory.emulatorProcess.Handle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
+
+            if (!successful) //There was an error
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + Memory.GetLastError() + " - " + Memory.GetSystemMessage(Memory.GetLastError())); //Get the last error code and write out the message associated with it.
 
             Memory.Write(Addresses.chrConfigFileOffset, BitConverter.GetBytes(608545264)); //this changes the offset value in game's code to make it read the file in right location
@@ -171,14 +171,11 @@ namespace Dark_Cloud_Improved_Version
 
             currentAddress = Addresses.chrConfigFileLocation;
 
-            for (int i = 0; i < cfgFile.Length; i++)
-            {
+            for (int i = 0; i < cfgFile.Length; i++) {
                 char character = cfgFile[i];
 
-                for (int a = 0; a < characters.Length; a++)
-                {
-                    if (character.Equals(characters[a]))
-                    {
+                for (int a = 0; a < characters.Length; a++) {
+                    if (character.Equals(characters[a])) {
                         value1 = BitConverter.GetBytes(a + 32);
                     }
                 }
@@ -190,14 +187,11 @@ namespace Dark_Cloud_Improved_Version
 
             currentAddress = Addresses.chrFileLocation;
 
-            for (int i = 0; i < chrFilePath.Length; i++)
-            {
+            for (int i = 0; i < chrFilePath.Length; i++) {
                 char character = chrFilePath[i];
 
-                for (int a = 0; a < characters.Length; a++)
-                {
-                    if (character.Equals(characters[a]))
-                    {
+                for (int a = 0; a < characters.Length; a++) {
+                    if (character.Equals(characters[a])) {
                         value1 = BitConverter.GetBytes(a + 32);
                     }
                 }
@@ -209,15 +203,13 @@ namespace Dark_Cloud_Improved_Version
             }
 
 
-            while (true)
-            {
+            while (true) {
                 //Check if player is in town
-                if (Memory.ReadByte(Addresses.mode) == 2)
-                {                   
+                if (Memory.ReadByte(Addresses.mode) == 2) {
 
                     if (Memory.ReadByte(Addresses.mode) == 0x2 && Memory.ReadByte(Addresses.selectedMenu) == 0x3) //check if player entered allies menu in the overworld
                     {
-                        
+
                         if (Memory.ReadInt(0x202A28F4) == 0)    //set currentCharacter variable after cycling through allies
                         {
                             currentCharacter = chrFilePath;
@@ -237,7 +229,7 @@ namespace Dark_Cloud_Improved_Version
                                 Memory.WriteByte(currentAddress, 0);
                                 currentAddress += 0x00000001;
                             }
-     
+
 
                             switch (charNumber) //gets character file path based on selected ally
                             {
@@ -270,10 +262,8 @@ namespace Dark_Cloud_Improved_Version
                             {
                                 char character = chrFilePath[i];
 
-                                for (int a = 0; a < characters.Length; a++)
-                                {
-                                    if (character.Equals(characters[a]))
-                                    {
+                                for (int a = 0; a < characters.Length; a++) {
+                                    if (character.Equals(characters[a])) {
                                         value1 = BitConverter.GetBytes(a + 32);
                                     }
                                 }
@@ -295,14 +285,11 @@ namespace Dark_Cloud_Improved_Version
 
                         currentAddress = Addresses.chrFileLocation;
 
-                        for (int i = 0; i < chrFilePath.Length; i++)
-                        {
+                        for (int i = 0; i < chrFilePath.Length; i++) {
                             char character = chrFilePath[i];
 
-                            for (int a = 0; a < characters.Length; a++)
-                            {
-                                if (character.Equals(characters[a]))
-                                {
+                            for (int a = 0; a < characters.Length; a++) {
+                                if (character.Equals(characters[a])) {
                                     value1 = BitConverter.GetBytes(a + 32);
                                 }
                             }
@@ -326,64 +313,54 @@ namespace Dark_Cloud_Improved_Version
 
                         if (currentHouseID != 255)  //check if its actual georama house
                         {
-                            checkCompletion = 0xE8 * currentHouseID + 0x21D19C58;
+                            checkCompletion = (0xE8 * currentHouseID) + 0x21D19C58;
 
                             if (Memory.ReadByte(checkCompletion) == 0)  //checks if house has been completed when opening the door
                             {
                                 int parts = 4;
-                                checkCompletion = 0xE8 * currentHouseID + 0x21D19C80;
+                                checkCompletion = (0xE8 * currentHouseID) + 0x21D19C80;
 
                                 if (Memory.ReadByte(0x202A2518) == 0) //check if claude's house
                                 {
-                                    if (currentHouseID == 4)
-                                    {
+                                    if (currentHouseID == 4) {
                                         parts = 5;
                                     }
                                 }
                                 else if (Memory.ReadByte(0x202A2518) == 1) //check if cacaos house
                                 {
-                                    if (currentHouseID == 1)
-                                    {
+                                    if (currentHouseID == 1) {
                                         parts = 5;
                                     }
                                 }
 
 
-                                for (int i = 0; i < parts; i++)
-                                {
+                                for (int i = 0; i < parts; i++) {
                                     partsCollected += Memory.ReadByte(checkCompletion);
                                     checkCompletion += 0x20;
                                 }
 
-                                if ((parts == 4 && partsCollected == 4) || (parts == 5 && partsCollected == 5))
-                                {
+                                if ((parts == 4 && partsCollected == 4) || (parts == 5 && partsCollected == 5)) {
                                     Memory.WriteByte(0x202A282C, 0);
                                 }
-                                else
-                                {
+                                else {
                                     Memory.WriteByte(0x202A282C, 128);
                                 }
                                 partsCollected = 0;
                             }
-                            else
-                            {
+                            else {
                                 Memory.WriteByte(0x202A282C, 128);
                             }
 
-                            if (Memory.ReadByte(0x202A2518) == 2)
-                            {
-                                if (Memory.ReadByte(0x21D196A4) == 4)
-                                {
-                                    if (Memory.ReadByte(0x21D19FF8) != 1)
-                                    {
+                            if (Memory.ReadByte(0x202A2518) == 2) {
+                                if (Memory.ReadByte(0x21D196A4) == 4) {
+                                    if (Memory.ReadByte(0x21D19FF8) != 1) {
                                         if (Memory.ReadByte(0x21D19710) == 1 && jokerHouse == false) //check if at joker's house door (INCONSISTENT, DOESN'T WORK ALL TIMES)
                                         {
                                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "entered jokers");
                                             Memory.WriteByte(0x202A2A08, 0);
                                             jokerHouse = true;
                                         }
-                                        else if (Memory.ReadByte(0x21D19710) == 0 && jokerHouse == true)
-                                        {
+                                        else if (Memory.ReadByte(0x21D19710) == 0 && jokerHouse == true) {
                                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "left jokers");
                                             Memory.WriteByte(0x202A2A08, 1);
                                             jokerHouse = false;
@@ -393,40 +370,32 @@ namespace Dark_Cloud_Improved_Version
                             }
 
                         }
-                        else
-                        {
+                        else {
                             Memory.WriteByte(0x202A282C, 128);
                         }
 
-                        if (Memory.ReadByte(0x202A2518) == 23)
-                        {
-                            if (Memory.ReadByte(0x21D28474) == 8)
-                            {
+                        if (Memory.ReadByte(0x202A2518) == 23) {
+                            if (Memory.ReadByte(0x21D28474) == 8) {
                                 Memory.WriteByte(0x21D2849C, 0); //despawn trade quest bunny
                             }
-                            else
-                            {
+                            else {
                                 Memory.WriteByte(0x21D2849C, 1);
                             }
                         }
                         currentArea = Memory.ReadByte(0x202A2518);
-                        if (currentArea == 11 || currentArea == 13 || currentArea == 33 || currentArea == 35 || currentArea == 37 || currentArea == 14)
-                        {
+                        if (currentArea == 11 || currentArea == 13 || currentArea == 33 || currentArea == 35 || currentArea == 37 || currentArea == 14) {
                             Memory.WriteByte(0x21F10000, 1); //disable eventpoints/triggers, pnach does the rest
                         }
-                        else
-                        {
+                        else {
                             Memory.WriteByte(0x21F10000, 0);
                         }
 
 
-                        if (Memory.ReadByte(0x21CDD80D) != 255)
-                        {
+                        if (Memory.ReadByte(0x21CDD80D) != 255) {
                             Memory.WriteByte(0x21F10004, 1); //enable yaya
                         }
 
-                        if (Memory.ReadByte(0x21F10014) == 1)
-                        {
+                        if (Memory.ReadByte(0x21F10014) == 1) {
                             Memory.WriteByte(0x20415508, 0); //disable mayor door event
                             Memory.WriteByte(0x20415538, 0); //disable mayor door event mark
                         }
@@ -436,11 +405,9 @@ namespace Dark_Cloud_Improved_Version
                         for (int i = 0; i < 6; i++)     //check if player is next to a character. If so, jumps to SetDialogue() and writes the dialogues
                         {
                             //this following dialogue handling is a bit of mess, but it works fine and I don't want to break it lol
-                            currentAddress = i * 0x14A0 + 0x21D26FF8;
-                            if (Memory.ReadByte(currentAddress) == 1)
-                            {
-                                if (nearNPC == false || onDialogueFlag == 1)
-                                {
+                            currentAddress = (i * 0x14A0) + 0x21D26FF8;
+                            if (Memory.ReadByte(currentAddress) == 1) {
+                                if (nearNPC == false || onDialogueFlag == 1) {
                                     Dialogues.SetDialogue(i, true, false);
                                     if (talkableNPC != false) //check if NPC is not llama
                                     {
@@ -448,13 +415,13 @@ namespace Dark_Cloud_Improved_Version
                                     }
                                     talkableNPC = true;
                                     nearNPC = true;
-                                    if (onDialogueFlag == 1) onDialogueFlag = 2;    //if player was already on a dialogue, the next one was written ready
+                                    if (onDialogueFlag == 1)
+                                        onDialogueFlag = 2;    //if player was already on a dialogue, the next one was written ready
                                 }
                                 checkNearNPC++;
                             }
                         }
-                        if (checkNearNPC == 0)
-                        {
+                        if (checkNearNPC == 0) {
                             nearNPC = false;
                             Memory.WriteByte(0x21F10008, 0); //nearNPC flag for PNACH to use
                             onDialogueFlag = 0;
@@ -470,8 +437,7 @@ namespace Dark_Cloud_Improved_Version
                             onDialogueFlag = 0;
                         }
 
-                        if (onDialogueFlag == 2)
-                        {
+                        if (onDialogueFlag == 2) {
                             if (Memory.ReadByte(0x21D1CC0C) == 255) //check if previous custom dialogue has ended
                             {
                                 onDialogueFlag = 3;
@@ -480,8 +446,7 @@ namespace Dark_Cloud_Improved_Version
 
                         if (Memory.ReadInt(0x2029AA18) == 1882468451)   //if using Xiao, change talk camera
                         {
-                            switch (currentArea)
-                            {
+                            switch (currentArea) {
                                 case 0:     //Norune
                                     Memory.WriteByte(0x202A2A6C, 0);
                                     Memory.WriteByte(0x202A2A6E, 9);
@@ -518,110 +483,87 @@ namespace Dark_Cloud_Improved_Version
 
                             Memory.WriteByte(0x21F1000C, 1); //xiaoFlag for PNACH
                         }
-                        else
-                        {
+                        else {
                             Memory.WriteByte(0x21F1000C, 0); //xiaoFlag for PNACH
                         }
 
                         if (shopkeeper == true) //check for shopkeeper and change dialogue ID, this part is a bit poorly written and could be cleaner
                         {
-                            if (currentArea != 23)
-                            {
+                            if (currentArea != 23) {
                                 Memory.WriteUShort(0x21D3D438, townDialogueIDs[currentArea]);
 
-                                if (itsfinishedOptionFlag == false && (Memory.ReadByte(0x21D1CC0C) == 12 || Memory.ReadByte(0x21D1CC0C) == 13))
-                                {
+                                if (itsfinishedOptionFlag == false && (Memory.ReadByte(0x21D1CC0C) == 12 || Memory.ReadByte(0x21D1CC0C) == 13)) {
                                     itsfinishedOptionFlag = true;
                                 }
-                                else if (itsfinishedOptionFlag == true && Memory.ReadByte(0x21D1CC0C) == 255)
-                                {
+                                else if (itsfinishedOptionFlag == true && Memory.ReadByte(0x21D1CC0C) == 255) {
                                     itsfinishedOptionFlag = false;
                                 }
 
-                                if (itsfinishedOptionFlag == true)
-                                {
+                                if (itsfinishedOptionFlag == true) {
                                     Memory.WriteInt(0x21D3D440, itsfinishedDialogueID); //its finished dialogue ID setup
                                     SetItsFinishedDialogue();
                                 }
-                                else
-                                {
+                                else {
                                     itsfinishedonDialogueFlag = 0;
                                 }
                             }
-                            else
-                            {
-                                if (sidequestOptionFlag == false && Memory.ReadByte(0x21D1CC0C) == 12)
-                                {
+                            else {
+                                if (sidequestOptionFlag == false && Memory.ReadByte(0x21D1CC0C) == 12) {
                                     sidequestOptionFlag = true;
                                 }
-                                else if (sidequestOptionFlag == true && Memory.ReadByte(0x21D1CC0C) == 255)
-                                {
+                                else if (sidequestOptionFlag == true && Memory.ReadByte(0x21D1CC0C) == 255) {
                                     sidequestOptionFlag = false;
                                 }
 
-                                if (sidequestOptionFlag == true)
-                                {
+                                if (sidequestOptionFlag == true) {
                                     Memory.WriteInt(0x21D3D43C, sidequestDialogueID); //THIS IS USED FOR POSSIBLE 4TH DIALOGUE OPTION (sidequests)
                                     SetSideQuestDialogue();
 
-                                    if (Memory.ReadUShort(0x21D1CC0C) == sidequestDialogueID && isSideQuestDialogueActive == false)
-                                    {
+                                    if (Memory.ReadUShort(0x21D1CC0C) == sidequestDialogueID && isSideQuestDialogueActive == false) {
                                         CheckSideQuestDialogue();
                                         isSideQuestDialogueActive = true;
                                     }
-                                    else if (Memory.ReadUShort(0x21D1CC0C) != sidequestDialogueID)
-                                    {
+                                    else if (Memory.ReadUShort(0x21D1CC0C) != sidequestDialogueID) {
                                         isSideQuestDialogueActive = false;
                                     }
                                 }
-                                else
-                                {
+                                else {
                                     sidequestonDialogueFlag = 0;
                                     itsfinishedonDialogueFlag = 0;
                                 }
                             }
                         }
-                        else
-                        {
-                            if (currentArea != 38 || currentArea != 19)
-                            {
+                        else {
+                            if (currentArea != 38 || currentArea != 19) {
                                 Memory.WriteUShort(0x21D3D434, townDialogueIDs[currentArea]);
                             }
-                            if (sidequestOptionFlag == false && (Memory.ReadByte(0x21D1CC0C) == 11 || (currentArea == 2 && Memory.ReadByte(0x21D1CC0C) == 15)))
-                            {
+                            if (sidequestOptionFlag == false && (Memory.ReadByte(0x21D1CC0C) == 11 || (currentArea == 2 && Memory.ReadByte(0x21D1CC0C) == 15))) {
                                 sidequestOptionFlag = true;
                             }
-                            else if (sidequestOptionFlag == true && Memory.ReadByte(0x21D1CC0C) == 255)
-                            {
+                            else if (sidequestOptionFlag == true && Memory.ReadByte(0x21D1CC0C) == 255) {
                                 sidequestOptionFlag = false;
                             }
 
-                            if (sidequestOptionFlag == true)
-                            {
-                                if (Memory.ReadByte(0x21F10014) == 1)
-                                {
+                            if (sidequestOptionFlag == true) {
+                                if (Memory.ReadByte(0x21F10014) == 1) {
                                     Memory.WriteInt(0x21D3D438, sidequestDialogueID);
                                 }
-                                else
-                                {
+                                else {
                                     Memory.WriteInt(0x21D3D440, sidequestDialogueID); //THIS IS USED FOR POSSIBLE 4TH DIALOGUE OPTION (sidequests)
                                     Memory.WriteInt(0x21D3D43C, itsfinishedDialogueID); //its finished dialogue ID setup
                                 }
                                 SetSideQuestDialogue();
                                 SetItsFinishedDialogue();
 
-                                if (Memory.ReadUShort(0x21D1CC0C) == sidequestDialogueID && isSideQuestDialogueActive == false)
-                                {
+                                if (Memory.ReadUShort(0x21D1CC0C) == sidequestDialogueID && isSideQuestDialogueActive == false) {
                                     CheckSideQuestDialogue();
                                     isSideQuestDialogueActive = true;
                                 }
-                                else if (Memory.ReadUShort(0x21D1CC0C) != sidequestDialogueID)
-                                {
+                                else if (Memory.ReadUShort(0x21D1CC0C) != sidequestDialogueID) {
                                     isSideQuestDialogueActive = false;
                                 }
                             }
-                            else
-                            {
+                            else {
                                 sidequestonDialogueFlag = 0;
                                 itsfinishedonDialogueFlag = 0;
                             }
@@ -637,71 +579,55 @@ namespace Dark_Cloud_Improved_Version
                         //if (Memory.ReadByte(0x21D1CC0C) == 12)
 
                         currentArea = Memory.ReadByte(0x202A2518);
-                        if (currentArea == 0 || currentArea == 1 || currentArea == 2 || currentArea == 3)
-                        {
-                            if (sidequestOptionFlag == false && Memory.ReadByte(0x21D1CC0C) == 11)
-                            {
+                        if (currentArea == 0 || currentArea == 1 || currentArea == 2 || currentArea == 3) {
+                            if (sidequestOptionFlag == false && Memory.ReadByte(0x21D1CC0C) == 11) {
                                 sidequestOptionFlag = true;
                             }
-                            else if (sidequestOptionFlag == true && Memory.ReadByte(0x21D1CC0C) == 255)
-                            {
+                            else if (sidequestOptionFlag == true && Memory.ReadByte(0x21D1CC0C) == 255) {
                                 sidequestOptionFlag = false;
                             }
-                            if (sidequestOptionFlag == true)
-                            {
-                                if (Memory.ReadByte(0x21F10014) == 1)
-                                {
+                            if (sidequestOptionFlag == true) {
+                                if (Memory.ReadByte(0x21F10014) == 1) {
                                     Memory.WriteInt(0x21D3D438, sidequestDialogueID);
                                 }
-                                else
-                                {
+                                else {
                                     Memory.WriteInt(0x21D3D440, sidequestDialogueID); //THIS IS USED FOR POSSIBLE 4TH DIALOGUE OPTION (sidequests)
                                 }
                                 SetSideQuestDialogue();
 
-                                if (Memory.ReadUShort(0x21D1CC0C) == sidequestDialogueID && isSideQuestDialogueActive == false)
-                                {
+                                if (Memory.ReadUShort(0x21D1CC0C) == sidequestDialogueID && isSideQuestDialogueActive == false) {
                                     CheckSideQuestDialogue();
                                     isSideQuestDialogueActive = true;
                                 }
-                                else if (Memory.ReadUShort(0x21D1CC0C) != sidequestDialogueID)
-                                {
+                                else if (Memory.ReadUShort(0x21D1CC0C) != sidequestDialogueID) {
                                     isSideQuestDialogueActive = false;
                                 }
                             }
-                            else
-                            {
+                            else {
                                 sidequestonDialogueFlag = 0;
                             }
                         }
-                        else if (currentArea == 23)
-                        {
-                            if (sidequestOptionFlag == false && Memory.ReadByte(0x21D1CC0C) == 12)
-                            {
+                        else if (currentArea == 23) {
+                            if (sidequestOptionFlag == false && Memory.ReadByte(0x21D1CC0C) == 12) {
                                 sidequestOptionFlag = true;
                             }
-                            else if (sidequestOptionFlag == true && Memory.ReadByte(0x21D1CC0C) == 255)
-                            {
+                            else if (sidequestOptionFlag == true && Memory.ReadByte(0x21D1CC0C) == 255) {
                                 sidequestOptionFlag = false;
                             }
 
-                            if (sidequestOptionFlag == true)
-                            {
+                            if (sidequestOptionFlag == true) {
                                 Memory.WriteInt(0x21D3D43C, sidequestDialogueID); //THIS IS USED FOR POSSIBLE 4TH DIALOGUE OPTION (sidequests)
                                 SetSideQuestDialogue();
 
-                                if (Memory.ReadUShort(0x21D1CC0C) == sidequestDialogueID && isSideQuestDialogueActive == false)
-                                {
+                                if (Memory.ReadUShort(0x21D1CC0C) == sidequestDialogueID && isSideQuestDialogueActive == false) {
                                     CheckSideQuestDialogue();
                                     isSideQuestDialogueActive = true;
                                 }
-                                else if (Memory.ReadUShort(0x21D1CC0C) != sidequestDialogueID)
-                                {
+                                else if (Memory.ReadUShort(0x21D1CC0C) != sidequestDialogueID) {
                                     isSideQuestDialogueActive = false;
                                 }
                             }
-                            else
-                            {
+                            else {
                                 sidequestonDialogueFlag = 0;
                             }
                         }
@@ -710,32 +636,28 @@ namespace Dark_Cloud_Improved_Version
                             int checkNearNPC = 0;
                             for (int i = 0; i < 6; i++)     //check if player is next to a character. If so, jumps to SetDialogue() and writes the dialogues
                             {
-                                currentAddress = i * 0x14A0 + 0x21D26FF8;
-                                if (Memory.ReadByte(currentAddress) == 1)
-                                {
-                                    if (nearNPC == false || onDialogueFlag == 1)
-                                    {
+                                currentAddress = (i * 0x14A0) + 0x21D26FF8;
+                                if (Memory.ReadByte(currentAddress) == 1) {
+                                    if (nearNPC == false || onDialogueFlag == 1) {
 
                                         Dialogues.SetDialogue(i, false, false);
                                         Memory.WriteByte(0x21F10010, 1); //nearNPC flag for PNACH to use
                                         nearNPC = true;
-                                        if (onDialogueFlag == 1) onDialogueFlag = 2;
+                                        if (onDialogueFlag == 1)
+                                            onDialogueFlag = 2;
                                     }
                                     checkNearNPC++;
                                     currentAddress = currentAddress - 0x00000024;
-                                    if (Memory.ReadByte(currentAddress) == 5)
-                                    {
+                                    if (Memory.ReadByte(currentAddress) == 5) {
                                         mintTalk = true;
                                     }
-                                    else
-                                    {
+                                    else {
                                         mintTalk = false;
                                     }
                                 }
                             }
 
-                            if (checkNearNPC == 0)
-                            {
+                            if (checkNearNPC == 0) {
                                 nearNPC = false;
                                 Memory.WriteByte(0x21F10010, 0); //nearNPC flag for PNACH to use
                                 onDialogueFlag = 0;
@@ -744,20 +666,16 @@ namespace Dark_Cloud_Improved_Version
                             if (Memory.ReadByte(0x21D1CC0C) == 200 && onDialogueFlag == 0) //check if current dialogue is our custom dialogue, set a flag
                             {
                                 onDialogueFlag = 1;
-                                if (mintTalk)
-                                {
-                                    if (Memory.ReadByte(0x21CE444F) == 1)
-                                    {
-                                        if (Dialogues.alreadyHasSavingBook == false)
-                                        {
+                                if (mintTalk) {
+                                    if (Memory.ReadByte(0x21CE444F) == 1) {
+                                        if (Dialogues.alreadyHasSavingBook == false) {
                                             Dialogues.GiveMasterFishQuestReward();
                                         }
                                     }
                                 }
                             }
 
-                            if (onDialogueFlag == 2)
-                            {
+                            if (onDialogueFlag == 2) {
                                 if (Memory.ReadByte(0x21D1CC0C) == 255) //check if previous custom dialogue has ended
                                 {
                                     onDialogueFlag = 0;
@@ -770,10 +688,8 @@ namespace Dark_Cloud_Improved_Version
 
                     int currentAreaFrames = Memory.ReadInt(0x202A2880);
 
-                    if (currentAreaFrames < 25)
-                    {
-                        if (currentAreaFrames > 5)
-                        {
+                    if (currentAreaFrames < 25) {
+                        if (currentAreaFrames > 5) {
                             if (!areaEnteredClockCheck) //Enables clock for areas that dont originally have it (yellow drops & dark heaven)
                             {
                                 CheckClockAdvancement(currentArea);
@@ -782,35 +698,31 @@ namespace Dark_Cloud_Improved_Version
                             }
                         }
                     }
-                    else
-                    {
+                    else {
                         areaEnteredClockCheck = false;
                     }
 
                     if (currentAreaFrames < 50) //check player duration in new area (to check if its a new/changed area)
                     {
-                        if (currentAreaFrames > 30 && areaChanged == false)
-                        {
+                        if (currentAreaFrames > 30 && areaChanged == false) {
                             if (!areaEnteredCheck) //Initializes some data when entering an area for the first time, might do it multiple times but its fine, just spams the console a bit
                             {
                                 areaChanged = true;
                                 CheckAllyFishing();
-                                if (currentArea == 42) Dialogues.SetDefaultDialogue(42);
-                                else if (currentArea == 14) Dialogues.SetDefaultDialogue(14);
+                                if (currentArea == 42)
+                                    Dialogues.SetDefaultDialogue(42);
+                                else if (currentArea == 14)
+                                    Dialogues.SetDefaultDialogue(14);
 
-                                if (currentArea == 23)
-                                {
-                                    if (Dialogues.storageOriginalDialogue != null)
-                                    {
-                                        if (Dialogues.storageOriginalDialogue.Length > 0)
-                                        {
+                                if (currentArea == 23) {
+                                    if (Dialogues.storageOriginalDialogue != null) {
+                                        if (Dialogues.storageOriginalDialogue.Length > 0) {
                                             Array.Clear(Dialogues.storageOriginalDialogue, 0, Dialogues.storageOriginalDialogue.Length);
                                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Cleared storage original dialogue");
                                         }
                                     }
                                 }
-                                if (!characterNamesFixThread.IsAlive)
-                                {
+                                if (!characterNamesFixThread.IsAlive) {
                                     characterNamesFixThread = new Thread(() => Dialogues.FixCharacterNamesInDialogues());
                                     characterNamesFixThread.Start();
                                 }
@@ -818,8 +730,7 @@ namespace Dark_Cloud_Improved_Version
                             }
                         }
                     }
-                    else
-                    {
+                    else {
                         areaChanged = false;
                         areaEnteredCheck = false;
                     }
@@ -833,10 +744,8 @@ namespace Dark_Cloud_Improved_Version
                         CheckAllyFishing();
 
                     }
-                    else if (buildingCheck == 1 && checkBuildingFlag == false)
-                    {
-                        if (currentArea != 23)
-                        {
+                    else if (buildingCheck == 1 && checkBuildingFlag == false) {
+                        if (currentArea != 23) {
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Currently inside building");
                             Dialogues.SetDialogueOptions(currentArea, true);
                             Dialogues.SetStorageDialogue(currentArea, true);
@@ -844,16 +753,13 @@ namespace Dark_Cloud_Improved_Version
 
                             if (currentArea == 0 && currentHouseID == 0) //renee house
                             {
-                                if (Memory.ReadUShort(0x20425014) == 64820)
-                                {
+                                if (Memory.ReadUShort(0x20425014) == 64820) {
                                     Dialogues.FixFairyKingDialogue(); //just to change one dialogue...
                                 }
                             }
                         }
-                        else
-                        {
-                            if (Memory.ReadByte(0x21D26FD4) == 0 || Memory.ReadByte(0x21D26FD4) == 1)
-                            {
+                        else {
+                            if (Memory.ReadByte(0x21D26FD4) == 0 || Memory.ReadByte(0x21D26FD4) == 1) {
                                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Currently inside building");
                                 Dialogues.SetDialogueOptions(currentArea, true);
                                 Dialogues.SetStorageDialogue(currentArea, true);
@@ -873,22 +779,18 @@ namespace Dark_Cloud_Improved_Version
 
                         currentAddress = Addresses.chrFileLocation;
 
-                        for (int i = 0; i < 30; i++)
-                        {
+                        for (int i = 0; i < 30; i++) {
                             Memory.WriteByte(currentAddress, 0);
                             currentAddress += 0x00000001;
                         }
 
                         currentAddress = Addresses.chrFileLocation;
 
-                        for (int i = 0; i < chrFilePath.Length; i++)
-                        {
+                        for (int i = 0; i < chrFilePath.Length; i++) {
                             char character = chrFilePath[i];
 
-                            for (int a = 0; a < characters.Length; a++)
-                            {
-                                if (character.Equals(characters[a]))
-                                {
+                            for (int a = 0; a < characters.Length; a++) {
+                                if (character.Equals(characters[a])) {
                                     value1 = BitConverter.GetBytes(a + 32);
                                 }
                             }
@@ -901,8 +803,7 @@ namespace Dark_Cloud_Improved_Version
                         if (Memory.ReadByte(0x21D2DA4C) < 61) //sometimes when teleporting from yellow drops or dark heaven, the area might turn dark. This part tries to prevent it
                         {
                             int timerCheck = 0;
-                            while (Memory.ReadByte(0x21D2DA4C) < 58 && timerCheck <= 25)
-                            {
+                            while (Memory.ReadByte(0x21D2DA4C) < 58 && timerCheck <= 25) {
                                 Thread.Sleep(50);
                                 timerCheck++;
                             }
@@ -916,8 +817,7 @@ namespace Dark_Cloud_Improved_Version
                     }
 
                     int checkFishing = Memory.ReadByte(0x21D19714); //checks if player has entered fishing mode
-                    if (fishingActive == false & checkFishing == 1)
-                    {
+                    if (fishingActive == false & checkFishing == 1) {
                         fishingActive = true;
                         fishingQuestPikeActive = false;
                         fishingQuestPaoActive = false;
@@ -927,56 +827,46 @@ namespace Dark_Cloud_Improved_Version
                         CheckMardanSword();
                     }
 
-                    if (fishingActive == true)
-                    {
+                    if (fishingActive == true) {
                         CheckFishingQuest(currentArea); //as long as player is in fishing mode, enter this function to observe fishing
-                        if (checkFishing == 0)
-                        {
+                        if (checkFishing == 0) {
                             fishingActive = false;
                         }
                     }
 
-                    if (!currentlyInShop)
-                    {
-                        if (Memory.ReadByte(0x21DA52E4) == 1 && Memory.ReadByte(0x21DA52E8) == 11)
-                        {
+                    if (!currentlyInShop) {
+                        if (Memory.ReadByte(0x21DA52E4) == 1 && Memory.ReadByte(0x21DA52E8) == 11) {
                             currentlyInShop = true;
                             shopDataCleared = false;
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Entered a shop");
                         }
                     }
 
-                    if (currentlyInShop)
-                    {
-                        if (!shopDataCleared)
-                        {
+                    if (currentlyInShop) {
+                        if (!shopDataCleared) {
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Fixing broken dagger glitch...");
                             FixBrokenDagger();
                             shopDataCleared = true;
                             Dialogues.FixCharacterNamesInShopDialogues();
                         }
 
-                        if (Memory.ReadByte(0x21DA52E4) != 1)
-                        {
+                        if (Memory.ReadByte(0x21DA52E4) != 1) {
                             currentlyInShop = false;
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Exited a shop");
                         }
                     }
 
                     Dungeon.CheckWepLvlUp(); //check if player is upgrading a weapon
-                    
+
                     DemonShaftUnlockCheck(); //prevents players from accessing post-game dungeon before completing the base game
 
                     //Check if player is inside the weapon customize menu
-                    if (Player.CheckIsWeaponCustomizeMenu())
-                    {
+                    if (Player.CheckIsWeaponCustomizeMenu()) {
                         //The Synthsphere Listener thread
-                        if (Weapons.weaponsMenuListener.ThreadState == ThreadState.Unstarted)
-                        {
+                        if (Weapons.weaponsMenuListener.ThreadState == ThreadState.Unstarted) {
                             Weapons.weaponsMenuListener.Start();
                         }
-                        else if (Weapons.weaponsMenuListener.ThreadState == ThreadState.Stopped)
-                        {
+                        else if (Weapons.weaponsMenuListener.ThreadState == ThreadState.Stopped) {
                             Weapons.weaponsMenuListener = new Thread(new ThreadStart(Weapons.WeaponListenForSynthSphere));
                             Weapons.weaponsMenuListener.Start();
                         }
@@ -989,21 +879,17 @@ namespace Dark_Cloud_Improved_Version
                     }
                 } //end of check if player is in town mode
 
-                if (MainMenuThread.userMode == true)
-                {
-                    if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1)
-                    {
+                if (MainMenuThread.userMode == true) {
+                    if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1) {
                         Thread.Sleep(100);
-                        if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1)
-                        {
+                        if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1) {
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Not ingame anymore! Exited from Towncharacter!");
                             break;
                         }
                     }
                 }
 
-                if (Memory.ReadByte(Addresses.mode) == 13)
-                {
+                if (Memory.ReadByte(Addresses.mode) == 13) {
                     CheckCreditsScene(); //when player finishes credits, properly save the game and redirect to demon shaft
                 }
 
@@ -1028,11 +914,9 @@ namespace Dark_Cloud_Improved_Version
             int checkNearNPC = 0;
             for (int i = 0; i < 6; i++)     //check if player is next to a character. If so, jumps to SetDialogue() and writes the dialogues
             {
-                currentAddress = i * 0x14A0 + 0x21D26FF8;
-                if (Memory.ReadByte(currentAddress) == 1)
-                {
-                    if (sidequestonDialogueFlag == 0)
-                    {
+                currentAddress = (i * 0x14A0) + 0x21D26FF8;
+                if (Memory.ReadByte(currentAddress) == 1) {
+                    if (sidequestonDialogueFlag == 0) {
 
                         Dialogues.SetDialogue(i, false, true);
                         Memory.WriteByte(0x21F10010, 1); //nearNPC flag for PNACH to use
@@ -1050,11 +934,9 @@ namespace Dark_Cloud_Improved_Version
             int checkNearNPC = 0;
             for (int i = 0; i < 6; i++)     //check if player is next to a character. If so, jumps to SetDialogue() and writes the dialogues
             {
-                currentAddress = i * 0x14A0 + 0x21D26FF8;
-                if (Memory.ReadByte(currentAddress) == 1)
-                {
-                    if (itsfinishedonDialogueFlag == 0)
-                    {
+                currentAddress = (i * 0x14A0) + 0x21D26FF8;
+                if (Memory.ReadByte(currentAddress) == 1) {
+                    if (itsfinishedonDialogueFlag == 0) {
                         Dialogues.SetDialogue(i, false, false, true);
                         Memory.WriteByte(0x21F10010, 1); //nearNPC flag for PNACH to use
                         nearNPCSD = true;
@@ -1068,298 +950,237 @@ namespace Dark_Cloud_Improved_Version
 
         public static void CheckAllyFishing()
         {
-            if (isUsingAlly)
-            {
-                if (currentArea == 0)
-                {
+            if (isUsingAlly) {
+                if (currentArea == 0) {
                     Memory.WriteOneByte(0x2041BF4E, BitConverter.GetBytes(1)); //disable fishing
-                    Dialogues.SetFishingDisabledDialogue(currentArea);               
+                    Dialogues.SetFishingDisabledDialogue(currentArea);
                 }
-                else if (currentArea == 1)
-                {
+                else if (currentArea == 1) {
                     Memory.WriteOneByte(0x2041AABA, BitConverter.GetBytes(1)); //disable fishing
                     Dialogues.SetFishingDisabledDialogue(currentArea);
                 }
-                else if (currentArea == 19)
-                {
+                else if (currentArea == 19) {
                     Memory.WriteOneByte(0x2041495E, BitConverter.GetBytes(1)); //disable fishing
                     Dialogues.SetFishingDisabledDialogue(currentArea);
                     Memory.WriteByte(0x20420B6C, 0); //disable submarine
                     Memory.WriteByte(0x20420B7C, 0); //disable submarine
                 }
-                else if (currentArea == 3)
-                {
+                else if (currentArea == 3) {
                     Memory.WriteOneByte(0x20421A8A, BitConverter.GetBytes(1)); //disable fishing
                     Dialogues.SetFishingDisabledDialogue(currentArea);
-                }              
+                }
             }
         }
 
         public static void CheckSideQuestDialogue()
         {
             sidequestOptionFlag = false;
-            
+
             if (characterIDData == 12592) //macho sidequest
             {
-                if (Memory.ReadByte(0x21CE4474) == 1)
-                {
-                    if (Memory.ReadByte(0x21CE4402) == 0)
-                    {
+                if (Memory.ReadByte(0x21CE4474) == 1) {
+                    if (Memory.ReadByte(0x21CE4402) == 0) {
                         Memory.WriteOneByte(0x21CE4402, BitConverter.GetBytes(1));
                     }
-                    else if (Memory.ReadByte(0x21CE4402) == 1)
-                    {
+                    else if (Memory.ReadByte(0x21CE4402) == 1) {
                         //Memory.WriteOneByte(0x21CE4402, BitConverter.GetBytes(2));
                     }
-                    else if (Memory.ReadByte(0x21CE4402) == 2)
-                    {
+                    else if (Memory.ReadByte(0x21CE4402) == 2) {
                         SideQuestManager.MonsterQuestReward();
                         Memory.WriteOneByte(0x21CE4402, BitConverter.GetBytes(0));
                     }
                 }
-                else
-                {
+                else {
                     Memory.WriteByte(0x21CE4474, 1);
                 }
             }
             else if (characterIDData == 13618) //gob sidequest
             {
-                if (Memory.ReadByte(0x21CE4476) == 1)
-                {
-                    if (Memory.ReadByte(0x21CE4407) == 0)
-                    {
+                if (Memory.ReadByte(0x21CE4476) == 1) {
+                    if (Memory.ReadByte(0x21CE4407) == 0) {
                         Memory.WriteOneByte(0x21CE4407, BitConverter.GetBytes(1));
                     }
-                    else if (Memory.ReadByte(0x21CE4407) == 1)
-                    {
+                    else if (Memory.ReadByte(0x21CE4407) == 1) {
                         //Memory.WriteOneByte(0x21CE4402, BitConverter.GetBytes(2));
                     }
-                    else if (Memory.ReadByte(0x21CE4407) == 2)
-                    {
+                    else if (Memory.ReadByte(0x21CE4407) == 2) {
                         SideQuestManager.MonsterQuestReward();
                         Memory.WriteOneByte(0x21CE4407, BitConverter.GetBytes(0));
                     }
                 }
-                else
-                {
+                else {
                     Memory.WriteByte(0x21CE4476, 1);
                 }
             }
             else if (characterIDData == 13108) //jake sidequest
             {
-                if (Memory.ReadByte(0x21CE4478) == 1)
-                {
-                    if (Memory.ReadByte(0x21CE440C) == 0)
-                    {
+                if (Memory.ReadByte(0x21CE4478) == 1) {
+                    if (Memory.ReadByte(0x21CE440C) == 0) {
                         Memory.WriteOneByte(0x21CE440C, BitConverter.GetBytes(1));
                     }
-                    else if (Memory.ReadByte(0x21CE440C) == 1)
-                    {
+                    else if (Memory.ReadByte(0x21CE440C) == 1) {
                         //Memory.WriteOneByte(0x21CE4402, BitConverter.GetBytes(2));
                     }
-                    else if (Memory.ReadByte(0x21CE440C) == 2)
-                    {
+                    else if (Memory.ReadByte(0x21CE440C) == 2) {
                         SideQuestManager.MonsterQuestReward();
                         Memory.WriteOneByte(0x21CE440C, BitConverter.GetBytes(0));
                     }
                 }
-                else
-                {
+                else {
                     Memory.WriteByte(0x21CE4478, 1);
                 }
             }
             else if (characterIDData == 14388) //chiefbonka sidequest
             {
-                if (Memory.ReadByte(0x21CE447A) == 1)
-                {
-                    if (Memory.ReadByte(0x21CE4411) == 0)
-                    {
+                if (Memory.ReadByte(0x21CE447A) == 1) {
+                    if (Memory.ReadByte(0x21CE4411) == 0) {
                         Memory.WriteOneByte(0x21CE4411, BitConverter.GetBytes(1));
                     }
-                    else if (Memory.ReadByte(0x21CE4411) == 1)
-                    {
+                    else if (Memory.ReadByte(0x21CE4411) == 1) {
                         //Memory.WriteOneByte(0x21CE4402, BitConverter.GetBytes(2));
                     }
-                    else if (Memory.ReadByte(0x21CE4411) == 2)
-                    {
+                    else if (Memory.ReadByte(0x21CE4411) == 2) {
                         SideQuestManager.MonsterQuestReward();
                         Memory.WriteOneByte(0x21CE4411, BitConverter.GetBytes(0));
                     }
                 }
-                else
-                {
+                else {
                     Memory.WriteByte(0x21CE447A, 1);
                 }
             }
             else if (characterIDData == 13872) //pike
             {
-                if (Memory.ReadByte(0x21CE4475) == 1)
-                {
-                    if (Memory.ReadByte(0x21CE4416) == 0)
-                    {
+                if (Memory.ReadByte(0x21CE4475) == 1) {
+                    if (Memory.ReadByte(0x21CE4416) == 0) {
                         Memory.WriteOneByte(0x21CE4416, BitConverter.GetBytes(1));
                     }
-                    else if (Memory.ReadByte(0x21CE4416) == 1)
-                    {
+                    else if (Memory.ReadByte(0x21CE4416) == 1) {
                         //Memory.WriteOneByte(0x21CE4416, BitConverter.GetBytes(2));
                     }
-                    else if (Memory.ReadByte(0x21CE4416) == 2)
-                    {
+                    else if (Memory.ReadByte(0x21CE4416) == 2) {
                         SideQuestManager.GetFishingQuestReward();
                         Memory.WriteOneByte(0x21CE4416, BitConverter.GetBytes(0));
                     }
                 }
-                else
-                {
+                else {
                     Memory.WriteByte(0x21CE4475, 1);
                 }
             }
             else if (characterIDData == 13362) //pao
             {
-                if (Memory.ReadByte(0x21CE4477) == 1)
-                {
-                    if (Memory.ReadByte(0x21CE441E) == 0)
-                    {
+                if (Memory.ReadByte(0x21CE4477) == 1) {
+                    if (Memory.ReadByte(0x21CE441E) == 0) {
                         Memory.WriteOneByte(0x21CE441E, BitConverter.GetBytes(1));
                     }
-                    else if (Memory.ReadByte(0x21CE441E) == 1)
-                    {
+                    else if (Memory.ReadByte(0x21CE441E) == 1) {
                         //Memory.WriteOneByte(0x21CE441E, BitConverter.GetBytes(2));
                     }
-                    else if (Memory.ReadByte(0x21CE441E) == 2)
-                    {
+                    else if (Memory.ReadByte(0x21CE441E) == 2) {
                         SideQuestManager.GetFishingQuestReward();
                         Memory.WriteOneByte(0x21CE441E, BitConverter.GetBytes(0));
                     }
                 }
-                else
-                {
+                else {
                     Memory.WriteByte(0x21CE4477, 1);
                 }
             }
             else if (characterIDData == 13363) //sam
             {
-                if (Memory.ReadByte(0x21CE4479) == 1)
-                {
-                    if (Memory.ReadByte(0x21CE4427) == 0)
-                    {
+                if (Memory.ReadByte(0x21CE4479) == 1) {
+                    if (Memory.ReadByte(0x21CE4427) == 0) {
                         Memory.WriteOneByte(0x21CE4427, BitConverter.GetBytes(1));
                     }
-                    else if (Memory.ReadByte(0x21CE4427) == 1)
-                    {
+                    else if (Memory.ReadByte(0x21CE4427) == 1) {
                         //Memory.WriteOneByte(0x21CE441E, BitConverter.GetBytes(2));
                     }
-                    else if (Memory.ReadByte(0x21CE4427) == 2)
-                    {
+                    else if (Memory.ReadByte(0x21CE4427) == 2) {
                         SideQuestManager.GetFishingQuestReward();
-                        if (queensQuest)
-                        {
+                        if (queensQuest) {
                             Memory.WriteByte(0x21CE4430, 1);
                         }
                         Memory.WriteOneByte(0x21CE4427, BitConverter.GetBytes(0));
                     }
                 }
-                else
-                {
+                else {
                     Memory.WriteByte(0x21CE4479, 1);
                 }
             }
             else if (characterIDData == 13109) //devia
             {
-                if (Memory.ReadByte(0x21CE447B) == 1)
-                {
-                    if (Memory.ReadByte(0x21CE4431) == 0)
-                    {
+                if (Memory.ReadByte(0x21CE447B) == 1) {
+                    if (Memory.ReadByte(0x21CE4431) == 0) {
                         Memory.WriteOneByte(0x21CE4431, BitConverter.GetBytes(1));
                     }
-                    else if (Memory.ReadByte(0x21CE4431) == 1)
-                    {
+                    else if (Memory.ReadByte(0x21CE4431) == 1) {
                         //Memory.WriteOneByte(0x21CE441E, BitConverter.GetBytes(2));
                     }
-                    else if (Memory.ReadByte(0x21CE4431) == 2)
-                    {
+                    else if (Memory.ReadByte(0x21CE4431) == 2) {
                         SideQuestManager.GetFishingQuestReward();
                         Memory.WriteOneByte(0x21CE4431, BitConverter.GetBytes(0));
                     }
                 }
-                else
-                {
+                else {
                     Memory.WriteByte(0x21CE447B, 1);
                 }
             }
             else if (characterIDData == 13360) //laura
             {
-                if (Memory.ReadByte(0x21CE4451) == 0)
-                {
+                if (Memory.ReadByte(0x21CE4451) == 0) {
                     Memory.WriteByte(0x21CE4451, 1);
                 }
             }
             else if (characterIDData == 12594) //ro
             {
-                if (Memory.ReadByte(0x21CE4452) == 0)
-                {
+                if (Memory.ReadByte(0x21CE4452) == 0) {
                     Memory.WriteByte(0x21CE4452, 1);
                 }
             }
             else if (characterIDData == 12852) //phil
             {
-                if (Memory.ReadByte(0x21CE4453) == 0)
-                {
+                if (Memory.ReadByte(0x21CE4453) == 0) {
                     Memory.WriteByte(0x21CE4453, 1);
                 }
             }
             else if (characterIDData == 12341) //zabo
             {
-                if (Memory.ReadByte(0x21CE4454) == 0)
-                {
+                if (Memory.ReadByte(0x21CE4454) == 0) {
                     Memory.WriteByte(0x21CE4454, 1);
                 }
             }
             else if (characterIDData == 13361) //mayor
             {
-                if (Memory.ReadByte(0x21CE4464) == 0)
-                {
+                if (Memory.ReadByte(0x21CE4464) == 0) {
                     if (Memory.ReadByte(0x21CE4463) == 1)
                         Memory.WriteByte(0x21CE4464, 1);
                 }
-                else if (Memory.ReadByte(0x21CE4464) == 1)
-                {
+                else if (Memory.ReadByte(0x21CE4464) == 1) {
                     Memory.WriteByte(0x21CE4464, 2);
                     DailyShopItem.SetDailyItemsToShop();
                 }
-                else if (Memory.ReadByte(0x21CE4464) == 2)
-                {
-                    if (Memory.ReadByte(0x21CE4468) == 0)
-                    {
+                else if (Memory.ReadByte(0x21CE4464) == 2) {
+                    if (Memory.ReadByte(0x21CE4468) == 0) {
                         Memory.WriteByte(0x21CE4468, 1);
                     }
-                    else if (Memory.ReadByte(0x21CE4468) == 2)
-                    {
+                    else if (Memory.ReadByte(0x21CE4468) == 2) {
                         Memory.WriteUShort(Addresses.firstBagItem + (0x2 * Player.Inventory.GetBagItemsFirstAvailableSlot()), mayorReward);
                         Memory.WriteByte(0x21CE4468, 0);
-                        if (Memory.ReadByte(0x21CE446B) == 1)
-                        {
+                        if (Memory.ReadByte(0x21CE446B) == 1) {
                             Memory.WriteByte(0x21CE4464, 3);
                         }
                     }
                 }
             }
 
-            if (currentArea == 23)
-            {
-                if (Memory.ReadByte(0x21D26FD4) == 0)
-                {
-                    if (Memory.ReadByte(0x21CE445D) == 1)
-                    {
+            if (currentArea == 23) {
+                if (Memory.ReadByte(0x21D26FD4) == 0) {
+                    if (Memory.ReadByte(0x21CE445D) == 1) {
                         Memory.WriteByte(0x21CE445D, 2);
                         Memory.WriteByte(0x21CE4459, 2);
                         Memory.WriteUShort(Addresses.firstBagItem + (0x2 * Player.Inventory.GetBagItemsFirstAvailableSlot()), 234);
-                    }                 
+                    }
                 }
-                if (Memory.ReadByte(0x21D26FD4) == 1)
-                {
-                    if (Memory.ReadByte(0x21CE4462) == 1)
-                    {
+                if (Memory.ReadByte(0x21D26FD4) == 1) {
+                    if (Memory.ReadByte(0x21CE4462) == 1) {
                         Memory.WriteByte(0x21CE445E, 2);
                         Memory.WriteByte(0x21CE4462, 2);
                         Memory.WriteUShort(Addresses.firstBagItem + (0x2 * Player.Inventory.GetBagItemsFirstAvailableSlot()), 233);
@@ -1370,8 +1191,7 @@ namespace Dark_Cloud_Improved_Version
 
         public static void CheckClockAdvancement(int area)
         {
-            if (area == 23 || area == 40 || area == 38)
-            {
+            if (area == 23 || area == 40 || area == 38) {
                 float currentClock = Memory.ReadFloat(0x21CD4310);
 
                 Memory.WriteByte(0x21F1001C, 1);
@@ -1387,21 +1207,18 @@ namespace Dark_Cloud_Improved_Version
         public static void CheckFishingQuest(int area) //handles fishing mode, checks for caught fish and quest progress
         {
             //this entire function could be shortened by 75% if the area check is utilized better instead of copying the whole process...
-            if (area == 0)
-            {
+            if (area == 0) {
                 if (!fishingQuestCheck) //variable for checking if current area has a fishing quest
                 {
                     currentAddress = 0x214798D0;
-                    for (int i = 0; i < 4; i++)
-                    {
+                    for (int i = 0; i < 4; i++) {
                         fishArray[i] = Memory.ReadByte(currentAddress);
                         currentAddress += 0x00002410;
                         //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "fish " + i + " ID: " + fishArray[i]);
                         fishCaught[i] = false;
                     }
 
-                    if (Memory.ReadByte(0x21CE4416) == 1)
-                    {
+                    if (Memory.ReadByte(0x21CE4416) == 1) {
                         fishingQuestPikeActive = true;
                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Currently on Pikes quest");
 
@@ -1412,12 +1229,9 @@ namespace Dark_Cloud_Improved_Version
                     {
                         Thread.Sleep(300);
                         currentAddress = 0x214798E0;
-                        for (int i = 0; i < 4; i++)
-                        {
-                            if (fishArray[i] != 5)
-                            {
-                                if (fishArray[i] != 17)
-                                {
+                        for (int i = 0; i < 4; i++) {
+                            if (fishArray[i] != 5) {
+                                if (fishArray[i] != 17) {
                                     int FPavg = Memory.ReadInt(currentAddress);
                                     FPavg = FPavg * mardanMultiplier;
                                     Memory.WriteInt(currentAddress, FPavg);
@@ -1428,32 +1242,26 @@ namespace Dark_Cloud_Improved_Version
                                     currentAddress += 0x0000240C;
                                     Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Mardan did its thing!" /*multiplied FP's"*/);
                                 }
-                                else
-                                {
+                                else {
                                     currentAddress += 0x00002410;
                                 }
                             }
-                            else
-                            {
+                            else {
                                 currentAddress += 0x00002410;
                             }
                         }
                     }
                     fishingQuestCheck = true;
                 }
-                else
-                {
+                else {
                     currentAddress = 0x214798D0;
-                    for (int i = 0; i < 4; i++)
-                    {
-                        if (Memory.ReadByte(currentAddress) == 255 && fishCaught[i] == false && Memory.ReadByte(0x202A26E8) == 12)
-                        {
+                    for (int i = 0; i < 4; i++) {
+                        if (Memory.ReadByte(currentAddress) == 255 && fishCaught[i] == false && Memory.ReadByte(0x202A26E8) == 12) {
                             fishCaught[i] = true;
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Fish caught -> ID: " + fishArray[i]);
                             FishAcquiredFlag(fishArray[i]);
 
-                            if (fishingQuestPikeActive)
-                            {
+                            if (fishingQuestPikeActive) {
                                 if (Memory.ReadByte(0x21CE4417) == 0) //check if fishing quest one
                                 {
                                     if (fishArray[i] == Memory.ReadByte(0x21CE4419)) //check if caught fish matches quest fish ID
@@ -1464,8 +1272,7 @@ namespace Dark_Cloud_Improved_Version
                                         fishleft--;
                                         Memory.WriteByte(0x21CE441A, fishleft);
 
-                                        if (fishleft == 0)
-                                        {
+                                        if (fishleft == 0) {
                                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
                                             Memory.WriteByte(0x21CE4416, 2);
                                             fishingQuestPikeActive = false;
@@ -1477,54 +1284,45 @@ namespace Dark_Cloud_Improved_Version
                                     fishSizeAddress = currentAddress + 0x00000060;
                                     fishSizeFloat = Memory.ReadFloat(fishSizeAddress);
                                     fishSizeFloat = fishSizeFloat * 10;
-                                    fishSizeFloat = (float)System.Math.Floor(fishSizeFloat);
+                                    fishSizeFloat = (float) System.Math.Floor(fishSizeFloat);
                                     fishSizeInt = Convert.ToInt32(fishSizeFloat);
 
-                                    if (minFishSize <= fishSizeInt && maxFishSize >= fishSizeInt)
-                                    {
+                                    if (minFishSize <= fishSizeInt && maxFishSize >= fishSizeInt) {
                                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
                                         Memory.WriteByte(0x21CE4416, 2);
                                         fishingQuestPikeActive = false;
                                     }
                                 }
-                            }                        
+                            }
                         }
 
                         currentAddress += 0x00002410;
                     }
                 }
             }
-            else if (area == 1)
-            {
-                if (!fishingQuestCheck)
-                {
+            else if (area == 1) {
+                if (!fishingQuestCheck) {
                     currentAddress = 0x214D9910;
-                    for (int i = 0; i < 5; i++)
-                    {
+                    for (int i = 0; i < 5; i++) {
                         fishArray[i] = Memory.ReadByte(currentAddress);
                         currentAddress += 0x00002410;
                         //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "fish " + i + " ID: " + fishArray[i]);
                         fishCaught[i] = false;
                     }
 
-                    if (Memory.ReadByte(0x21CE441E) == 1)
-                    {
+                    if (Memory.ReadByte(0x21CE441E) == 1) {
                         fishingQuestPaoActive = true;
                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Currently on Paos quest");
 
                         minFishSize = Memory.ReadByte(0x21CE4423);
-                        maxFishSize = Memory.ReadByte(0x21CE4424);                    
+                        maxFishSize = Memory.ReadByte(0x21CE4424);
                     }
-                    if (hasMardanSword)
-                    {
+                    if (hasMardanSword) {
                         Thread.Sleep(300);
                         currentAddress = 0x214D9920;
-                        for (int i = 0; i < 5; i++)
-                        {
-                            if (fishArray[i] != 5)
-                            {
-                                if (fishArray[i] != 17)
-                                {
+                        for (int i = 0; i < 5; i++) {
+                            if (fishArray[i] != 5) {
+                                if (fishArray[i] != 17) {
                                     int FPavg = Memory.ReadInt(currentAddress);
                                     FPavg = FPavg * mardanMultiplier;
                                     Memory.WriteInt(currentAddress, FPavg);
@@ -1535,60 +1333,49 @@ namespace Dark_Cloud_Improved_Version
                                     currentAddress += 0x0000240C;
                                     Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Mardan did its thing!" /*multiplied FP's"*/);
                                 }
-                                else
-                                {
+                                else {
                                     currentAddress += 0x00002410;
                                 }
                             }
-                            else
-                            {
+                            else {
                                 currentAddress += 0x00002410;
                             }
                         }
                     }
                     fishingQuestCheck = true;
                 }
-                else
-                {
+                else {
                     currentAddress = 0x214D9910;
-                    for (int i = 0; i < 5; i++)
-                    {
-                        if (Memory.ReadByte(currentAddress) == 255 && fishCaught[i] == false && Memory.ReadByte(0x202A26E8) == 12)
-                        {
+                    for (int i = 0; i < 5; i++) {
+                        if (Memory.ReadByte(currentAddress) == 255 && fishCaught[i] == false && Memory.ReadByte(0x202A26E8) == 12) {
                             fishCaught[i] = true;
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Fish caught -> ID: " + fishArray[i]);
                             FishAcquiredFlag(fishArray[i]);
 
-                            if (fishingQuestPaoActive)
-                            {
-                                if (Memory.ReadByte(0x21CE441F) == 0)
-                                {
-                                    if (fishArray[i] == Memory.ReadByte(0x21CE4421))
-                                    {
+                            if (fishingQuestPaoActive) {
+                                if (Memory.ReadByte(0x21CE441F) == 0) {
+                                    if (fishArray[i] == Memory.ReadByte(0x21CE4421)) {
                                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest progress +1!");
 
                                         byte fishleft = Memory.ReadByte(0x21CE4422);
                                         fishleft--;
                                         Memory.WriteByte(0x21CE4422, fishleft);
 
-                                        if (fishleft == 0)
-                                        {
+                                        if (fishleft == 0) {
                                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
                                             Memory.WriteByte(0x21CE441E, 2);
                                             fishingQuestPaoActive = false;
                                         }
                                     }
                                 }
-                                else
-                                {
+                                else {
                                     fishSizeAddress = currentAddress + 0x00000060;
                                     fishSizeFloat = Memory.ReadFloat(fishSizeAddress);
                                     fishSizeFloat = fishSizeFloat * 10;
-                                    fishSizeFloat = (float)System.Math.Floor(fishSizeFloat);
+                                    fishSizeFloat = (float) System.Math.Floor(fishSizeFloat);
                                     fishSizeInt = Convert.ToInt32(fishSizeFloat);
 
-                                    if (minFishSize <= fishSizeInt && maxFishSize >= fishSizeInt)
-                                    {
+                                    if (minFishSize <= fishSizeInt && maxFishSize >= fishSizeInt) {
                                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
                                         Memory.WriteByte(0x21CE441E, 2);
                                         fishingQuestPaoActive = false;
@@ -1601,37 +1388,29 @@ namespace Dark_Cloud_Improved_Version
                     }
                 }
             }
-            else if (area == 19)
-            {
-                if (!fishingQuestCheck)
-                {
+            else if (area == 19) {
+                if (!fishingQuestCheck) {
                     currentAddress = 0x20DE0710;
-                    for (int i = 0; i < 5; i++)
-                    {
+                    for (int i = 0; i < 5; i++) {
                         fishArray[i] = Memory.ReadByte(currentAddress);
                         currentAddress += 0x00002410;
                         //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "fish " + i + " ID: " + fishArray[i]);
                         fishCaught[i] = false;
                     }
 
-                    if (Memory.ReadByte(0x21CE4427) == 1)
-                    {
+                    if (Memory.ReadByte(0x21CE4427) == 1) {
                         fishingQuestSamActive = true;
                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Currently on Sams quest");
 
                         minFishSize = Memory.ReadByte(0x21CE442C);
-                        maxFishSize = Memory.ReadByte(0x21CE442D);                      
+                        maxFishSize = Memory.ReadByte(0x21CE442D);
                     }
-                    if (hasMardanSword)
-                    {
+                    if (hasMardanSword) {
                         Thread.Sleep(300);
                         currentAddress = 0x20DE0720;
-                        for (int i = 0; i < 5; i++)
-                        {
-                            if (fishArray[i] != 5)
-                            {
-                                if (fishArray[i] != 17)
-                                {
+                        for (int i = 0; i < 5; i++) {
+                            if (fishArray[i] != 5) {
+                                if (fishArray[i] != 17) {
                                     int FPavg = Memory.ReadInt(currentAddress);
                                     FPavg = FPavg * mardanMultiplier;
                                     Memory.WriteInt(currentAddress, FPavg);
@@ -1642,32 +1421,26 @@ namespace Dark_Cloud_Improved_Version
                                     currentAddress += 0x0000240C;
                                     Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Mardan did its thing!" /*multiplied FP's"*/);
                                 }
-                                else
-                                {
+                                else {
                                     currentAddress += 0x00002410;
                                 }
                             }
-                            else
-                            {
+                            else {
                                 currentAddress += 0x00002410;
                             }
                         }
                     }
                     fishingQuestCheck = true;
                 }
-                else
-                {
+                else {
                     currentAddress = 0x20DE0710;
-                    for (int i = 0; i < 5; i++)
-                    {
-                        if (Memory.ReadByte(currentAddress) == 255 && fishCaught[i] == false && Memory.ReadByte(0x202A26E8) == 12)
-                        {
+                    for (int i = 0; i < 5; i++) {
+                        if (Memory.ReadByte(currentAddress) == 255 && fishCaught[i] == false && Memory.ReadByte(0x202A26E8) == 12) {
                             fishCaught[i] = true;
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Fish caught -> ID: " + fishArray[i]);
                             FishAcquiredFlag(fishArray[i]);
 
-                            if (fishingQuestSamActive)
-                            {
+                            if (fishingQuestSamActive) {
                                 if (Memory.ReadByte(0x21CE4428) == 0) //check if fishing quest one
                                 {
                                     if (fishArray[i] == Memory.ReadByte(0x21CE442A)) //check if caught fish matches quest fish ID
@@ -1678,14 +1451,12 @@ namespace Dark_Cloud_Improved_Version
                                         fishleft--;
                                         Memory.WriteByte(0x21CE442B, fishleft);
 
-                                        if (fishleft == 0)
-                                        {
+                                        if (fishleft == 0) {
                                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
                                             Memory.WriteByte(0x21CE4427, 2);
                                             fishingQuestSamActive = false;
                                             byte questsDone = Memory.ReadByte(0x21CE442F);
-                                            if (questsDone < 4)
-                                            {
+                                            if (questsDone < 4) {
                                                 questsDone++;
                                                 Memory.WriteByte(0x21CE442F, questsDone);
                                             }
@@ -1697,17 +1468,15 @@ namespace Dark_Cloud_Improved_Version
                                     fishSizeAddress = currentAddress + 0x00000060;
                                     fishSizeFloat = Memory.ReadFloat(fishSizeAddress);
                                     fishSizeFloat = fishSizeFloat * 10;
-                                    fishSizeFloat = (float)System.Math.Floor(fishSizeFloat);
+                                    fishSizeFloat = (float) System.Math.Floor(fishSizeFloat);
                                     fishSizeInt = Convert.ToInt32(fishSizeFloat);
 
-                                    if (minFishSize <= fishSizeInt && maxFishSize >= fishSizeInt)
-                                    {
+                                    if (minFishSize <= fishSizeInt && maxFishSize >= fishSizeInt) {
                                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
                                         Memory.WriteByte(0x21CE4427, 2);
                                         fishingQuestSamActive = false;
                                         byte questsDone = Memory.ReadByte(0x21CE442F);
-                                        if (questsDone < 4)
-                                        {
+                                        if (questsDone < 4) {
                                             questsDone++;
                                             Memory.WriteByte(0x21CE442F, questsDone);
                                         }
@@ -1720,42 +1489,33 @@ namespace Dark_Cloud_Improved_Version
                     }
                 }
 
-                if (Memory.ReadByte(0x21CE4430) == 1)
-                {
+                if (Memory.ReadByte(0x21CE4430) == 1) {
                     Memory.WriteByte(0x202A1FA0, 1);
                 }
             }
-            else if (area == 3)
-            {
-                if (!fishingQuestCheck)
-                {
+            else if (area == 3) {
+                if (!fishingQuestCheck) {
                     currentAddress = 0x213C3150;
-                    for (int i = 0; i < 4; i++)
-                    {
+                    for (int i = 0; i < 4; i++) {
                         fishArray[i] = Memory.ReadByte(currentAddress);
                         currentAddress += 0x00002410;
                         //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "fish " + i + " ID: " + fishArray[i]);
                         fishCaught[i] = false;
                     }
 
-                    if (Memory.ReadByte(0x21CE4431) == 1)
-                    {
+                    if (Memory.ReadByte(0x21CE4431) == 1) {
                         fishingQuestDeviaActive = true;
                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Currently on Devias quest");
 
                         minFishSize = Memory.ReadByte(0x21CE4436);
-                        maxFishSize = Memory.ReadByte(0x21CE4437);                      
+                        maxFishSize = Memory.ReadByte(0x21CE4437);
                     }
-                    if (hasMardanSword)
-                    {
+                    if (hasMardanSword) {
                         Thread.Sleep(300);
                         currentAddress = 0x213C3160;
-                        for (int i = 0; i < 4; i++)
-                        {
-                            if (fishArray[i] != 5)
-                            {
-                                if (fishArray[i] != 17)
-                                {
+                        for (int i = 0; i < 4; i++) {
+                            if (fishArray[i] != 5) {
+                                if (fishArray[i] != 17) {
                                     int FPavg = Memory.ReadInt(currentAddress);
                                     FPavg = FPavg * mardanMultiplier;
                                     Memory.WriteInt(currentAddress, FPavg);
@@ -1766,33 +1526,27 @@ namespace Dark_Cloud_Improved_Version
                                     currentAddress += 0x0000240C;
                                     Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Mardan did its thing!" /*multiplied FP's"*/);
                                 }
-                                else
-                                {
+                                else {
                                     currentAddress += 0x00002410;
                                 }
                             }
-                            else
-                            {
+                            else {
                                 currentAddress += 0x00002410;
                             }
                         }
                     }
                     fishingQuestCheck = true;
                 }
-                else
-                {
+                else {
                     currentAddress = 0x213C3150;
 
-                    for (int i = 0; i < 4; i++)
-                    {
-                        if (Memory.ReadByte(currentAddress) == 255 && fishCaught[i] == false && Memory.ReadByte(0x202A26E8) == 12)
-                        {
+                    for (int i = 0; i < 4; i++) {
+                        if (Memory.ReadByte(currentAddress) == 255 && fishCaught[i] == false && Memory.ReadByte(0x202A26E8) == 12) {
                             fishCaught[i] = true;
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Fish caught -> ID: " + fishArray[i]);
                             FishAcquiredFlag(fishArray[i]);
 
-                            if (fishingQuestDeviaActive)
-                            {
+                            if (fishingQuestDeviaActive) {
                                 if (Memory.ReadByte(0x21CE4432) == 0) //check if fishing quest one
                                 {
                                     if (fishArray[i] == Memory.ReadByte(0x21CE4434)) //check if caught fish matches quest fish ID
@@ -1803,8 +1557,7 @@ namespace Dark_Cloud_Improved_Version
                                         fishleft--;
                                         Memory.WriteByte(0x21CE4435, fishleft);
 
-                                        if (fishleft == 0)
-                                        {
+                                        if (fishleft == 0) {
                                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
                                             Memory.WriteByte(0x21CE4431, 2);
                                             fishingQuestDeviaActive = false;
@@ -1816,11 +1569,10 @@ namespace Dark_Cloud_Improved_Version
                                     fishSizeAddress = currentAddress + 0x00000060;
                                     fishSizeFloat = Memory.ReadFloat(fishSizeAddress);
                                     fishSizeFloat = fishSizeFloat * 10;
-                                    fishSizeFloat = (float)System.Math.Floor(fishSizeFloat);
+                                    fishSizeFloat = (float) System.Math.Floor(fishSizeFloat);
                                     fishSizeInt = Convert.ToInt32(fishSizeFloat);
 
-                                    if (minFishSize <= fishSizeInt && maxFishSize >= fishSizeInt)
-                                    {
+                                    if (minFishSize <= fishSizeInt && maxFishSize >= fishSizeInt) {
                                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
                                         Memory.WriteByte(0x21CE4431, 2);
                                         fishingQuestDeviaActive = false;
@@ -1838,8 +1590,7 @@ namespace Dark_Cloud_Improved_Version
         public static void FishAcquiredFlag(byte caughtfishID)
         {
             int fishflag = 0x21CE4439;
-            for (int f = 0; f < caughtfishID; f++)
-            {
+            for (int f = 0; f < caughtfishID; f++) {
                 fishflag += 0x00000001;
             }
             Memory.WriteByte(fishflag, 1);
@@ -1850,26 +1601,22 @@ namespace Dark_Cloud_Improved_Version
             int slot = Player.Toan.GetWeaponSlot();
             int currentwepID = Memory.ReadUShort(0x21CDDA58 + (slot * 0xF8));
 
-            if (currentwepID == 278)
-            {
+            if (currentwepID == 278) {
                 hasMardanSword = true;
                 mardanMultiplier = 2;
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Player has Mardan Eins");
             }
-            else if (currentwepID == 279)
-            {
+            else if (currentwepID == 279) {
                 hasMardanSword = true;
                 mardanMultiplier = 3;
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Player has Mardan Twei");
             }
-            else if (currentwepID == 280)
-            {
+            else if (currentwepID == 280) {
                 hasMardanSword = true;
                 mardanMultiplier = 5;
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Player has Arise Mardan");
             }
-            else
-            {
+            else {
                 hasMardanSword = false;
             }
         }
@@ -1880,28 +1627,23 @@ namespace Dark_Cloud_Improved_Version
             {
                 playerAtCredits = true;
                 Memory.WriteByte(0x21CE448B, 1); //game cleared flag, our custom flag
-                if (Memory.ReadByte(0x21CE70A0) == 0)
-                {
+                if (Memory.ReadByte(0x21CE70A0) == 0) {
                     Memory.WriteByte(0x21CE70A0, 1); //demon shaft visit count
                 }
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Game beaten, entered save mode after credits!");
             }
-            else if (Memory.ReadInt(0x202A2518) != 51 && playerAtCredits == true)
-            {
+            else if (Memory.ReadInt(0x202A2518) != 51 && playerAtCredits == true) {
                 Memory.WriteInt(0x202A2518, 60);
-                if (Memory.ReadByte(0x21DA8AD0) == 2 && Memory.ReadByte(0x21DA8AE3) < 255)
-                {
+                if (Memory.ReadByte(0x21DA8AD0) == 2 && Memory.ReadByte(0x21DA8AE3) < 255) {
                     Memory.WriteByte(0x21DA8AD0, 1); //changes the menu to properly save the game
                     playerAtCredits = false;
-                }              
+                }
             }
         }
         public static void DemonShaftUnlockCheck()
         {
-            if (demonshaftUnlocked == false)
-            {
-                if (Memory.ReadByte(0x21CE448B) == 1)
-                {
+            if (demonshaftUnlocked == false) {
+                if (Memory.ReadByte(0x21CE448B) == 1) {
                     demonshaftUnlocked = true; //if DS is unlocked, set this so we don't need to check for it anymore
                 }
 
@@ -1910,7 +1652,7 @@ namespace Dark_Cloud_Improved_Version
                     if (Memory.ReadByte(0x21CE448B) == 0) //check if game cleared flag not true
                     {
                         Memory.WriteByte(0x21CE70A0, 0);
-                    }                 
+                    }
                 }
             }
         }
@@ -1921,10 +1663,10 @@ namespace Dark_Cloud_Improved_Version
             //The game reads the character file (for example Xiao's model and such) from a specific address,
             //but this location needs to be moved, so that we can apply longer character file paths
 
-            Memory.VirtualProtect(Memory.process.Handle, Addresses.chrConfigFileOffset, 8, Memory.PAGE_EXECUTE_READWRITE, out _);
-            successful = Memory.VirtualProtectEx(Memory.process.Handle, Addresses.chrConfigFileOffset, 8, Memory.PAGE_EXECUTE_READWRITE, out _);
+            Memory.VirtualProtect(Memory.emulatorProcess.Handle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
+            successful = Memory.VirtualProtectEx(Memory.emulatorProcess.Handle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
 
-            if (successful == false) //There was an error
+            if (!successful) //There was an error
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + Memory.GetLastError() + " - " + Memory.GetSystemMessage(Memory.GetLastError())); //Get the last error code and write out the message associated with it.
 
             Memory.Write(Addresses.chrConfigFileOffset, BitConverter.GetBytes(608545264)); //this changes the offset value in game's code to make it read the file in right location
@@ -1949,14 +1691,11 @@ namespace Dark_Cloud_Improved_Version
 
             currentAddress = Addresses.chrConfigFileLocation;
 
-            for (int i = 0; i < cfgFile.Length; i++)
-            {
+            for (int i = 0; i < cfgFile.Length; i++) {
                 char character = cfgFile[i];
 
-                for (int a = 0; a < characters.Length; a++)
-                {
-                    if (character.Equals(characters[a]))
-                    {
+                for (int a = 0; a < characters.Length; a++) {
+                    if (character.Equals(characters[a])) {
                         value1 = BitConverter.GetBytes(a + 32);
                     }
                 }
@@ -1971,14 +1710,11 @@ namespace Dark_Cloud_Improved_Version
 
             currentAddress = Addresses.chrFileLocation;
 
-            for (int i = 0; i < chrFilePath.Length; i++)
-            {
+            for (int i = 0; i < chrFilePath.Length; i++) {
                 char character = chrFilePath[i];
 
-                for (int a = 0; a < characters.Length; a++)
-                {
-                    if (character.Equals(characters[a]))
-                    {
+                for (int a = 0; a < characters.Length; a++) {
+                    if (character.Equals(characters[a])) {
                         value1 = BitConverter.GetBytes(a + 32);
                     }
                 }

@@ -58,16 +58,16 @@ namespace Dark_Cloud_Improved_Version
         {
             Memory.Initialize();
 
-            if (Memory.process == null)
+            if (Memory.emulatorProcess == null)
             {
                 ShowWindow(consoleH, SW_SHOW); //Show the console
-                Console.WriteLine("\n{0} was not found in the list of running processes.", Memory.procName);
+                Console.WriteLine("\n{0} was not found in the list of running processes.", Memory.emulatorName);
                 Thread.Sleep(1000);
                 return;
             }
 
 
-            Console.WriteLine("\nFound running instance of {0} ({1})", Memory.process.ProcessName, Memory.process.Id);
+            Console.WriteLine("\nFound running instance of {0} ({1})", Memory.emulatorProcess.ProcessName, Memory.emulatorProcess.Id);
 
 
 
@@ -90,8 +90,8 @@ namespace Dark_Cloud_Improved_Version
             //Console.WriteLine("\nEEmem Location: {0:X8}", Memory.EEMem_Offset);  
             //Memory.TestProgress();
 
-            Console.WriteLine("\nEEMem_Address: {0:X8}", $"0x{Memory.EEMem_Address:X}");
-            Console.WriteLine("\nEEMem_Offset: {0:X8}", $"0x{Memory.EEMem_Offset:X}");
+            Console.WriteLine("\nEEMem_Address: {0:X8}", $"0x{Memory.EEMemAddress:X}");
+            Console.WriteLine("\nEEMem_Offset: {0:X8}", $"0x{Memory.EEMemOffset:X}");
         }
 
         public static void ConsoleLogging()

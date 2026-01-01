@@ -32,7 +32,7 @@ namespace Dark_Cloud_Improved_Version
             Program.ConsoleLogging(); //LOGS CONSOLE WRITES TO TEXT FILE!
             while (true)
             {
-                if (Memory.process != null)
+                if (Memory.emulatorProcess != null)
                 {
                     Memory.WriteByte(0x21F10024, 0); //mod's flag for PNACH
                 }
@@ -49,9 +49,9 @@ namespace Dark_Cloud_Improved_Version
                     }
 
                     Program.GetPCSX2Executable();
-                    if (Memory.process != null)
+                    if (Memory.emulatorProcess != null)
                     {
-                        PID = Memory.process.Id;
+                        PID = Memory.emulatorProcess.Id;
                     }
                     else
                     {
