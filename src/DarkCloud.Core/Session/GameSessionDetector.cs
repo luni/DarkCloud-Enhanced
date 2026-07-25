@@ -23,11 +23,12 @@ namespace DarkCloud.Core.Session
         private const long ModeAddress = 0x202A2534L;
         private const long OpeningBookAddress = 0x202A3420L;
 
-        // In-game modes observed by the original mod.
+        // Modes observed by the original mod.
         private const byte TownMode = 0;
+        private const byte TitleOrIntroMode = 1;
         private const byte DungeonMode = 2;
         private const byte GeoramaMode = 3;
-        private const byte IntroMode = 5;
+        private const byte OpeningCutsceneMode = 5;
 
         // Opening book value that appears after pressing start on the title screen.
         private const byte OpeningBookValue = 9;
@@ -43,13 +44,13 @@ namespace DarkCloud.Core.Session
         {
             if (memory == null)
             {
-                ResetTransientState();
+                ResetAllState();
                 return GameSessionState.NoEmulator;
             }
 
             if (!TryReadInt32(memory, BootMarkerAddress, out int bootMarker))
             {
-                ResetTransientState();
+                ResetFrameTracking();
                 return previousState == GameSessionState.NoEmulator
                     ? GameSessionState.NoEmulator
                     : GameSessionState.EmulatorExited;
@@ -57,19 +58,19 @@ namespace DarkCloud.Core.Session
 
             if (bootMarker != BootMarker)
             {
-                ResetTransientState();
+                ResetFrameTracking();
                 return GameSessionState.EmulatorWithoutGame;
             }
 
             if (!TryReadByte(memory, PnachFlagAddress, out byte pnachFlag) || pnachFlag != 1)
             {
-                ResetTransientState();
+                ResetFrameTracking();
                 return GameSessionState.PnachDisabled;
             }
 
             if (!TryReadByte(memory, ModFlagAddress, out byte modFlag))
             {
-                ResetTransientState();
+                ResetFrameTracking();
                 return GameSessionState.EmulatorExited;
             }
 
@@ -84,7 +85,7 @@ namespace DarkCloud.Core.Session
                 // Claim the flag so another instance cannot start.
                 if (!TryWriteByte(memory, ModFlagAddress, 1))
                 {
-                    ResetTransientState();
+                    ResetFrameTracking();
                     return GameSessionState.EmulatorExited;
                 }
 
@@ -110,18 +111,18 @@ namespace DarkCloud.Core.Session
 
             if (!TryReadByte(memory, ModeAddress, out byte mode))
             {
-                ResetTransientState();
+                ResetFrameTracking();
                 return GameSessionState.EmulatorExited;
             }
 
-            if (mode == DungeonMode || mode == GeoramaMode || mode == IntroMode)
+            if (mode == DungeonMode || mode == GeoramaMode || mode == OpeningCutsceneMode)
                 return GameSessionState.InGame;
 
-            if (mode == TownMode)
+            if (mode == TownMode || mode == TitleOrIntroMode)
             {
                 if (!TryReadByte(memory, OpeningBookAddress, out byte openingBook))
                 {
-                    ResetTransientState();
+                    ResetFrameTracking();
                     return GameSessionState.EmulatorExited;
                 }
 
@@ -137,11 +138,27 @@ namespace DarkCloud.Core.Session
                 : GameSessionState.MainMenu;
         }
 
-        private void ResetTransientState()
+        /// <summary>
+        /// Releases the mod's mutual-exclusion flag so another instance can start.
+        /// </summary>
+        public static bool ReleaseModFlag(IGameMemory memory)
         {
-            _hasClaimedModFlag = false;
+            if (memory == null)
+                return false;
+
+            return TryWriteByte(memory, ModFlagAddress, 0);
+        }
+
+        private void ResetFrameTracking()
+        {
             _hasPreviousFrameCounter = false;
             _previousFrameCounter = 0;
+        }
+
+        private void ResetAllState()
+        {
+            _hasClaimedModFlag = false;
+            ResetFrameTracking();
         }
 
         private static bool TryReadByte(IGameMemory memory, long address, out byte value)

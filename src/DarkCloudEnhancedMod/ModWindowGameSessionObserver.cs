@@ -1,70 +1,93 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using DarkCloud.Core.Session;
 using DarkCloud.Memory.Abstractions;
 
 namespace DarkCloudEnhancedMod
 {
     /// <summary>
-    /// Maps <see cref="GameSessionState"/> transitions onto the existing WinForms
-    /// UI and legacy feature threads. This preserves the original
-    /// <see cref="MainMenuThread"/> behavior while the session state machine now
-    /// drives the lifecycle.
+    /// Adapts the new session state machine to the legacy feature threads and
+    /// WinForms UI. It starts/stops feature threads with a shared cancellation
+    /// token and reports progress through <see cref="IModStatusSink"/>.
     /// </summary>
     internal sealed class ModWindowGameSessionObserver : IGameSessionObserver
     {
-        private bool _firstLaunch = true;
-        private bool _threadsStarted;
+        private readonly IModStatusSink _sink;
+        private readonly IClock _clock;
+        private CancellationTokenSource _featureCts;
+
+        private IGameMemory _lastMemory;
+        private bool _bootedAndInitialized;
+        private bool _sawMenuSinceLastInGame;
+        private bool _waitingForGameReset;
 
         private Thread _changesThread;
         private Thread _townThread;
         private Thread _dungeonThread;
         private Thread _weaponsThread;
 
-        public void OnStateChanged(GameSessionState oldState, GameSessionState newState, IGameSessionContext context)
+        public ModWindowGameSessionObserver(IModStatusSink sink, IClock clock)
         {
+            _sink = sink ?? throw new ArgumentNullException(nameof(sink));
+            _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+            _featureCts = new CancellationTokenSource();
+        }
+
+        public async Task OnStateChanged(GameSessionState oldState, GameSessionState newState, IGameSessionContext context)
+        {
+            _lastMemory = context?.Memory;
+            var memory = _lastMemory;
+            var cancellationToken = context?.CancellationToken ?? CancellationToken.None;
+
             switch (newState)
             {
                 case GameSessionState.NoEmulator:
-                    ModWindow.EmulatorCount(0);
+                    _sink.ReportNoEmulators();
                     ResetForNewSession();
                     break;
 
                 case GameSessionState.EmulatorWithoutGame:
+                    _sink.ReportGameNotActive();
+                    ResetForNewSession();
+                    break;
+
                 case GameSessionState.EmulatorExited:
-                    ModWindow.EmulatorCount(1);
+                    _sink.ReportGameNotActive();
                     break;
 
                 case GameSessionState.PnachDisabled:
-                    ModWindow.PnachNotActive();
+                    _sink.ReportPnachNotActive();
                     ResetForNewSession();
                     break;
 
                 case GameSessionState.ModAlreadyOpen:
-                    ModWindow.EnhancedModAlreadyOpen();
+                    _sink.ReportAnotherInstanceActive();
                     break;
 
                 case GameSessionState.MainMenu:
                     MainMenuThread.userMode = true;
-                    HandleMainMenuOrTitle(firstLaunchMode: false);
-                    ModWindow.CurrentlyInMainMenu();
+                    StopFeatureThreads();
+                    HandleMainMenuOrTitle();
+                    _sink.ReportMainMenu();
                     break;
 
                 case GameSessionState.TitleScreen:
                     MainMenuThread.userMode = true;
-                    HandleMainMenuOrTitle(firstLaunchMode: false);
-                    ModWindow.CurrentlyInGame();
+                    StopFeatureThreads();
+                    HandleMainMenuOrTitle();
+                    _sink.ReportTitleScreen();
                     break;
 
                 case GameSessionState.InGame:
                     MainMenuThread.userMode = true;
-                    HandleInGame(oldState == GameSessionState.TitleScreen);
+                    await HandleInGameAsync(memory, cancellationToken);
                     break;
 
                 case GameSessionState.SaveStateDetected:
                     MainMenuThread.userMode = true;
-                    HandleSaveState();
-                    ModWindow.SaveStateDetected();
+                    HandleSaveState(memory);
+                    _sink.ReportSaveStateDetected();
                     break;
             }
         }
@@ -74,120 +97,225 @@ namespace DarkCloudEnhancedMod
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + $" Session error in {state}: {exception}");
         }
 
-        public void OnShutdown()
+        public Task OnShutdown(CancellationToken cancellationToken = default)
         {
-            StopGameThreads();
-            Memory.WriteByte(0x21F10024, 0);
-        }
+            _featureCts.Cancel();
+            _featureCts.Dispose();
 
-        private void HandleMainMenuOrTitle(bool firstLaunchMode)
-        {
-            if (_firstLaunch)
-            {
-                ModWindow.FirstLaunchGameMode(!firstLaunchMode);
-                TownCharacter.InitializeCharacterOffsetValues();
-                _firstLaunch = false;
-            }
-        }
-
-        private void HandleInGame(bool fromTitleScreen)
-        {
-            if (_firstLaunch)
-            {
-                ModWindow.FirstLaunchGameMode(false);
-                _firstLaunch = false;
-            }
-
-            if (!fromTitleScreen)
-            {
-                // The original mod writes the new-game flag and shows intro text
-                // when the player starts a brand new game.
-                if (Memory.ReadByte(Addresses.mode) == 5)
-                {
-                    Memory.WriteByte(0x21CE448A, 1);
-                    Dialogues.IntroTextAtNorune();
-                }
-            }
-
-            StartGameThreads();
-            ModWindow.CurrentlyInGame();
-            CheckModWindowOptions();
-        }
-
-        private static void HandleSaveState()
-        {
             try
             {
-                if (Player.InDungeonFloor())
-                    Memory.WriteInt(Addresses.dungeonDebugMenu, 151);
-                else
-                    Memory.WriteByte(Addresses.townSoftReset, 1);
+                GameSessionDetector.ReleaseModFlag(_lastMemory ?? LegacyProcessGameMemory.Instance);
             }
             catch (Exception exception)
             {
-                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Save-state handling failed: " + exception.Message);
+                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Failed to release mod mutex: " + exception.Message);
             }
+
+            return Task.CompletedTask;
         }
 
-        private static void CheckModWindowOptions()
+        private void HandleMainMenuOrTitle()
         {
-            if (Memory.ReadByte(Addresses.mode) != 5)
-                ModWindow.ModWindowOptionsEnabled();
+            if (!_bootedAndInitialized)
+            {
+                _sink.ReportBooted();
+                TownCharacter.InitializeCharacterOffsetValues();
+                _bootedAndInitialized = true;
+            }
+
+            _sawMenuSinceLastInGame = true;
+            _waitingForGameReset = false;
+        }
+
+        private async Task HandleInGameAsync(IGameMemory memory, CancellationToken cancellationToken)
+        {
+            if (_waitingForGameReset || cancellationToken.IsCancellationRequested)
+                return;
+
+            // If the very first thing we see is in-game, the mod was launched
+            // while a save was already running. Ask the user to reset.
+            // Once the mod has booted from a menu, transient disconnects should
+            // not re-trigger this prompt.
+            if (!_sawMenuSinceLastInGame && !_bootedAndInitialized)
+            {
+                _waitingForGameReset = true;
+
+                if (!cancellationToken.IsCancellationRequested && _sink.PromptForGameReset())
+                    WriteGameReset(memory, Addresses.townSoftReset);
+
+                return;
+            }
+
+            _sawMenuSinceLastInGame = false;
+
+            try
+            {
+                await _clock.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            if (!TryReadByte(memory, Addresses.mode, out byte mode))
+                return;
+
+            // Re-check that the game is still in an in-game mode, mirroring the
+            // original main-menu thread behavior.
+            if (mode != 2 && mode != 3 && mode != 5)
+                return;
+
+            // New game (mode 5) writes the Enhanced Mod save flag, then shows
+            // the custom opening text. The delays mirror the original timing
+            // but now flow through IClock so the runner thread is not blocked.
+            if (mode == 5)
+            {
+                try
+                {
+                    await _clock.Delay(TimeSpan.FromMilliseconds(800), cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                if (!TryWriteByte(memory, 0x21CE448A, 1))
+                {
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Failed to write Enhanced Mod save flag for new game.");
+                }
+
+                try
+                {
+                    await _clock.Delay(TimeSpan.FromMilliseconds(200), cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                Dialogues.IntroTextAtNorune();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            // Loading an existing save (or a new game) requires an Enhanced Mod
+            // save flag at 0x21CE448A. If it is not present, reset the game and
+            // warn the user.
+            if (!TryReadByte(memory, 0x21CE448A, out byte enhancedFlag) || enhancedFlag != 1)
+            {
+                _waitingForGameReset = true;
+                WriteGameReset(memory, Addresses.mode);
+                _sink.ReportNotEnhancedModSaveFile();
+                return;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            StartGameThreads();
+            _sink.ReportInGame(mode == 5);
+        }
+
+        private void HandleSaveState(IGameMemory memory)
+        {
+            WriteGameReset(memory, Addresses.townSoftReset);
+        }
+
+        private void WriteGameReset(IGameMemory memory, long nonDungeonResetAddress)
+        {
+            // If the player is inside a dungeon, use the dungeon reset path so
+            // the save state does not leave them stuck on an unpopulated floor.
+            if (!TryReadByte(memory, (long)Addresses.checkFloor + 1, out byte currentFloor) || currentFloor == 255)
+            {
+                TryWriteByte(memory, nonDungeonResetAddress, 1);
+            }
+            else
+            {
+                TryWriteInt32(memory, Addresses.dungeonDebugMenu, 151);
+            }
         }
 
         private void StartGameThreads()
         {
-            if (_threadsStarted)
-                return;
+            var token = _featureCts.Token;
 
-            _threadsStarted = true;
-
-            _changesThread = new Thread(() => MainMenuThread.ApplyNewChanges());
-            _townThread = new Thread(() => TownCharacter.MainScript());
-            _dungeonThread = new Thread(() => Dungeon.InsideDungeonThread());
-            _weaponsThread = new Thread(() => Weapons.RerollWeaponSpecialAttributes());
-
-            _changesThread.Start();
-            _townThread.Start();
-            _dungeonThread.Start();
-            _weaponsThread.Start();
+            EnsureThreadStarted(ref _changesThread, () => MainMenuThread.ApplyNewChanges(token));
+            EnsureThreadStarted(ref _townThread, () => TownCharacter.MainScript(token));
+            EnsureThreadStarted(ref _dungeonThread, () => Dungeon.InsideDungeonThread(token));
+            EnsureThreadStarted(ref _weaponsThread, () => Weapons.RerollWeaponSpecialAttributes(token));
         }
 
-        private void StopGameThreads()
+        private static void EnsureThreadStarted(ref Thread thread, ThreadStart start)
         {
-            // The legacy threads are long-running loops that terminate only when
-            // the process exits. Thread.Abort is available on .NET Framework/Mono
-            // and matches the original behavior when closing the mod.
-            TryAbort(_changesThread);
-            TryAbort(_townThread);
-            TryAbort(_dungeonThread);
-            TryAbort(_weaponsThread);
-            _threadsStarted = false;
-        }
-
-        private static void TryAbort(Thread thread)
-        {
-            if (thread?.IsAlive != true)
+            if (thread?.IsAlive == true)
                 return;
 
-            try
-            {
-                thread.Abort();
-            }
-            catch (ThreadStateException)
-            {
-            }
-            catch (PlatformNotSupportedException)
-            {
-            }
+            thread = new Thread(start) { IsBackground = true };
+            thread.Start();
+        }
+
+        private void StopFeatureThreads()
+        {
+            var previousCts = _featureCts;
+            _featureCts = new CancellationTokenSource();
+            previousCts.Cancel();
+            previousCts.Dispose();
+
+            _changesThread = null;
+            _townThread = null;
+            _dungeonThread = null;
+            _weaponsThread = null;
         }
 
         private void ResetForNewSession()
         {
-            // The legacy threads are long-running loops; stop them when the
-            // emulator disappears or the PNACH is disabled so the next session
-            // can start fresh.
-            StopGameThreads();
+            StopFeatureThreads();
+
+            _bootedAndInitialized = false;
+            _sawMenuSinceLastInGame = false;
+            _waitingForGameReset = false;
+        }
+
+        private static bool TryReadByte(IGameMemory memory, long address, out byte value)
+        {
+            value = 0;
+            if (memory == null)
+                return false;
+
+            byte[] buffer = new byte[1];
+            if (!memory.TryRead(address, buffer, 0, 1))
+                return false;
+
+            value = buffer[0];
+            return true;
+        }
+
+        private static bool TryWriteByte(IGameMemory memory, long address, byte value)
+        {
+            if (memory == null)
+                return false;
+
+            byte[] buffer = new byte[1] { value };
+            return memory.TryWrite(address, buffer, 0, 1);
+        }
+
+        private static bool TryWriteInt32(IGameMemory memory, long address, int value)
+        {
+            if (memory == null)
+                return false;
+
+            byte[] buffer = BitConverter.GetBytes(value);
+            return memory.TryWrite(address, buffer, 0, 4);
         }
     }
 }

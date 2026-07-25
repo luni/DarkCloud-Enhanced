@@ -101,6 +101,13 @@ namespace DarkCloudEnhancedMod
 
         public static void MainScript()
         {
+            MainScript(CancellationToken.None);
+        }
+
+        public static void MainScript(CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Towncharacter setup...");
 
@@ -142,8 +149,9 @@ namespace DarkCloudEnhancedMod
             //THE FOLLOWING CODE UP TO WHILE LOOP is for setting up ally switching in the overworld, by editing
             //some of the game's code that handles the character files
 
-            Memory.VirtualProtect(Memory.emulatorProcess.Handle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
-            successful = Memory.VirtualProtectEx(Memory.emulatorProcess.Handle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
+            IntPtr processHandle = Memory.ProcessHandle;
+            Memory.VirtualProtect(processHandle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
+            successful = Memory.VirtualProtectEx(processHandle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
 
             if (!successful) //There was an error
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + Memory.GetLastError() + " - " + Memory.GetSystemMessage(Memory.GetLastError())); //Get the last error code and write out the message associated with it.
@@ -204,6 +212,9 @@ namespace DarkCloudEnhancedMod
 
 
             while (true) {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
                 //Check if player is in town
                 if (Memory.ReadByte(Addresses.mode) == 2) {
 
@@ -722,10 +733,7 @@ namespace DarkCloudEnhancedMod
                                         }
                                     }
                                 }
-                                if (!characterNamesFixThread.IsAlive) {
-                                    characterNamesFixThread = new Thread(() => Dialogues.FixCharacterNamesInDialogues());
-                                    characterNamesFixThread.Start();
-                                }
+                                ThreadingHelper.RestartThread(ref characterNamesFixThread, () => Dialogues.FixCharacterNamesInDialogues(cancellationToken));
                                 areaEnteredCheck = true;
                             }
                         }
@@ -863,13 +871,7 @@ namespace DarkCloudEnhancedMod
                     //Check if player is inside the weapon customize menu
                     if (Player.CheckIsWeaponCustomizeMenu()) {
                         //The Synthsphere Listener thread
-                        if (Weapons.weaponsMenuListener.ThreadState == ThreadState.Unstarted) {
-                            Weapons.weaponsMenuListener.Start();
-                        }
-                        else if (Weapons.weaponsMenuListener.ThreadState == ThreadState.Stopped) {
-                            Weapons.weaponsMenuListener = new Thread(new ThreadStart(Weapons.WeaponListenForSynthSphere));
-                            Weapons.weaponsMenuListener.Start();
-                        }
+                        ThreadingHelper.RestartThread(ref Weapons.weaponsMenuListener, () => Weapons.WeaponListenForSynthSphere(cancellationToken));
                     }
 
                     if (Memory.ReadUShort(0x21CD4318) > currentInGameDay) //whenever the ingame day counter increases, reroll the shops
@@ -893,7 +895,10 @@ namespace DarkCloudEnhancedMod
                     CheckCreditsScene(); //when player finishes credits, properly save the game and redirect to demon shaft
                 }
 
-                Thread.Sleep(50); //resets the code loop in 50ms intervals. Sleep is required, otherwise CPU usage will skyrocket
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
+                ThreadingHelper.Sleep(50, cancellationToken); //resets the code loop in 50ms intervals. Sleep is required, otherwise CPU usage will skyrocket
             }
 
         }
@@ -1663,8 +1668,9 @@ namespace DarkCloudEnhancedMod
             //The game reads the character file (for example Xiao's model and such) from a specific address,
             //but this location needs to be moved, so that we can apply longer character file paths
 
-            Memory.VirtualProtect(Memory.emulatorProcess.Handle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
-            successful = Memory.VirtualProtectEx(Memory.emulatorProcess.Handle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
+            IntPtr processHandle = Memory.ProcessHandle;
+            Memory.VirtualProtect(processHandle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
+            successful = Memory.VirtualProtectEx(processHandle, Addresses.chrConfigFileOffset, 8, (uint) Memory.WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
 
             if (!successful) //There was an error
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + Memory.GetLastError() + " - " + Memory.GetSystemMessage(Memory.GetLastError())); //Get the last error code and write out the message associated with it.

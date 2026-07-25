@@ -22,7 +22,19 @@ namespace DarkCloudEnhancedMod
 
         internal static void ApplyNewChanges()
         {
+            ApplyNewChanges(CancellationToken.None);
+        }
+
+        internal static void ApplyNewChanges(CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             Weapons.WeaponsBalanceChanges();
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             Shop.UpdateShopPrices();
         }
 

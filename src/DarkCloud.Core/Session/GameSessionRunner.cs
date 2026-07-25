@@ -58,8 +58,8 @@ namespace DarkCloud.Core.Session
 
                 if (newState != state)
                 {
-                    var context = new GameSessionContext(memory, _translator);
-                    _observer.OnStateChanged(state, newState, context);
+                    var context = new GameSessionContext(memory, _translator, cancellationToken);
+                    await _observer.OnStateChanged(state, newState, context);
                     state = newState;
                 }
 
@@ -75,7 +75,7 @@ namespace DarkCloud.Core.Session
                 }
             }
 
-            _observer.OnShutdown();
+            await _observer.OnShutdown(cancellationToken);
         }
 
         private static TimeSpan DefaultDelaySelector(GameSessionState state)

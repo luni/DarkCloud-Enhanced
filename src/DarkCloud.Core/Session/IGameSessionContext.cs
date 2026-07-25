@@ -1,3 +1,4 @@
+using System.Threading;
 using DarkCloud.Memory.Abstractions;
 
 namespace DarkCloud.Core.Session
@@ -17,5 +18,10 @@ namespace DarkCloud.Core.Session
         /// Translator used to map NTSC addresses to the active region.
         /// </summary>
         IAddressTranslator Translator { get; }
+
+        /// <summary>
+        /// Cancellation token that is cancelled when the session runner is stopped.
+        /// </summary>
+        CancellationToken CancellationToken { get; }
     }
 }

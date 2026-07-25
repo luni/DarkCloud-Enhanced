@@ -70,6 +70,40 @@ namespace DarkCloud.Core.Tests.Session
         }
 
         [Fact]
+        public void Detect_TitleOrIntroMode1_ReturnsMainMenu()
+        {
+            var memory = CreateBootedMemory();
+            var writer = new GameMemoryWriter(memory);
+            writer.WriteByte(0x202A2534L, 1);
+
+            var detector = new GameSessionDetector();
+            Assert.Equal(GameSessionState.MainMenu, detector.Detect(memory, GameSessionState.EmulatorWithoutGame));
+        }
+
+        [Fact]
+        public void Detect_TitleOrIntroMode1_WithOpeningBook_ReturnsTitleScreen()
+        {
+            var memory = CreateBootedMemory();
+            var writer = new GameMemoryWriter(memory);
+            writer.WriteByte(0x202A2534L, 1);
+            writer.WriteByte(0x202A3420L, 9);
+
+            var detector = new GameSessionDetector();
+            Assert.Equal(GameSessionState.TitleScreen, detector.Detect(memory, GameSessionState.EmulatorWithoutGame));
+        }
+
+        [Fact]
+        public void Detect_TitleOrIntroMode1_AfterInGame_ReturnsMainMenu()
+        {
+            var memory = CreateBootedMemory();
+            var writer = new GameMemoryWriter(memory);
+            writer.WriteByte(0x202A2534L, 1);
+
+            var detector = new GameSessionDetector();
+            Assert.Equal(GameSessionState.MainMenu, detector.Detect(memory, GameSessionState.InGame));
+        }
+
+        [Fact]
         public void Detect_DungeonMode_ReturnsInGame()
         {
             var memory = CreateBootedMemory();
@@ -92,7 +126,7 @@ namespace DarkCloud.Core.Tests.Session
         }
 
         [Fact]
-        public void Detect_IntroMode_ReturnsInGame()
+        public void Detect_OpeningCutsceneMode_ReturnsInGame()
         {
             var memory = CreateBootedMemory();
             var writer = new GameMemoryWriter(memory);
@@ -135,6 +169,34 @@ namespace DarkCloud.Core.Tests.Session
             Assert.Equal(GameSessionState.EmulatorExited, detector.Detect(empty, GameSessionState.InGame));
         }
 
+        [Fact]
+        public void ReleaseModFlag_WritesZero()
+        {
+            var memory = CreateBootedMemory();
+            var writer = new GameMemoryWriter(memory);
+            writer.WriteByte(0x21F10024L, 1);
+
+            Assert.True(GameSessionDetector.ReleaseModFlag(memory));
+            Assert.Equal(0, new GameMemoryReader(memory).ReadByte(0x21F10024L));
+        }
+
+        [Fact]
+        public void Detect_ClaimedFlagSurvivesTransientReadFailure()
+        {
+            var memory = CreateBootedMemory();
+            var detector = new GameSessionDetector();
+
+            // First, claim the flag and establish MainMenu.
+            Assert.Equal(GameSessionState.MainMenu, detector.Detect(memory, GameSessionState.EmulatorWithoutGame));
+
+            // A single failed read should not cause the detector to forget it owns the flag.
+            var flaky = new FlakyGameMemory(memory, failCount: 1);
+            Assert.Equal(GameSessionState.EmulatorExited, detector.Detect(flaky, GameSessionState.MainMenu));
+
+            // The next successful read should still see the flag as our own.
+            Assert.Equal(GameSessionState.MainMenu, detector.Detect(memory, GameSessionState.EmulatorExited));
+        }
+
         private static InMemoryGameMemory CreateBootedMemory()
         {
             var memory = new InMemoryGameMemory(BaseAddress, Capacity);
@@ -149,6 +211,34 @@ namespace DarkCloud.Core.Tests.Session
             writer.WriteByte(0x202A3420L, 0);
 
             return memory;
+        }
+
+        private sealed class FlakyGameMemory : IGameMemory
+        {
+            private readonly IGameMemory _inner;
+            private int _failCount;
+
+            public FlakyGameMemory(IGameMemory inner, int failCount)
+            {
+                _inner = inner;
+                _failCount = failCount;
+            }
+
+            public bool TryRead(long address, byte[] destination, int offset, int count)
+            {
+                if (_failCount > 0)
+                {
+                    _failCount--;
+                    return false;
+                }
+
+                return _inner.TryRead(address, destination, offset, count);
+            }
+
+            public bool TryWrite(long address, byte[] source, int offset, int count)
+            {
+                return _inner.TryWrite(address, source, offset, count);
+            }
         }
     }
 }

@@ -14,6 +14,8 @@ namespace DarkCloudEnhancedMod
         {
             InitializeComponent();
             instance = this;
+            _statusSink = new WinFormsModStatusSink();
+            NightlyVersionCheck();
 
             //User mode on launch!!!
             UserModeLaunch();
@@ -28,8 +30,10 @@ namespace DarkCloudEnhancedMod
         public static Thread dungeonthread = new Thread(new ThreadStart(Dungeon.InsideDungeonThread));
         public static Thread debugThread = new Thread(new ThreadStart(CheatCodes.DebugOptions));
 
+        private readonly object _runnerLock = new object();
         private CancellationTokenSource _runnerCts;
         private Task _runnerTask;
+        private readonly IModStatusSink _statusSink;
 
         public int[] attackSoundAddresses = { 0x20265DBC, 0x20265DC2, 0x20265DC8, 0x20265DCE, 0x20265F0C, 0x20265F12, 0x2026605C, 0x20266062, 0x202661AC, 0x202661B8, 0x202662FC, 0x20266302, 0x20266308, 0x2026644C };
         public byte[] attackSoundValues = { 68, 69, 70, 71, 83, 84, 98, 99, 113, 115, 128, 129, 130, 156 };
@@ -89,7 +93,10 @@ namespace DarkCloudEnhancedMod
 
         public static void SaveStateDetected()
         {
-            instance.FormSaveStateDetected(true);
+            // The runner is on a background thread. Cancel it without waiting, then
+            // let the UI thread display the shutdown message and close the form.
+            instance.CancelSessionRunner();
+            instance.BeginInvoke(new Action(() => instance.FormSaveStateDetected(true)));
         }
 
         public static void FirstLaunchGameMode(bool validGameMode)
@@ -107,6 +114,14 @@ namespace DarkCloudEnhancedMod
         public static void NotEnhancedModSaveFile()
         {
             instance.FormNotEnhancedModSaveFile(true);
+        }
+
+        internal static bool PromptForGameReset()
+        {
+            if (instance == null)
+                return false;
+
+            return (bool)instance.Invoke(new Func<bool>(instance.PromptForGameResetInternal));
         }
 
         public static void EnhancedModAlreadyOpen()
@@ -156,33 +171,30 @@ namespace DarkCloudEnhancedMod
                 this.Invoke(new EnableDelegate(InvalidFirstLaunchGameMode), new object[] { enable });
                 return;
             }
-            Label_UserMode_PlaceholderText.Text = "Detected a save file already running!\n\nPlease re-boot Dark Cloud to start the Mod.";
             MainMenuThread.saveFileMessageBox = true;
+
+            if (PromptForGameResetInternal())
+            {
+                if (Player.InDungeonFloor() == true)
+                    Memory.WriteInt(Addresses.dungeonDebugMenu, 151); //If we are in a dungeon, this will take us to the main menu
+                else
+                    Memory.WriteByte(Addresses.townSoftReset, 1);
+                //MainMenuThread.saveFileMessageBox = false;
+            }
+        }
+
+        private bool PromptForGameResetInternal()
+        {
+            this.TopMost = true;
+            Label_UserMode_PlaceholderText.Text = "Detected a save file already running!\n\nPlease re-boot Dark Cloud to start the Mod.";
+
             string message = "Detected a save file already running! Enhanced Mod currently not active.\n\nThe mod needs to be launched while in the Main Menu.\n\nDo you want the mod to return your game to Main Menu?";
             string title = "Save file running!";
             MessageBoxButtons buttons = MessageBoxButtons.YesNo;
             DialogResult result = MessageBox.Show(message, title, buttons, MessageBoxIcon.Exclamation);
+
             this.TopMost = false;
-
-            while (true)
-            {
-                Label_UserMode_PlaceholderText.Text = "Detected a save file already running!\n\nPlease re-boot Dark Cloud to start the Mod.";
-                if (result == DialogResult.Yes)
-                {
-                    if (Player.InDungeonFloor() == true)
-                        Memory.WriteInt(Addresses.dungeonDebugMenu, 151); //If we are in a dungeon, this will take us to the main menu
-                    else
-                        Memory.WriteByte(Addresses.townSoftReset, 1);
-                    //MainMenuThread.saveFileMessageBox = false;
-                    break;
-                }
-                else if (result == DialogResult.No)
-                {
-                    break;
-                }
-            }
-
-
+            return result == DialogResult.Yes;
         }
 
         void ValidFirstLaunchGameMode(bool enable)
@@ -241,22 +253,11 @@ namespace DarkCloudEnhancedMod
             string message = "The mod has detected a possible save state load!\n\nUsing save states is NOT ALLOWED while using the Enhanced Mod, since it can cause major issues.\n\nThe game has been reset, and this mod will be closed.";
             string title = "Save state detected!";
             MessageBoxButtons buttons = MessageBoxButtons.OK;
-            DialogResult result = MessageBox.Show(message, title, buttons, MessageBoxIcon.Exclamation);
+            MessageBox.Show(message, title, buttons, MessageBoxIcon.Exclamation);
             this.TopMost = false;
-            while (true)
-            {
-                Label_UserMode_PlaceholderText.Text = "A possible save state used! Mod has been terminated.";
-                StopSessionRunner();
-                Memory.WriteByte(0x21F10024, 0);
-                if (result == DialogResult.OK)
-                {
-                    this.Close();
-                }
-                else
-                {
-                    this.Close();
-                }
-            }
+
+            Label_UserMode_PlaceholderText.Text = "A possible save state used! Mod has been terminated.";
+            this.Close();
         }
 
         void FormNotEnhancedModSaveFile(bool enable)
@@ -271,19 +272,8 @@ namespace DarkCloudEnhancedMod
             string message = "Loaded a Dark Cloud save file which was not started with Enhanced Mod!\n\nPlease load a save file which you have started with Enhanced Mod, or start a New Game with the mod.";
             string title = "Invalid save file!";
             MessageBoxButtons buttons = MessageBoxButtons.OK;
-            DialogResult result = MessageBox.Show(message, title, buttons, MessageBoxIcon.Exclamation);
+            MessageBox.Show(message, title, buttons, MessageBoxIcon.Exclamation);
             this.TopMost = false;
-            while (true)
-            {
-                if (result == DialogResult.OK)
-                {
-                    break;
-                }
-                else
-                {
-                    break;
-                }
-            }
         }
 
         void FormEnhancedModAlreadyOpen(bool enable)
@@ -387,29 +377,86 @@ namespace DarkCloudEnhancedMod
 
         protected override void OnFormClosed(FormClosedEventArgs e) //when mod is quit
         {
+            // Stop the runner and wait for its OnShutdown handler to complete so the
+            // mod flag is released before the form closes.
             StopSessionRunner();
-            Memory.WriteByte(0x21F10024, 0);
+
+            try
+            {
+                GameSessionDetector.ReleaseModFlag(LegacyProcessGameMemory.Instance);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Failed to release mod mutex on form close: " + exception.Message);
+            }
+
             base.OnFormClosed(e);
+        }
+
+        private void CancelSessionRunner()
+        {
+            lock (_runnerLock)
+            {
+                _runnerCts?.Cancel();
+            }
         }
 
         private void StartSessionRunner()
         {
             StopSessionRunner();
 
-            _runnerCts = new CancellationTokenSource();
+            lock (_runnerLock)
+            {
+                _runnerCts = new CancellationTokenSource();
 
-            var provider = new ModWindowGameMemoryProvider();
-            var detector = new GameSessionDetector();
-            var observer = new ModWindowGameSessionObserver();
-            var clock = new SystemClock();
-            var runner = new GameSessionRunner(provider, detector, observer, clock);
+                var provider = new ModWindowGameMemoryProvider();
+                var detector = new GameSessionDetector();
+                var clock = new SystemClock();
+                var observer = new ModWindowGameSessionObserver(_statusSink, clock);
+                var runner = new GameSessionRunner(provider, detector, observer, clock);
 
-            _runnerTask = Task.Run(() => runner.RunAsync(_runnerCts.Token));
+                _runnerTask = Task.Run(() => runner.RunAsync(_runnerCts.Token));
+            }
         }
 
         private void StopSessionRunner()
         {
-            _runnerCts?.Cancel();
+            CancellationTokenSource cts;
+            Task task;
+
+            lock (_runnerLock)
+            {
+                cts = _runnerCts;
+                task = _runnerTask;
+                _runnerCts = null;
+                _runnerTask = null;
+            }
+
+            if (cts == null)
+                return;
+
+            cts.Cancel();
+
+            if (task != null)
+            {
+                try
+                {
+                    if (!task.Wait(TimeSpan.FromSeconds(5)))
+                    {
+                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Session runner did not shut down within 5 seconds.");
+                    }
+                }
+                catch (AggregateException ex) when (ex.InnerExceptions.Count == 1 && ex.InnerExceptions[0] is OperationCanceledException)
+                {
+                    // Expected when the runner is stopped via the cancellation token.
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Session runner shutdown failed: " + exception.Message);
+                }
+            }
+
+            cts.Dispose();
         }
         #endregion
 
@@ -462,18 +509,11 @@ namespace DarkCloudEnhancedMod
                 string title = "Are you sure you want to quit?";
                 MessageBoxButtons buttons = MessageBoxButtons.YesNo;
                 DialogResult result = MessageBox.Show(message, title, buttons, MessageBoxIcon.Exclamation);
+                this.TopMost = false;
 
-
-                while (true)
+                if (result == DialogResult.Yes)
                 {
-                    if (result == DialogResult.Yes)
-                    {
-                        this.Close();
-                    }
-                    else if (result == DialogResult.No)
-                    {
-                        break;
-                    }
+                    this.Close();
                 }
             }
             else

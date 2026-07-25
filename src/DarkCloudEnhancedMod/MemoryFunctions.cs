@@ -15,7 +15,28 @@ namespace DarkCloudEnhancedMod
         internal static long EEMemAddress, EEMemOffset;
         internal static long CheckEEMemAddress, CheckEEMemOffset;
 
-        private static IntPtr ProcessHandle => Platform.IsLinux ? new IntPtr(emulatorProcess.Id) : emulatorProcess.Handle;
+        internal static IntPtr ProcessHandle
+        {
+            get
+            {
+                var process = emulatorProcess;
+                if (process == null)
+                    return IntPtr.Zero;
+
+                try
+                {
+                    return Platform.IsLinux ? new IntPtr(process.Id) : process.Handle;
+                }
+                catch (InvalidOperationException)
+                {
+                    return IntPtr.Zero;
+                }
+                catch (NotSupportedException)
+                {
+                    return IntPtr.Zero;
+                }
+            }
+        }
 
         internal static class WinAPIFlags
         {
@@ -89,22 +110,32 @@ namespace DarkCloudEnhancedMod
 
             if (emulatorProcess != null)
             {
-                CheckEEMemAddress = Platform.GetEEMem(ProcessHandle, emulatorProcess.Id);
-                CheckEEMemOffset = CheckEEMemAddress - 0x20000000;
-
-                switch (emulatorProcess.ProcessName)
+                try
                 {
-                    case "pcsx2":
-                        EEMemOffset = 0x00000000;
-                        break;
+                    CheckEEMemAddress = Platform.GetEEMem(ProcessHandle, emulatorProcess.Id);
+                    CheckEEMemOffset = CheckEEMemAddress - 0x20000000;
+
+                    switch (emulatorProcess.ProcessName)
+                    {
+                        case "pcsx2":
+                            EEMemOffset = 0x00000000;
+                            break;
+                    }
+
+                    if (CheckEEMemAddress > 0x0)
+                    {
+                        EEMemAddress = CheckEEMemAddress;
+                        EEMemOffset = CheckEEMemOffset;
+                        RegionAddresses.DetectRegion();
+                    }
                 }
-
-                if (CheckEEMemAddress > 0x0)
+                catch (InvalidOperationException)
                 {
-                    EEMemAddress = CheckEEMemAddress;
-                    EEMemOffset = CheckEEMemOffset;
-                    RegionAddresses.DetectRegion();
-                    ModWindow.NightlyVersionCheck();
+                    emulatorProcess = null;
+                }
+                catch (NotSupportedException)
+                {
+                    emulatorProcess = null;
                 }
             }
 

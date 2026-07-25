@@ -70,17 +70,27 @@ namespace DarkCloudEnhancedMod
         public static Thread cheatCodeThread = new Thread(new ThreadStart(CheatCodes.InputBuffer.Monitor));
         public static void InsideDungeonThread()
         {
+            InsideDungeonThread(CancellationToken.None);
+        }
+
+        public static void InsideDungeonThread(CancellationToken cancellationToken)
+        {
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Dungeon Thread Activated");
-            elementSwapThread = new Thread(new ThreadStart(Dayuppy.ElementSwapping));
-            elementSwapThread.Start();
-            if (!cheatCodeThread.IsAlive)
+
+            // Restart the shared feature threads so they observe the current session's
+            // cancellation token. RestartThread handles stale threads from a previous
+            // session that may still be sleeping.
+            ThreadingHelper.RestartThread(ref elementSwapThread, () => Dayuppy.ElementSwapping(cancellationToken));
+            ThreadingHelper.RestartThread(ref cheatCodeThread, () =>
             {
-                cheatCodeThread = new Thread(new ThreadStart(CheatCodes.InputBuffer.Monitor));             
-                cheatCodeThread.Start();
                 Resources.initiateRubyMemeFix();
-            }
+                CheatCodes.InputBuffer.Monitor(cancellationToken);
+            });
             while (true)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
                 if (Player.InDungeonFloor())
                 {
                     if (!Player.CheckDunIsPaused() && Player.CheckDunIsWalkingMode())
@@ -262,15 +272,7 @@ namespace DarkCloudEnhancedMod
                     if (Player.CheckIsWeaponCustomizeMenu())
                     {
                         //The Synthsphere Listener thread
-                        if (Weapons.weaponsMenuListener.ThreadState == ThreadState.Unstarted)
-                        {
-                            Weapons.weaponsMenuListener.Start();
-                        }
-                        else if (Weapons.weaponsMenuListener.ThreadState == ThreadState.Stopped)
-                        {
-                            Weapons.weaponsMenuListener = new Thread(new ThreadStart(Weapons.WeaponListenForSynthSphere));
-                            Weapons.weaponsMenuListener.Start();
-                        }
+                        ThreadingHelper.RestartThread(ref Weapons.weaponsMenuListener, () => Weapons.WeaponListenForSynthSphere(cancellationToken));
                     }
 
                     //Check if the player has killed all the floor enemies
@@ -296,7 +298,7 @@ namespace DarkCloudEnhancedMod
                     if (currentFloor != prevFloor)
                     {
                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Floor changed!");
-                        Thread.Sleep(120);  // check if player is still in dungeon(to prevent a new floor process when leaving dungeon)
+                        ThreadingHelper.Sleep(120, cancellationToken);  // check if player is still in dungeon(to prevent a new floor process when leaving dungeon)
                         if (Player.InDungeonFloor())
                         {
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Player has entered a new floor!");
@@ -313,8 +315,7 @@ namespace DarkCloudEnhancedMod
                             {
                                 //Initialize the spawns check
                                 Memory.WriteInt(Enemies.Enemy14.hp, 1);
-                                spawnsCheck = new Thread(new ThreadStart(CheckSpawns));
-                                spawnsCheck.Start();
+                                ThreadingHelper.RestartThread(ref spawnsCheck, () => CheckSpawns(cancellationToken), joinTimeoutMs: 200);
 
                                 eventfloor = false;
                             }
@@ -334,10 +335,10 @@ namespace DarkCloudEnhancedMod
                         }
                     }
 
-                    CheckUngagaSwap();
+                    CheckUngagaSwap(cancellationToken);
                     CheckWepLvlUp();
                     CheckClown();
-                    CheckCurrentSidequests();
+                    CheckCurrentSidequests(cancellationToken);
                     CheckDungeonLeaving();
                     CheckMiniBossStamina();
                     if (CheckWeaponChange(currentWeapon))
@@ -360,7 +361,7 @@ namespace DarkCloudEnhancedMod
                 {
                     if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1)
                     {
-                        Thread.Sleep(100);
+                        ThreadingHelper.Sleep(100, cancellationToken);
                         if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1)
                         {
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Not ingame anymore! Exited from Dungeon!");
@@ -369,7 +370,7 @@ namespace DarkCloudEnhancedMod
                     }
                 }
 
-                Thread.Sleep(10);
+                ThreadingHelper.Sleep(10, cancellationToken);
             }
         }
 
@@ -569,8 +570,16 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Check enemy spawns upon entering a dungeon floor
         /// </summary>
-        public static void CheckSpawns() 
+        public static void CheckSpawns()
         {
+            CheckSpawns(CancellationToken.None);
+        }
+
+        public static void CheckSpawns(CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Checking spawns...");
 
             int ms = 0;
@@ -582,7 +591,10 @@ namespace DarkCloudEnhancedMod
                 //We use the enemy render value here because enemies spawn after chests
                 while (Memory.ReadByte(Enemies.Enemy14.renderStatus) == 255 && ms < 10000)
                 {
-                    Thread.Sleep(100);
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    ThreadingHelper.Sleep(100, cancellationToken);
                     ms += 100;
                     continue;
                 }
@@ -593,7 +605,10 @@ namespace DarkCloudEnhancedMod
                 //We use the enemy render value here because enemies spawn after chests
                 while (Memory.ReadByte(Enemies.Enemy14.hp) == 1 && ms < 10000)
                 {
-                    Thread.Sleep(100);
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    ThreadingHelper.Sleep(100, cancellationToken);
                     ms += 100;
                     continue;
                 }
@@ -773,7 +788,7 @@ namespace DarkCloudEnhancedMod
             }
         }
 
-        public static void CheckUngagaSwap()
+        public static void CheckUngagaSwap(CancellationToken cancellationToken = default)
         {
             currentCharCursor = Memory.ReadByte(0x202A2DE8); //current char
 
@@ -784,7 +799,10 @@ namespace DarkCloudEnhancedMod
                     int timer = 0;
                     while (timer < 10)
                     {
-                        Thread.Sleep(100);
+                        if (cancellationToken.IsCancellationRequested)
+                            return;
+
+                        ThreadingHelper.Sleep(100, cancellationToken);
                         timer++;
 
                         if (Memory.ReadByte(0x202A2010) == 3)
@@ -880,14 +898,20 @@ namespace DarkCloudEnhancedMod
             }
         }
 
-        public static void CheckCurrentSidequests()
+        public static void CheckCurrentSidequests(CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             if (monsterQuestActive)
             {
                 if (currentDungeon != 6)
                 {
                     for (int i = 0; i < monstersDead.Length; i++)
                     {
+                        if (cancellationToken.IsCancellationRequested)
+                            return;
+
                         currentAddress = 0x21E16BC4 + (i * 0x190);
 
                         if (Memory.ReadUShort(currentAddress) > 0)
@@ -909,16 +933,16 @@ namespace DarkCloudEnhancedMod
 
             if (sambaChallengeQuest)
             {
-                SambaChallengeQuest();
+                SambaChallengeQuest(cancellationToken);
             }
 
             if (mayorQuest)
             {
-                MayorQuest();
+                MayorQuest(cancellationToken);
             }
         }
 
-        public static void SambaChallengeQuest()
+        public static void SambaChallengeQuest(CancellationToken cancellationToken = default)
         {
             ushort currentweaponID = Memory.ReadUShort(0x21EA7590);
             if (sambaChallengeQuestCheck == false && Memory.ReadByte(0x202A34CC) == 1)
@@ -954,7 +978,10 @@ namespace DarkCloudEnhancedMod
             {
                 if ((currentweaponID != 258 && currentweaponID != 257) || Memory.ReadByte(0x21DC4484) == 26 || Memory.ReadByte(0x21DC4484) == 27)
                 {
-                    Thread.Sleep(500);
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    ThreadingHelper.Sleep(500, cancellationToken);
                     Dayuppy.DisplayMessage("Samba's quest has been cancelled.\nRe-enter in order to activate it.", 2, 40, 4000);
                     sambaChallengeQuestActive = false;
                 }
@@ -983,7 +1010,7 @@ namespace DarkCloudEnhancedMod
             }
         }
 
-        public static void MayorQuest()
+        public static void MayorQuest(CancellationToken cancellationToken = default)
         {
             if (mayorQuestCheck == false && Memory.ReadByte(0x202A34CC) == 1)
             {
@@ -1019,7 +1046,10 @@ namespace DarkCloudEnhancedMod
             {
                 if (Memory.ReadByte(0x21DC4484) == 26 || Memory.ReadByte(0x21DC4484) == 27)
                 {
-                    Thread.Sleep(500);
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    ThreadingHelper.Sleep(500, cancellationToken);
                     Dayuppy.DisplayMessage("Mayor's quest has been cancelled.\nRe-enter in order to re-attempt it.", 2, 40, 4000);
                     mayorQuestActive = false;
                 }

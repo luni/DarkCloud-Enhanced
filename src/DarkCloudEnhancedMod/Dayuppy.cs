@@ -503,6 +503,11 @@ namespace DarkCloudEnhancedMod
         */
         public static void ElementSwapping()
         {
+            ElementSwapping(CancellationToken.None);
+        }
+
+        public static void ElementSwapping(CancellationToken cancellationToken)
+        {
             string[] elementName = new string[6];
 
             elementName[0] = "Fire";    //33
@@ -524,6 +529,9 @@ namespace DarkCloudEnhancedMod
 
             while (true)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 int currentCharacter = Player.CurrentCharacterNum();
                 
                 //Check for character animations
@@ -745,7 +753,11 @@ namespace DarkCloudEnhancedMod
                                                 }
 
                                                 DisplayMessage("Changed current attribute to " + elementName[elementSelected], 1, width, 1000);
-                                                Thread.Sleep(1100);
+
+                                                if (cancellationToken.IsCancellationRequested)
+                                                    return;
+
+                                                ThreadingHelper.Sleep(1100, cancellationToken);
                                             }
                                         }
                                     }
@@ -764,7 +776,10 @@ namespace DarkCloudEnhancedMod
                 {
                     if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1)
                     {
-                        Thread.Sleep(100);
+                        if (cancellationToken.IsCancellationRequested)
+                            return;
+
+                        ThreadingHelper.Sleep(100, cancellationToken);
                         if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1)
                         {
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Not ingame anymore! Exited from ElementThread!");
@@ -773,7 +788,10 @@ namespace DarkCloudEnhancedMod
                     }
                 }
 
-                Thread.Sleep(1);
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                ThreadingHelper.Sleep(1, cancellationToken);
             }
         }
 
@@ -1090,13 +1108,14 @@ namespace DarkCloudEnhancedMod
         {
             bool successful;
 
-            Memory.VirtualProtect(Memory.emulatorProcess.Handle, 0x201B6A0C, 8, Memory.PAGE_EXECUTE_READWRITE, out _);
-            successful = Memory.VirtualProtectEx(Memory.emulatorProcess.Handle, 0x201B6A0C, 8, Memory.PAGE_EXECUTE_READWRITE, out _);
+            IntPtr processHandle = Memory.ProcessHandle;
+            Memory.VirtualProtect(processHandle, 0x201B6A0C, 8, Memory.PAGE_EXECUTE_READWRITE, out _);
+            successful = Memory.VirtualProtectEx(processHandle, 0x201B6A0C, 8, Memory.PAGE_EXECUTE_READWRITE, out _);
             
             if (successful == false) //There was an error
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + Memory.GetLastError() + " - " + Memory.GetSystemMessage(Memory.GetLastError())); //Get the last error code and write out the message associated with it.
 
-            successful = Memory.VirtualProtectEx(Memory.emulatorProcess.Handle, 0x201B6A14, 4, Memory.PAGE_EXECUTE_READWRITE, out _);
+            successful = Memory.VirtualProtectEx(processHandle, 0x201B6A14, 4, Memory.PAGE_EXECUTE_READWRITE, out _);
 
             if (successful == false) //There was an error
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + Memory.GetLastError() + " - " + Memory.GetSystemMessage(Memory.GetLastError())); //Get the last error code and write out the message associated with it.

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using DarkCloud.Core.Session;
 
 namespace DarkCloud.Core.Tests.Session
@@ -16,9 +18,10 @@ namespace DarkCloud.Core.Tests.Session
 
         public bool ShutdownCalled { get; private set; }
 
-        public void OnStateChanged(GameSessionState oldState, GameSessionState newState, IGameSessionContext context)
+        public Task OnStateChanged(GameSessionState oldState, GameSessionState newState, IGameSessionContext context)
         {
             StateChanges.Add((oldState, newState, context));
+            return Task.CompletedTask;
         }
 
         public void OnError(Exception exception, GameSessionState state)
@@ -26,9 +29,10 @@ namespace DarkCloud.Core.Tests.Session
             Errors.Add(exception);
         }
 
-        public void OnShutdown()
+        public Task OnShutdown(CancellationToken cancellationToken = default)
         {
             ShutdownCalled = true;
+            return Task.CompletedTask;
         }
     }
 }

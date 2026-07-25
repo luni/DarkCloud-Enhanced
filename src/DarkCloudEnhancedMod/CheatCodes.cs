@@ -58,10 +58,18 @@ namespace DarkCloudEnhancedMod
             public static Thread debugThread = new Thread(new ThreadStart(DebugOptions));
             internal static void Monitor()
             {
+                Monitor(CancellationToken.None);
+            }
+
+            internal static void Monitor(CancellationToken cancellationToken)
+            {
                 InitializeBD();
                 while (1 == 1)
                 {
-                    Thread.Sleep(50);
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    ThreadingHelper.Sleep(50, cancellationToken);
                
                     if (Player.CheckDunIsPaused() == true)
                     {
@@ -115,7 +123,7 @@ namespace DarkCloudEnhancedMod
                         {
                             if (firstDebugCheatActive == true)
                             {
-                                UnlockDebugMenus();
+                                UnlockDebugMenus(cancellationToken);
                                 Memory.WriteByte(0x21CE446C, 1);
                             }
                         }
@@ -133,7 +141,13 @@ namespace DarkCloudEnhancedMod
 
                     if (Memory.ReadUShort(Addresses.buttonInputs) == (ushort)softResetList)  //If L1+L2+R1+R2+Select+Start is pressed, return to main menu
                     {
-                        Thread.Sleep(2000); //Wait two seconds
+                        if (cancellationToken.IsCancellationRequested)
+                            return;
+
+                        ThreadingHelper.Sleep(2000, cancellationToken); //Wait two seconds
+                        if (cancellationToken.IsCancellationRequested)
+                            return;
+
                         if (Memory.ReadUShort(Addresses.buttonInputs) == (ushort)softResetList)  //Check again
                         {
                             if (Player.InDungeonFloor() == true)
@@ -231,13 +245,12 @@ namespace DarkCloudEnhancedMod
                 firstDebugCheatActive = true;
             }
 
-            private static void UnlockDebugMenus()
+            private static void UnlockDebugMenus(CancellationToken cancellationToken)
             {
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Cheat: Debug Menus Unlocked");
                 Dayuppy.DisplayMessage("^BCheater!!\n Debug Menus Unlocked!\n Have fun and be careful not to crash the game!^W", 3, 50, 5500);
 
-                if (!debugThread.IsAlive)
-                    debugThread.Start();
+                ThreadingHelper.RestartThread(ref debugThread, () => DebugOptions(cancellationToken));
             }
 
             private static void UnlockFloors(byte currentDng)
@@ -285,14 +298,28 @@ namespace DarkCloudEnhancedMod
         }
         public static void DebugOptions()
         {
+            DebugOptions(CancellationToken.None);
+        }
+
+        public static void DebugOptions(CancellationToken cancellationToken)
+        {
             while (true)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 if (Memory.ReadUShort(Addresses.buttonInputs) == 512)
                     Memory.WriteUShort(Addresses.itemDebugMenu, 5);
 
                 if (Memory.ReadUShort(Addresses.buttonInputs) == 1024)
                 {
-                    Thread.Sleep(500);
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    ThreadingHelper.Sleep(500, cancellationToken);
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
                     if (Memory.ReadUShort(Addresses.buttonInputs) == 1024)
                     {
                         if (Memory.ReadByte(Addresses.dungeonDebugMenu) != 220)
@@ -301,7 +328,7 @@ namespace DarkCloudEnhancedMod
                         }
                     }
                 }
-                Thread.Sleep(50);
+                ThreadingHelper.Sleep(50, cancellationToken);
             }         
         }
 

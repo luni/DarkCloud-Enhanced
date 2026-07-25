@@ -11,16 +11,47 @@ namespace DarkCloudEnhancedMod
     /// </summary>
     internal sealed class ModWindowGameMemoryProvider : IGameMemoryProvider
     {
+        private int _lastProcessId;
+
         public IGameMemory Current => LegacyProcessGameMemory.Instance;
 
         public bool TryRefresh()
         {
-            if (NeedsReinitialization())
+            bool reinitialized = NeedsReinitialization();
+            if (reinitialized)
             {
                 Memory.Initialize();
             }
 
-            return Memory.emulatorProcess != null;
+            Process process = Memory.emulatorProcess;
+            if (process == null)
+            {
+                _lastProcessId = 0;
+                return false;
+            }
+
+            int currentId;
+            try
+            {
+                currentId = process.Id;
+            }
+            catch (InvalidOperationException)
+            {
+                _lastProcessId = 0;
+                return false;
+            }
+
+            // When the provider reconnects to a different emulator process,
+            // force one disconnected tick so the detector resets its ownership
+            // of the mutual-exclusion flag before claiming it on the new process.
+            if (reinitialized && _lastProcessId != 0 && currentId != _lastProcessId)
+            {
+                _lastProcessId = currentId;
+                return false;
+            }
+
+            _lastProcessId = currentId;
+            return true;
         }
 
         private static bool NeedsReinitialization()

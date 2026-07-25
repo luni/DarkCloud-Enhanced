@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 9: Decouple UI notifications
+Phase 10: Extract domain logic (pending)
 
 ## Completed
 
@@ -26,14 +26,17 @@ Phase 9: Decouple UI notifications
 - [x] Phase 6 — Add `IMemoryBackend` abstraction, `SnapshotMemoryBackend`, and `DarkCloudEnhancedMod.IntegrationTests` covering Linux synthetic and snapshot-based scenarios
 - [x] Phase 7 — Add Windows synthetic process target and `DarkCloud.Memory.Windows.IntegrationTests`
 - [x] Phase 8 — Extract session state machine
+- [x] Phase 9.1 — Introduce `IModStatusSink` and `WinFormsModStatusSink` adapter
+- [x] Phase 9.2 — Remove `ModWindow.NightlyVersionCheck` from `Memory.Initialize` and route all UI updates through `IModStatusSink`
 
 ## In progress
 
-- [ ] Phase 9 — Decouple UI notifications
+- None
 
 ## Next
 
 - Phase 10: Extract domain logic
+- Phase 11: Replace feature threads with modules
 
 ## Known blockers
 

@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace DarkCloud.Core.Session
 {
@@ -10,7 +12,7 @@ namespace DarkCloud.Core.Session
         /// <summary>
         /// Called whenever the detector reports a new state.
         /// </summary>
-        void OnStateChanged(GameSessionState oldState, GameSessionState newState, IGameSessionContext context);
+        Task OnStateChanged(GameSessionState oldState, GameSessionState newState, IGameSessionContext context);
 
         /// <summary>
         /// Called when the runner encounters an unhandled exception.
@@ -20,6 +22,6 @@ namespace DarkCloud.Core.Session
         /// <summary>
         /// Called once when the runner shuts down cleanly.
         /// </summary>
-        void OnShutdown();
+        Task OnShutdown(CancellationToken cancellationToken = default);
     }
 }

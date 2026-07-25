@@ -75,6 +75,11 @@ namespace DarkCloudEnhancedMod
         /// </summary>
         public static void WeaponListenForSynthSphere()
         {
+            WeaponListenForSynthSphere(CancellationToken.None);
+        }
+
+        public static void WeaponListenForSynthSphere(CancellationToken cancellationToken)
+        {
             int attack;
             int endurance;
             int speed;
@@ -84,8 +89,11 @@ namespace DarkCloudEnhancedMod
             int diffLevelBeforeChange;
             int hasChangedBySynth;
 
-            while (Player.CheckIsWeaponCustomizeMenu())
+            while (!cancellationToken.IsCancellationRequested && Player.CheckIsWeaponCustomizeMenu())
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 int character = Memory.ReadByte(Addresses.weaponMenuCurrentCharacterHover);
                 int weapon = Memory.ReadByte(Addresses.weaponMenuCurrentWeaponHover);
 
@@ -3301,7 +3309,10 @@ namespace DarkCloudEnhancedMod
                         break;
                 }
 
-                Thread.Sleep(64);
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                ThreadingHelper.Sleep(64, cancellationToken);
             }
         }
 
@@ -3570,13 +3581,24 @@ namespace DarkCloudEnhancedMod
         /// </summary>
         public static void RerollWeaponSpecialAttributes()
         {
+            RerollWeaponSpecialAttributes(CancellationToken.None);
+        }
+
+        public static void RerollWeaponSpecialAttributes(CancellationToken cancellationToken)
+        {
             while (true)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
                 if (MainMenuThread.userMode == true)
                 {
                     if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1)
                     {
-                        Thread.Sleep(100);
+                        if (cancellationToken.IsCancellationRequested)
+                            break;
+
+                        ThreadingHelper.Sleep(100, cancellationToken);
 
                         if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1)
                         {
@@ -3785,7 +3807,10 @@ namespace DarkCloudEnhancedMod
                     Memory.WriteByte((effect + (osmondoffset + (weaponoffset * (Items.swallow - machinegunid)))), 0);
                 }
 
-                Thread.Sleep(1000);
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
+                ThreadingHelper.Sleep(1000, cancellationToken);
             }
         }
 

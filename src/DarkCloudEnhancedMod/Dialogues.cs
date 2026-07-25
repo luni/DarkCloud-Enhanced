@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 
 namespace DarkCloudEnhancedMod
 {
@@ -2132,7 +2133,12 @@ namespace DarkCloudEnhancedMod
             }
         }
 
-        public static void FixCharacterNamesInDialogues() //replaces all mentions of Toan with correct ally, in some cases it doesn't fit well
+        public static void FixCharacterNamesInDialogues()
+        {
+            FixCharacterNamesInDialogues(CancellationToken.None);
+        }
+
+        public static void FixCharacterNamesInDialogues(CancellationToken cancellationToken) //replaces all mentions of Toan with correct ally, in some cases it doesn't fit well
         {
             byte charByte = 0;
             if (Memory.ReadInt(Addresses.chrFileLocation + 0x6) == 791752805) //Xiao
@@ -2157,29 +2163,39 @@ namespace DarkCloudEnhancedMod
             }
 
             if (charByte > 250)
-            {            
-                 storageAllDialogues = Memory.ReadByteArray(0x20645000, 200000);
-                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "started char fixing, all dialogue length: " + storageAllDialogues.Length);
-                 for (int i = 0; i < storageAllDialogues.Length; i++)
-                 {
-                     if (storageAllDialogues[i] == 250)
-                     {
-                         i++;
-                         if (storageAllDialogues[i] == 250)
-                         {
-                             i--;
-                             storageAllDialogues[i] = charByte;
-                             i++;
-                         }
-                     }
-                     else
-                     {
-                         i++;
-                     }
-                 }
-                 Memory.WriteByteArray(0x20645000, storageAllDialogues);
-                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Finished char fixing");
-                 
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                storageAllDialogues = Memory.ReadByteArray(0x20645000, 200000);
+                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "started char fixing, all dialogue length: " + storageAllDialogues.Length);
+                for (int i = 0; i < storageAllDialogues.Length; i++)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    if (storageAllDialogues[i] == 250)
+                    {
+                        i++;
+                        if (storageAllDialogues[i] == 250)
+                        {
+                            i--;
+                            storageAllDialogues[i] = charByte;
+                            i++;
+                        }
+                    }
+                    else
+                    {
+                        i++;
+                    }
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                Memory.WriteByteArray(0x20645000, storageAllDialogues);
+                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Finished char fixing");
+
             }
         }
 

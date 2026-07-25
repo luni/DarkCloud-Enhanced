@@ -1,0 +1,60 @@
+using System;
+using System.Threading;
+
+namespace DarkCloudEnhancedMod
+{
+    /// <summary>
+    /// Helpers for managing the legacy background threads used by the mod.
+    /// These utilities make threads cancellable and prevent stale threads
+    /// from blocking the creation of new ones when a session restarts.
+    /// </summary>
+    internal static class ThreadingHelper
+    {
+        /// <summary>
+        /// Sleeps up to the specified timeout, returning immediately if the
+        /// cancellation token is cancelled. This keeps background threads
+        /// responsive to shutdown while avoiding uninterruptible
+        /// <see cref="Thread.Sleep"/> calls.
+        /// </summary>
+        public static void Sleep(int millisecondsTimeout, CancellationToken cancellationToken)
+        {
+            if (millisecondsTimeout <= 0 || cancellationToken.IsCancellationRequested)
+                return;
+
+            cancellationToken.WaitHandle.WaitOne(millisecondsTimeout);
+        }
+
+        /// <summary>
+        /// Replaces a static thread field with a new thread. The old thread is
+        /// interrupted and joined with a short timeout, and the new thread is
+        /// marked as a background thread. The swap is atomic so only one new
+        /// thread is started when multiple callers race.
+        /// </summary>
+        public static void RestartThread(ref Thread field, ThreadStart start, int joinTimeoutMs = 100)
+        {
+            Thread oldThread = Interlocked.Exchange(ref field, null);
+            if (oldThread != null && oldThread.IsAlive)
+            {
+                try
+                {
+                    oldThread.Interrupt();
+                }
+                catch (ThreadStateException)
+                {
+                }
+
+                oldThread.Join(joinTimeoutMs);
+            }
+
+            Thread newThread = new Thread(start) { IsBackground = true };
+            Thread existing = Interlocked.CompareExchange(ref field, newThread, null);
+            if (existing != null)
+            {
+                // Another caller already installed a new thread for this field.
+                return;
+            }
+
+            newThread.Start();
+        }
+    }
+}
