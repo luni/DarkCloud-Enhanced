@@ -5,7 +5,7 @@ using System.Text;
 
 // Stand-alone smoke test for the Linux/Flatpak PCSX2 memory path.
 // Build with:
-//   mcs /out:SmokeTest.exe /r:../../Dark Cloud Improved Version/bin/Release/Dark Cloud Enhanced Mod.exe SmokeTest.cs
+//   mcs /out:SmokeTest.exe /r:../../src/DarkCloudEnhancedMod/bin/Release/DarkCloudEnhancedMod.exe SmokeTest.cs
 // Then:
 //   ./SmokeTest.exe
 class SmokeTest
@@ -54,9 +54,9 @@ class SmokeTest
 
         Console.WriteLine("Fake pid={0} expected EEmem=0x{1:X}", pid, expectedEEmem);
 
-        string asmPath = args.Length > 0 ? args[0] : "../../Dark Cloud Improved Version/bin/Release/Dark Cloud Enhanced Mod.exe";
+        string asmPath = args.Length > 0 ? args[0] : "../../src/DarkCloudEnhancedMod/bin/Release/DarkCloudEnhancedMod.exe";
         var asm = Assembly.LoadFrom(asmPath);
-        var platform = asm.GetType("Dark_Cloud_Improved_Version.Platform");
+        var platform = asm.GetType("DarkCloudEnhancedMod.Platform");
         var getEEMem = platform.GetMethod("GetEEMem", BindingFlags.NonPublic | BindingFlags.Static);
         long eemem = (long)getEEMem.Invoke(null, new object[] { new IntPtr(pid), pid });
         Console.WriteLine("Platform.GetEEMem returned: 0x{0:X}", eemem);

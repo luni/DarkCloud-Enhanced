@@ -101,8 +101,8 @@ def translate_addr_field(original):
     return fmt8((a & 0xF0000000) | (pal_cached & 0x0FFFFFFF))
 
 # ---------- main translation ----------
-input_path=os.path.join(REPO, 'Dark Cloud Improved Version/Resources/PNACH/A5C05C78.pnach')
-output_path=os.path.join(REPO, 'Dark Cloud Improved Version/Resources/PNACH/SCES-50295_0BAA8DD8.pnach')
+input_path=os.path.join(REPO, 'src/DarkCloudEnhancedMod/Resources/PNACH/A5C05C78.pnach')
+output_path=os.path.join(REPO, 'src/DarkCloudEnhancedMod/Resources/PNACH/SCES-50295_0BAA8DD8.pnach')
 
 out_lines=['gametitle=Dark Cloud (PAL-M5) (SCES-50295) 0BAA8DD8\n']
 

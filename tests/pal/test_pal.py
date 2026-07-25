@@ -12,9 +12,9 @@ import sys
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 PAL_MAP = os.path.join(SCRIPT_DIR, 'pal_address_map.json')
-REGION_CS = os.path.join(REPO, 'Dark Cloud Improved Version', 'RegionAddresses.cs')
-NTSC_PNACH = os.path.join(REPO, 'Dark Cloud Improved Version', 'Resources', 'PNACH', 'A5C05C78.pnach')
-PAL_PNACH = os.path.join(REPO, 'Dark Cloud Improved Version', 'Resources', 'PNACH', 'SCES-50295_0BAA8DD8.pnach')
+REGION_CS = os.path.join(REPO, 'src', 'DarkCloudEnhancedMod', 'RegionAddresses.cs')
+NTSC_PNACH = os.path.join(REPO, 'src', 'DarkCloudEnhancedMod', 'Resources', 'PNACH', 'A5C05C78.pnach')
+PAL_PNACH = os.path.join(REPO, 'src', 'DarkCloudEnhancedMod', 'Resources', 'PNACH', 'SCES-50295_0BAA8DD8.pnach')
 
 
 def parse_region_addresses_arrays(path):

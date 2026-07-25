@@ -24,12 +24,12 @@ from collections import defaultdict
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO = os.environ.get('REPO', os.path.dirname(os.path.dirname(SCRIPT_DIR)))
 DCEX = os.environ.get('DCEX', SCRIPT_DIR)
-NTSC_PNACH = os.path.join(REPO, 'Dark Cloud Improved Version/Resources/PNACH/A5C05C78.pnach')
-PAL_PNACH = os.path.join(REPO, 'Dark Cloud Improved Version/Resources/PNACH/SCES-50295_0BAA8DD8.pnach')
+NTSC_PNACH = os.path.join(REPO, 'src/DarkCloudEnhancedMod/Resources/PNACH/A5C05C78.pnach')
+PAL_PNACH = os.path.join(REPO, 'src/DarkCloudEnhancedMod/Resources/PNACH/SCES-50295_0BAA8DD8.pnach')
 PAL_ELF = os.path.join(DCEX, 'pal.elf')
 NTSC_ELF = os.path.join(DCEX, 'ntsc.elf')
 PAL_MAP = os.path.join(DCEX, 'pal_address_map.json')
-REGION_CS = os.path.join(REPO, 'Dark Cloud Improved Version/RegionAddresses.cs')
+REGION_CS = os.path.join(REPO, 'src/DarkCloudEnhancedMod/RegionAddresses.cs')
 
 
 def parse_elf_segments(path):
