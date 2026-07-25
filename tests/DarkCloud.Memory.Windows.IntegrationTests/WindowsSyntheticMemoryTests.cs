@@ -90,6 +90,7 @@ namespace DarkCloudEnhancedMod.Windows.IntegrationTests
                     CloseHandle(handle);
                 try { fake.Kill(); } catch { }
                 fake.WaitForExit(1000);
+                fake.Dispose();
             }
         }
 
@@ -119,6 +120,7 @@ namespace DarkCloudEnhancedMod.Windows.IntegrationTests
             {
                 try { fake.Kill(); } catch { }
                 fake.WaitForExit(1000);
+                fake.Dispose();
             }
         }
 
