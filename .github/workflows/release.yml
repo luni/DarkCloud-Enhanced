@@ -27,8 +27,8 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: Build solution
-        run: msbuild -restore "DarkCloud-Enhanced.sln" /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+      - name: Restore and build solution
+        run: msbuild -restore "DarkCloud-Enhanced.sln" /p:Configuration=Release /p:Platform=x64 /p:RestoreLockedMode=true /verbosity:minimal
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -57,14 +57,26 @@ jobs:
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mono-runtime mono-mcs gcc python3 libgdiplus
 
+      - name: Restore dependencies (locked)
+        run: dotnet restore "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" --locked-mode
+
       - name: Build C# project
-        run: dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release
+        run: dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release --no-restore
 
       - name: Run PAL port CI tests
-        run: python3 tests/pal/test_pal.py
+        run: |
+          mkdir -p test-results
+          python3 tests/pal/test_pal.py 2>&1 | tee test-results/pal-test.log
 
       - name: Run Linux memory smoke test
-        run: tests/linux_smoke/run.sh
+        run: tests/linux_smoke/run.sh 2>&1 | tee test-results/linux-smoke.log
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
 
       - name: Upload Linux build artifacts
         uses: actions/upload-artifact@v4
