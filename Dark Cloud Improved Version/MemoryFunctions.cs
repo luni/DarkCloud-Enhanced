@@ -126,6 +126,7 @@ namespace Dark_Cloud_Improved_Version
                 if (CheckEEMemAddress > 0x0) {
                     EEMemAddress = CheckEEMemAddress;
                     EEMemOffset = CheckEEMemOffset;
+                    RegionAddresses.DetectRegion();
                     ModWindow.NightlyVersionCheck();
                 }
             }
@@ -158,6 +159,7 @@ namespace Dark_Cloud_Improved_Version
 
         internal static byte[] ReadByteArray(long address, long numBytes)  //Read byte array from address + EEMem_Offset
         {
+            address = RegionAddresses.Translate(address);
             byte[] dataBuffer = new byte[numBytes];
             ReadProcessMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out _); //_ seems to act as NULL, we don't need numOfBytesRead
             return dataBuffer;
@@ -214,6 +216,7 @@ namespace Dark_Cloud_Improved_Version
         internal static string ReadString(long address, long length)
         {
             // http://stackoverflow.com/questions/1003275/how-to-convert-byte-to-string
+            address = RegionAddresses.Translate(address);
             byte[] dataBuffer = new byte[length];
             ReadProcessMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, length, out _);
             return Encoding.GetEncoding(10000).GetString(dataBuffer);
@@ -222,18 +225,28 @@ namespace Dark_Cloud_Improved_Version
         internal static bool WriteString(long address, string stringToWrite) //Untested
         {
             // http://stackoverflow.com/questions/16072709/converting-string-to-byte-array-in-c-sharp
+            address = RegionAddresses.Translate(address);
             byte[] dataBuffer = Encoding.GetEncoding(10000).GetBytes(stringToWrite); //Western European (Mac) Encoding Table
             return WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out _);
         }
 
-        internal static bool Write(long address, byte[] value) => WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, value, value.LongLength, out _);
+        internal static bool Write(long address, byte[] value)
+        {
+            address = RegionAddresses.Translate(address);
+            return WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, value, value.LongLength, out _);
+        }
 
-        internal static bool WriteOneByte(long address, byte[] value) => WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, value, sizeof(byte), out _);
+        internal static bool WriteOneByte(long address, byte[] value)
+        {
+            address = RegionAddresses.Translate(address);
+            return WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, value, sizeof(byte), out _);
+        }
 
         internal static bool WriteByte(long address, byte value) => WriteOneByte(address, BitConverter.GetBytes(value));
 
         internal static void WriteByteArray(long address, byte[] byteArray)  //Write byte array at address + EEMem_Offset
         {
+            address = RegionAddresses.Translate(address);
             bool successful = WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, byteArray, byteArray.LongLength, out _);
 
             if (!successful)

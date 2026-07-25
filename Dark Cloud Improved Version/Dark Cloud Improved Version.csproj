@@ -90,6 +90,7 @@
     <Compile Include="Patcher.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="MemoryFunctions.cs" />
+    <Compile Include="RegionAddresses.cs" />
     <Compile Include="ModWindow.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -129,6 +130,9 @@
     <EmbeddedResource Include="Resources\RubyMemeFix\Wind" />
     <EmbeddedResource Include="Resources\Font\DarkCloud_Speech-Thin.ttf" />
     <EmbeddedResource Include="Resources\PNACH\A5C05C78.pnach">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\PNACH\SCES-50295_0BAA8DD8.pnach">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>

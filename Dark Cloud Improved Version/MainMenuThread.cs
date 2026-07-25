@@ -34,7 +34,9 @@ namespace Dark_Cloud_Improved_Version
             {
                 if (Memory.emulatorProcess != null)
                 {
-                    Memory.WriteByte(0x21F10024, 0); //mod's flag for PNACH
+                    RegionAddresses.DetectRegion();
+                    if (RegionAddresses.RegionDetected)
+                        Memory.WriteByte(0x21F10024, 0); //mod's flag for PNACH
                 }
                 if (PID == 0)
                 {
