@@ -32,7 +32,7 @@ namespace DarkCloudEnhancedMod
         [STAThread]
         private static void Main()
         {
-            string appDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string appDir = AppDomain.CurrentDomain.BaseDirectory;
             AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
             {
                 string simpleName = new AssemblyName(args.Name).Name;
