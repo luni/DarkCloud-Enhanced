@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 0: Establish the baseline
+Phase 1.1: Separate CI and release workflows
 
 ## Completed
 
@@ -12,17 +12,15 @@ Phase 0: Establish the baseline
 - [x] Dependency map, call-site inventories, and WinForms coupling inventory produced
 - [x] Existing validation commands executed and results recorded
 - [x] First memory-abstraction pull request proposed
+- [x] Phase 1.1 — Split `.github/workflows/build-and-release.yml` into `ci.yml` and `release.yml`
 
 ## In progress
 
-- [ ] Phase 0 review and approval
+- [ ] Phase 1.2 — Add NuGet lock files, locked restore, and reproducibility checks
 
 ## Next
 
-- Phase 1: Harden continuous integration
-  - Separate CI and release workflows
-  - Add concurrency, lock files, and test artifacts
-  - Add CodeQL, dependency review, and Dependabot
+- Phase 1.3 — Add CodeQL, dependency review, and Dependabot
 - Phase 2: Introduce memory abstractions
   - Create `DarkCloud.Memory.Abstractions`
   - Implement `InMemoryGameMemory`

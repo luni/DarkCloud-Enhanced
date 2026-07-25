@@ -1,0 +1,76 @@
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (Windows)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      actions: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build solution
+        run: msbuild -restore "DarkCloud-Enhanced.sln" /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: DarkCloud-Enhanced-Mod-Windows
+          path: "src/DarkCloudEnhancedMod/bin/Release"
+
+  build-linux:
+    name: Build and Test (Linux)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install Mono and runtime tools
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mono-runtime mono-mcs gcc python3 libgdiplus
+
+      - name: Build C# project
+        run: dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release
+
+      - name: Run PAL port CI tests
+        run: python3 tests/pal/test_pal.py
+
+      - name: Run Linux memory smoke test
+        run: tests/linux_smoke/run.sh
+
+      - name: Upload Linux build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: DarkCloud-Enhanced-Mod-Linux
+          path: "src/DarkCloudEnhancedMod/bin/Release"

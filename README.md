@@ -1,6 +1,6 @@
 # Dark Cloud Enhanced Mod
 
-[![Build and Release](https://img.shields.io/github/actions/workflow/status/Gundorada-Workshop/DarkCloud-Enhanced/build-and-release.yml?branch=main&label=build)](https://github.com/Gundorada-Workshop/DarkCloud-Enhanced/actions/workflows/build-and-release.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/Gundorada-Workshop/DarkCloud-Enhanced/ci.yml?branch=main&label=build)](https://github.com/Gundorada-Workshop/DarkCloud-Enhanced/actions/workflows/ci.yml)
 
 Enhanced Mod is a fan-made community project that brings new features and QoL changes to Dark Cloud. It runs as an external executable alongside [PCSX2](https://pcsx2.net/).
 
@@ -104,10 +104,12 @@ cd tests/linux_smoke
 
 ## Continuous Integration
 
-The GitHub Actions workflow (`.github/workflows/build-and-release.yml`) runs:
+The GitHub Actions workflow `.github/workflows/ci.yml` runs on every push and pull request:
 
-- **Windows:** MSBuild Release/x64 build, artifact upload, and release zip creation for version tags.
+- **Windows:** MSBuild Release/x64 build and artifact upload.
 - **Linux:** .NET SDK Release build, `mono --aot` verification, `python3 tests/pal/test_pal.py`, and `tests/linux_smoke/run.sh`.
+
+`.github/workflows/release.yml` runs on `v*` tags and creates the release zips from the build artifacts.
 
 ## License and legal
 
