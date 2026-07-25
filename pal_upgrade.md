@@ -12,12 +12,14 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - Wired `Memory` read/write methods and `MainMenuThread` to detect region and translate addresses on the fly.
 - Added the new pnach and `RegionAddresses.cs` to `.csproj`.
 - Migrated the public changelog PDF to `CHANGELOG.md` and updated `README.md`.
-- Started Linux compatibility work with a new `Platform.cs` abstraction (`process_vm`/`-proc/pid/mem` fallback, `SIGSTOP`/`SIGCONT`, heuristic `GetEEMem` from `/proc/<pid>/maps`).
+- Added Linux compatibility with a new `Platform.cs` abstraction (`/proc/<pid>/mem`, `SIGSTOP`/`SIGCONT`, heuristic `GetEEMem` from `/proc/<pid>/maps`).
+- Added a GitHub Actions CI/CD workflow that builds on Windows and automatically creates a GitHub Release + ZIP when a `v*` tag is pushed.
 - Still needs a build/test run to verify.
 
 ## New scope added
 - Migrate the public-release `Full_Change_Log_Public_Release_v1.00.pdf` to `CHANGELOG.md` and update `README.md` to reference it.
 - Make the mod Linux-compatible: replace Windows-only P/Invokes (`ReadProcessMemory`, `WriteProcessMemory`, `VirtualProtectEx`, `DebugActiveProcess`, `pcsx2_offsetreader.dll`) with cross-platform equivalents, and provide a Linux `GetEEMem` implementation.
+- Add GitHub Actions CI/CD + automated release on version tags.
 
 ## Files available for comparison
 - NTSC-U: `/home/calvin/Dark Cloud (USA).chd`
@@ -75,6 +77,11 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - Process lookup made case-insensitive so `PCSX2`/`pcsx2-qt` are found on Linux.
 - Build and smoke-test on Linux with Mono (`msbuild`) or modern .NET if the project is converted to SDK-style.
 
+### 10. CI/CD and automated releases
+- Add a GitHub Actions workflow (`.github/workflows/build-and-release.yml`) that builds the solution on Windows with MSBuild.
+- Run the workflow on every push/PR and create a GitHub Release + upload a ZIP when a `v*` tag is pushed.
+- Keep a Linux/Mono build job optional/future.
+
 ## Files to Modify
 - `Resources/PNACH/A5C05C78.pnach` (source for translation)
 - `Resources/PNACH/<PAL>.pnach` (new)
@@ -86,6 +93,7 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - `README.md`
 - `CHANGELOG.md` (new, converted from PDF)
 - `Dark Cloud Improved Version/Platform.cs` (Linux P/Invokes and `GetEEMem`)
+- `.github/workflows/build-and-release.yml` (CI/CD and automated releases)
 
 ## Verification Checklist
 - [x] `readelf` segment diff between NTSC/PAL ELFs produces a clear delta/translation table.
@@ -95,6 +103,7 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - [ ] `0x21F10020` / `0x21F10024` handshake works in PAL.
 - [ ] NTSC build still passes basic smoke test.
 - [ ] Linux build/run path works on Mono / modern .NET (process memory reads, `EEmem` discovery, suspend/resume).
+- [ ] GitHub Actions workflow passes on Windows and creates a release ZIP for `v*` tags.
 
 ## Generated/Modified files
 - `Dark Cloud Improved Version/RegionAddresses.cs`
@@ -106,6 +115,7 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - `Dark Cloud Improved Version/Resources/PNACH/A5C05C78.pnach` (source, not modified)
 - `CHANGELOG.md` (converted from PDF)
 - `README.md` (PAL + changelog link updates)
+- `.github/workflows/build-and-release.yml`
 - `/home/calvin/dc_extract/` (temporary ELF/symbol mapping artifacts)
 
 ## Risks / Considerations

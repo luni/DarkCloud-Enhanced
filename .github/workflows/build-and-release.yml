@@ -1,0 +1,62 @@
+name: Build and Release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    name: Build (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore "Dark Cloud Improved Version.sln"
+
+      - name: Build solution
+        run: msbuild "Dark Cloud Improved Version.sln" /p:Configuration=Release /p:Platform="Any CPU" /verbosity:minimal
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: DarkCloud-Enhanced-Mod-Release
+          path: "Dark Cloud Improved Version/bin/Release"
+
+      - name: Package release zip
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $zipName = "DarkCloud-Enhanced-Mod-$tag.zip"
+          Push-Location "Dark Cloud Improved Version/bin/Release"
+          Compress-Archive -Path * -DestinationPath (Join-Path $Env:GITHUB_WORKSPACE $zipName) -Force
+          Pop-Location
+          Write-Output "Created $zipName"
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: DarkCloud-Enhanced-Mod-${{ github.ref_name }}.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,5 +1,7 @@
 # Dark Cloud Enhanced Mod
 
+[![Build and Release](https://img.shields.io/github/actions/workflow/status/Gundorada-Workshop/DarkCloud-Enhanced/build-and-release.yml?branch=main&label=build)](https://github.com/Gundorada-Workshop/DarkCloud-Enhanced/actions/workflows/build-and-release.yml)
+
 Enhanced Mod is a fan-made community project, which brings new features and QoL changes for Dark Cloud. Enhanced Mod performs as an external executable program, which you run alongside PCSX2 emulator.
 
 To know the full details and changes of the mod, read the [CHANGELOG.md](CHANGELOG.md) (converted from the original release PDF).
