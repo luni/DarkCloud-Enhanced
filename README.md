@@ -4,7 +4,7 @@
 
 Enhanced Mod is a fan-made community project, which brings new features and QoL changes for Dark Cloud. Enhanced Mod performs as an external executable program, which you run alongside PCSX2 emulator.
 
-To know the full details and changes of the mod, read the [CHANGELOG.md](CHANGELOG.md) (converted from the original release PDF).
+To know the full details and changes of the mod, read the [CHANGELOG.md](CHANGELOG.md). For the v1.00 feature list, see [FEATURES.md](FEATURES.md).
 
 You can download the mod as zip folder from our [Releases](https://github.com/Gundorada-Workshop/DarkCloud-Enhanced/releases), it contains the installation instructions. ***To run Enhanced Mod, you need PCSX2 Emulator (either v1.60 or v1.7+) and a copy of Dark Cloud (NTSC-U or PAL).***
 
