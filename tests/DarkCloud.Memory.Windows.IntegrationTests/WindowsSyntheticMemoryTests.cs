@@ -14,11 +14,10 @@ namespace DarkCloudEnhancedMod.Windows.IntegrationTests
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr hObject);
 
-        [Fact]
+        [SkippableFact]
         public async Task Platform_ReadMemory_FakeProcess_ReadsMarkers()
         {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-                return;
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Win32NT, "Windows only");
 
             Platform.Backend = new ProcessMemoryBackend();
 
@@ -94,11 +93,10 @@ namespace DarkCloudEnhancedMod.Windows.IntegrationTests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public void Memory_GetProcess_FindsFakeProcessByName()
         {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-                return;
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Win32NT, "Windows only");
 
             string fakeExe = BuildFakeProcess();
             var fake = StartFakeProcess(fakeExe);
@@ -124,11 +122,10 @@ namespace DarkCloudEnhancedMod.Windows.IntegrationTests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public void Platform_ReadMemory_InvalidHandle_ReturnsFalse()
         {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-                return;
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Win32NT, "Windows only");
 
             Platform.Backend = new ProcessMemoryBackend();
 

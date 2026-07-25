@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -71,7 +71,7 @@ namespace DarkCloudEnhancedMod
             IntPtr messageBuffer = IntPtr.Zero;
 
             _ = FormatMessageWin(
-                (uint) WinAPIFlags.SystemMessageOptions.All,
+                (uint)WinAPIFlags.SystemMessageOptions.All,
                 IntPtr.Zero,
                 errorCode,
                 0,
@@ -87,17 +87,20 @@ namespace DarkCloudEnhancedMod
         {
             emulatorProcess = GetProcess(emulatorName);
 
-            if (emulatorProcess != null) {
+            if (emulatorProcess != null)
+            {
                 CheckEEMemAddress = Platform.GetEEMem(ProcessHandle, emulatorProcess.Id);
                 CheckEEMemOffset = CheckEEMemAddress - 0x20000000;
 
-                switch (emulatorProcess.ProcessName) {
+                switch (emulatorProcess.ProcessName)
+                {
                     case "pcsx2":
                         EEMemOffset = 0x00000000;
                         break;
                 }
 
-                if (CheckEEMemAddress > 0x0) {
+                if (CheckEEMemAddress > 0x0)
+                {
                     EEMemAddress = CheckEEMemAddress;
                     EEMemOffset = CheckEEMemOffset;
                     RegionAddresses.DetectRegion();
@@ -195,10 +198,10 @@ namespace DarkCloudEnhancedMod
         {
             if (Platform.IsLinux)
                 return new IntPtr(processId);
-            return OpenProcess((uint) WinAPIFlags.ProcessModes.All, false, processId);
+            return OpenProcess((uint)WinAPIFlags.ProcessModes.All, false, processId);
         }
 
-        internal const uint PAGE_EXECUTE_READWRITE = (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite;
+        internal const uint PAGE_EXECUTE_READWRITE = (uint)WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite;
 
         public static bool VirtualProtect(IntPtr processH, long address, long size, uint newProtect, out uint oldProtect)
             => Platform.ProtectMemory(processH, address, size, newProtect, out oldProtect);
@@ -346,11 +349,12 @@ namespace DarkCloudEnhancedMod
             byte[] stringBuffer = new byte[searchString.LongCount()];
             List<long> resultsList = new List<long>();
 
-            Platform.ProtectMemory(ProcessHandle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
+            Platform.ProtectMemory(ProcessHandle, startOffset, stopOffset - startOffset, (uint)WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchString + ". This may take awhile.");
 
-            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++) {
+            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++)
+            {
                 if (ReadString(currentOffset, stringBuffer.LongLength) == searchString) //If we found a match
                     resultsList.Add(currentOffset); //Add it to the list
 
@@ -363,11 +367,12 @@ namespace DarkCloudEnhancedMod
         {
             List<long> resultsList = new List<long>();
 
-            Platform.ProtectMemory(ProcessHandle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
+            Platform.ProtectMemory(ProcessHandle, startOffset, stopOffset - startOffset, (uint)WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchValue + ". This may take awhile.");
 
-            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++) {
+            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++)
+            {
                 if (ReadInt(currentOffset) == searchValue)
                     resultsList.Add(currentOffset);
             }
@@ -378,10 +383,12 @@ namespace DarkCloudEnhancedMod
         {
             List<long> resultsList = new List<long>();
 
-            Platform.ProtectMemory(ProcessHandle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _);
+            Platform.ProtectMemory(ProcessHandle, startOffset, stopOffset - startOffset, (uint)WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _);
 
-            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++) {
-                if (ReadByteArray(currentOffset, byteArray.LongLength).SequenceEqual(byteArray)) {
+            for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++)
+            {
+                if (ReadByteArray(currentOffset, byteArray.LongLength).SequenceEqual(byteArray))
+                {
                     resultsList.Add(currentOffset);
                 }
 

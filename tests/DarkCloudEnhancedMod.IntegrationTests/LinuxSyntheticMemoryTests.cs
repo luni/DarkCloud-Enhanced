@@ -11,11 +11,10 @@ namespace DarkCloudEnhancedMod.IntegrationTests
 {
     public class LinuxSyntheticMemoryTests
     {
-        [Fact]
+        [SkippableFact]
         public async Task Platform_GetEEMem_FakePcsx2_ResolvesEEmem()
         {
-            if (!Platform.IsLinux)
-                return;
+            Skip.IfNot(Platform.IsLinux, "Linux only");
 
             // Ensure the real process backend is active; snapshot tests may have replaced it.
             Platform.Backend = new ProcessMemoryBackend();
@@ -89,6 +88,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             {
                 try { fake.Kill(); } catch { }
                 fake.WaitForExit(1000);
+                fake.Dispose();
             }
         }
 
@@ -103,15 +103,17 @@ namespace DarkCloudEnhancedMod.IntegrationTests
 
             if (!File.Exists(fakeExe) || File.GetLastWriteTimeUtc(fakeC) > File.GetLastWriteTimeUtc(fakeExe))
             {
-                var gcc = Process.Start(new ProcessStartInfo("gcc", $"-fPIC -fPIE -pie -Wl,-E -o \"{fakeExe}\" \"{fakeC}\"")
+                using (var gcc = Process.Start(new ProcessStartInfo("gcc", $"-fPIC -fPIE -pie -Wl,-E -o \"{fakeExe}\" \"{fakeC}\"")
                 {
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true
-                });
-                gcc.WaitForExit();
-                string gccErrors = gcc.StandardError.ReadToEnd();
-                Assert.True(gcc.ExitCode == 0, $"Failed to build fake_pcsx2. GCC output: {gccErrors}");
+                }))
+                {
+                    gcc.WaitForExit();
+                    string gccErrors = gcc.StandardError.ReadToEnd();
+                    Assert.True(gcc.ExitCode == 0, $"Failed to build fake_pcsx2. GCC output: {gccErrors}");
+                }
             }
 
             return fakeExe;

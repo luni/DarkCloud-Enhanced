@@ -43,12 +43,6 @@ Install the .NET 8 SDK (or newer), the Mono runtime, `gcc`, and `python3`, then 
 dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release
 ```
 
-You can also ahead-of-time compile the assembly with Mono for verification:
-
-```bash
-mono --aot "src/DarkCloudEnhancedMod/bin/Release/DarkCloudEnhancedMod.exe"
-```
-
 ## Running on Linux
 
 The mod discovers the PCSX2 process by name (`pcsx2`, `pcsx2-qt`, or the Flatpak app ID `net.pcsx2.PCSX2`) and reads the `EEmem` exported symbol from the PCSX2 ELF.
@@ -107,7 +101,7 @@ cd tests/linux_smoke
 The GitHub Actions workflow `.github/workflows/ci.yml` runs on every push and pull request:
 
 - **Windows:** MSBuild Release/x64 build and artifact upload.
-- **Linux:** .NET SDK Release build, `mono --aot` verification, `python3 tests/pal/test_pal.py`, and `tests/linux_smoke/run.sh`.
+- **Linux:** .NET SDK Release build, `python3 tests/pal/test_pal.py`, and `tests/linux_smoke/run.sh`.
 
 `.github/workflows/release.yml` runs on `v*` tags and creates the release zips from the build artifacts.
 
