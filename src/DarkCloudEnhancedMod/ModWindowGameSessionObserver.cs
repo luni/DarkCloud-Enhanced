@@ -17,7 +17,6 @@ namespace DarkCloudEnhancedMod
         private readonly IClock _clock;
         private CancellationTokenSource _featureCts;
 
-        private IGameMemory _lastMemory;
         private bool _bootedAndInitialized;
         private bool _sawMenuSinceLastInGame;
         private bool _waitingForGameReset;
@@ -36,8 +35,7 @@ namespace DarkCloudEnhancedMod
 
         public async Task OnStateChanged(GameSessionState oldState, GameSessionState newState, IGameSessionContext context)
         {
-            _lastMemory = context?.Memory;
-            var memory = _lastMemory;
+            var memory = context?.Memory;
             var cancellationToken = context?.CancellationToken ?? CancellationToken.None;
 
             switch (newState)
@@ -99,17 +97,13 @@ namespace DarkCloudEnhancedMod
 
         public Task OnShutdown(CancellationToken cancellationToken = default)
         {
-            _featureCts.Cancel();
-            _featureCts.Dispose();
+            var cts = _featureCts;
+            if (cts == null)
+                return Task.CompletedTask;
 
-            try
-            {
-                GameSessionDetector.ReleaseModFlag(_lastMemory ?? LegacyProcessGameMemory.Instance);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Failed to release mod mutex: " + exception.Message);
-            }
+            _featureCts = null;
+            cts.Cancel();
+            cts.Dispose();
 
             return Task.CompletedTask;
         }
@@ -140,7 +134,7 @@ namespace DarkCloudEnhancedMod
             {
                 _waitingForGameReset = true;
 
-                if (!cancellationToken.IsCancellationRequested && _sink.PromptForGameReset())
+                if (!cancellationToken.IsCancellationRequested && await _sink.PromptForGameReset(cancellationToken))
                     WriteGameReset(memory, Addresses.townSoftReset);
 
                 return;

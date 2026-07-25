@@ -37,6 +37,7 @@ namespace DarkCloud.Core.Session
         private const int SaveStateFrameDelta = 360;
 
         private bool _hasClaimedModFlag;
+        private int _lastProcessId = -1;
         private int _previousFrameCounter;
         private bool _hasPreviousFrameCounter;
 
@@ -46,6 +47,17 @@ namespace DarkCloud.Core.Session
             {
                 ResetAllState();
                 return GameSessionState.NoEmulator;
+            }
+
+            if (memory is IProcessIdentifiableGameMemory identifiable)
+            {
+                if (_lastProcessId != -1 && _lastProcessId != identifiable.ProcessId)
+                    _hasClaimedModFlag = false;
+                _lastProcessId = identifiable.ProcessId;
+            }
+            else
+            {
+                _lastProcessId = -1;
             }
 
             if (!TryReadInt32(memory, BootMarkerAddress, out int bootMarker))
@@ -141,12 +153,21 @@ namespace DarkCloud.Core.Session
         /// <summary>
         /// Releases the mod's mutual-exclusion flag so another instance can start.
         /// </summary>
-        public static bool ReleaseModFlag(IGameMemory memory)
+        public static bool TryReleaseModFlag(IGameMemory memory)
         {
             if (memory == null)
                 return false;
 
             return TryWriteByte(memory, ModFlagAddress, 0);
+        }
+
+        void IGameSessionDetector.ReleaseModFlag(IGameMemory memory)
+        {
+            if (!_hasClaimedModFlag)
+                return;
+
+            TryReleaseModFlag(memory);
+            _hasClaimedModFlag = false;
         }
 
         private void ResetFrameTracking()
@@ -157,7 +178,10 @@ namespace DarkCloud.Core.Session
 
         private void ResetAllState()
         {
-            _hasClaimedModFlag = false;
+            // A null memory provider only means the emulator is not currently
+            // reachable; the flag in memory (if any) is still owned by this
+            // detector. Ownership is reset when the underlying process identity
+            // changes, which is detected via IProcessIdentifiableGameMemory.
             ResetFrameTracking();
         }
 

@@ -109,6 +109,10 @@ namespace DarkCloud.Core.Tests.Session
             {
                 throw new InvalidOperationException("detector failure");
             }
+
+            public void ReleaseModFlag(IGameMemory memory)
+            {
+            }
         }
     }
 }

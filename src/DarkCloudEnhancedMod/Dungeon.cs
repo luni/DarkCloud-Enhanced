@@ -52,22 +52,22 @@ namespace DarkCloudEnhancedMod
         public static Thread miniBossMessage;
         
         //Weapon threads, only 1 should run at a time
-        public static Thread boneDoorThread = new Thread(new ThreadStart(CustomEffects.BoneDoorTrigger));
-        public static Thread seventhHeavenThread = new Thread(new ThreadStart(CustomEffects.SeventhHeaven));
-        public static Thread chronicleSwordThread = new Thread(new ThreadStart(CustomEffects.ChronicleSword));
-        public static Thread evilciseThread = new Thread(new ThreadStart(CustomEffects.Evilcise));
-        public static Thread angelGearThread = new Thread(new ThreadStart(CustomEffects.AngelGear));
-        public static Thread tallHammerThread = new Thread(new ThreadStart(CustomEffects.TallHammer));
-        public static Thread infernoHammerThread = new Thread(new ThreadStart(CustomEffects.Inferno));
-        public static Thread mobiusRingThread = new Thread(new ThreadStart(CustomEffects.MobiusRing));
-        public static Thread herculesWrathThread = new Thread(new ThreadStart(CustomEffects.HerculesWrath));
-        public static Thread babelSpearThread = new Thread(new ThreadStart(CustomEffects.BabelSpear));
-        public static Thread supernovaThread = new Thread(new ThreadStart(CustomEffects.Supernova));
-        public static Thread starBreakerThread = new Thread(new ThreadStart(CustomEffects.StarBreaker));
-        public static Thread elementSwapThread = new Thread(new ThreadStart(Dayuppy.ElementSwapping)); //Create a new thread to run monitorElementSwapping()
+        public static Thread boneDoorThread = new Thread(() => CustomEffects.BoneDoorTrigger(CancellationToken.None)) { IsBackground = true };
+        public static Thread seventhHeavenThread = new Thread(() => CustomEffects.SeventhHeaven(CancellationToken.None)) { IsBackground = true };
+        public static Thread chronicleSwordThread = new Thread(() => CustomEffects.ChronicleSword(CancellationToken.None)) { IsBackground = true };
+        public static Thread evilciseThread = new Thread(() => CustomEffects.Evilcise(CancellationToken.None)) { IsBackground = true };
+        public static Thread angelGearThread = new Thread(() => CustomEffects.AngelGear(CancellationToken.None)) { IsBackground = true };
+        public static Thread tallHammerThread = new Thread(() => CustomEffects.TallHammer(CancellationToken.None)) { IsBackground = true };
+        public static Thread infernoHammerThread = new Thread(() => CustomEffects.Inferno(CancellationToken.None)) { IsBackground = true };
+        public static Thread mobiusRingThread = new Thread(() => CustomEffects.MobiusRing(CancellationToken.None)) { IsBackground = true };
+        public static Thread herculesWrathThread = new Thread(() => CustomEffects.HerculesWrath(CancellationToken.None)) { IsBackground = true };
+        public static Thread babelSpearThread = new Thread(() => CustomEffects.BabelSpear(CancellationToken.None)) { IsBackground = true };
+        public static Thread supernovaThread = new Thread(() => CustomEffects.Supernova(CancellationToken.None)) { IsBackground = true };
+        public static Thread starBreakerThread = new Thread(() => CustomEffects.StarBreaker(CancellationToken.None)) { IsBackground = true };
+        public static Thread elementSwapThread = new Thread(() => Dayuppy.ElementSwapping(CancellationToken.None)) { IsBackground = true }; //Create a new thread to run monitorElementSwapping()
         public static Thread dunEscapeConfirmThread;
 
-        public static Thread cheatCodeThread = new Thread(new ThreadStart(CheatCodes.InputBuffer.Monitor));
+        public static Thread cheatCodeThread = new Thread(() => CheatCodes.InputBuffer.Monitor(CancellationToken.None)) { IsBackground = true };
         public static void InsideDungeonThread()
         {
             InsideDungeonThread(CancellationToken.None);
@@ -108,7 +108,7 @@ namespace DarkCloudEnhancedMod
 
                                         if (!boneDoorThread.IsAlive)
                                         {
-                                            boneDoorThread = new Thread(new ThreadStart(CustomEffects.BoneDoorTrigger));
+                                            boneDoorThread = new Thread(() => CustomEffects.BoneDoorTrigger(cancellationToken)) { IsBackground = true };
                                             boneDoorThread.Start();
                                         }
                                         break;
@@ -117,7 +117,7 @@ namespace DarkCloudEnhancedMod
 
                                         if (!seventhHeavenThread.IsAlive)
                                         {
-                                            seventhHeavenThread = new Thread(new ThreadStart(CustomEffects.SeventhHeaven));
+                                            seventhHeavenThread = new Thread(() => CustomEffects.SeventhHeaven(cancellationToken)) { IsBackground = true };
                                             seventhHeavenThread.Start();
                                         }
                                         break;
@@ -126,7 +126,7 @@ namespace DarkCloudEnhancedMod
 
                                         if (!chronicleSwordThread.IsAlive)
                                         {
-                                            chronicleSwordThread = new Thread(new ThreadStart(CustomEffects.ChronicleSword));
+                                            chronicleSwordThread = new Thread(() => CustomEffects.ChronicleSword(cancellationToken)) { IsBackground = true };
                                             chronicleSwordThread.Start();
                                         }
                                         break;
@@ -147,7 +147,7 @@ namespace DarkCloudEnhancedMod
                                     case Items.angelgear:
                                         if (!angelGearThread.IsAlive)
                                         {
-                                            angelGearThread = new Thread(new ThreadStart(CustomEffects.AngelGear));
+                                            angelGearThread = new Thread(() => CustomEffects.AngelGear(cancellationToken)) { IsBackground = true };
                                             angelGearThread.Start();
                                         }
                                         break;
@@ -164,14 +164,14 @@ namespace DarkCloudEnhancedMod
                                     case Items.tallhammer:
                                         if (!tallHammerThread.IsAlive)
                                         {
-                                            tallHammerThread = new Thread(new ThreadStart(CustomEffects.TallHammer));
+                                            tallHammerThread = new Thread(() => CustomEffects.TallHammer(cancellationToken)) { IsBackground = true };
                                             tallHammerThread.Start();
                                         }
                                         break;
                                     case Items.inferno:
                                         if (!infernoHammerThread.IsAlive)
                                         {
-                                            infernoHammerThread = new Thread(new ThreadStart(CustomEffects.Inferno));
+                                            infernoHammerThread = new Thread(() => CustomEffects.Inferno(cancellationToken)) { IsBackground = true };
                                             infernoHammerThread.Start();
                                         }
                                         break;
@@ -192,7 +192,7 @@ namespace DarkCloudEnhancedMod
 
                                         if (!mobiusRingThread.IsAlive)
                                         {
-                                            mobiusRingThread = new Thread(new ThreadStart(CustomEffects.MobiusRing));
+                                            mobiusRingThread = new Thread(() => CustomEffects.MobiusRing(cancellationToken)) { IsBackground = true };
                                             mobiusRingThread.Start();
                                         }
                                         break;
@@ -219,7 +219,7 @@ namespace DarkCloudEnhancedMod
                                     case Items.herculeswrath:
                                         if (!herculesWrathThread.IsAlive)
                                         {
-                                            herculesWrathThread = new Thread(new ThreadStart(CustomEffects.HerculesWrath));
+                                            herculesWrathThread = new Thread(() => CustomEffects.HerculesWrath(cancellationToken)) { IsBackground = true };
                                             herculesWrathThread.Start();
                                         }
                                         break;
@@ -227,7 +227,7 @@ namespace DarkCloudEnhancedMod
                                     case Items.babelsspear:
                                         if (!babelSpearThread.IsAlive)
                                         {
-                                            babelSpearThread = new Thread(new ThreadStart(CustomEffects.BabelSpear));
+                                            babelSpearThread = new Thread(() => CustomEffects.BabelSpear(cancellationToken)) { IsBackground = true };
                                             babelSpearThread.Start();
                                         }
                                         break;
@@ -246,7 +246,7 @@ namespace DarkCloudEnhancedMod
                                     case Items.supernova:
                                         if (!supernovaThread.IsAlive)
                                         {
-                                            supernovaThread = new Thread(new ThreadStart(CustomEffects.Supernova));
+                                            supernovaThread = new Thread(() => CustomEffects.Supernova(cancellationToken)) { IsBackground = true };
                                             supernovaThread.Start();
                                         }
                                         break;
@@ -254,7 +254,7 @@ namespace DarkCloudEnhancedMod
                                     case Items.starbreaker:
                                         if (!starBreakerThread.IsAlive)
                                         {
-                                            starBreakerThread = new Thread(new ThreadStart(CustomEffects.StarBreaker));
+                                            starBreakerThread = new Thread(() => CustomEffects.StarBreaker(cancellationToken)) { IsBackground = true };
                                             starBreakerThread.Start();
                                         }
                                         break;
@@ -265,7 +265,7 @@ namespace DarkCloudEnhancedMod
                         }
                         
 
-                        CheckActiveItems();
+                        CheckActiveItems(cancellationToken);
                     }
 
                     //Check if player is inside the weapon customize menu
@@ -278,7 +278,7 @@ namespace DarkCloudEnhancedMod
                     //Check if the player has killed all the floor enemies
                     if (ReusableFunctions.CheckIfAllEnemiesKilled() && !hasClearMessageShown)
                     {
-                        Dayuppy.DisplayMessage("DUMMY", 0, 0, 4000, true);
+                        Dayuppy.DisplayMessage("DUMMY", 0, 0, 4000, true, cancellationToken: cancellationToken);
 
                         hasClearMessageShown = true;
                     }
@@ -482,7 +482,7 @@ namespace DarkCloudEnhancedMod
             return floors;
         }
 
-        public static void CheckEnemyKill(int currentEnemyAddress)
+        public static void CheckEnemyKill(int currentEnemyAddress, CancellationToken cancellationToken = default)
         {
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Checking quest...");
             if (monsterQuestMachoActive)
@@ -499,7 +499,7 @@ namespace DarkCloudEnhancedMod
                     if (killsleft == 0)
                     {
                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
-                        Dayuppy.DisplayMessage("You completed Macho's quest!\nWell done!", 2, 30, 4000);
+                        Dayuppy.DisplayMessage("You completed Macho's quest!\nWell done!", 2, 30, 4000, cancellationToken: cancellationToken);
                         Memory.WriteByte(0x21CE4402, 2);
                         monsterQuestMachoActive = false;
                     }
@@ -519,7 +519,7 @@ namespace DarkCloudEnhancedMod
                     if (killsleft == 0)
                     {
                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
-                        Dayuppy.DisplayMessage("You completed Gob's quest!\nWell done!", 2, 30, 4000);
+                        Dayuppy.DisplayMessage("You completed Gob's quest!\nWell done!", 2, 30, 4000, cancellationToken: cancellationToken);
                         Memory.WriteByte(0x21CE4407, 2);
                         monsterQuestGobActive = false;
                     }
@@ -539,7 +539,7 @@ namespace DarkCloudEnhancedMod
                     if (killsleft == 0)
                     {
                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
-                        Dayuppy.DisplayMessage("You completed Jake's quest!\nWell done!", 2, 30, 4000);
+                        Dayuppy.DisplayMessage("You completed Jake's quest!\nWell done!", 2, 30, 4000, cancellationToken: cancellationToken);
                         Memory.WriteByte(0x21CE440C, 2);
                         monsterQuestJakeActive = false;
                     }
@@ -559,7 +559,7 @@ namespace DarkCloudEnhancedMod
                     if (killsleft == 0)
                     {
                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
-                        Dayuppy.DisplayMessage("You completed Chief Bonka´s quest!\nWell done!", 2, 35, 4000);
+                        Dayuppy.DisplayMessage("You completed Chief Bonka´s quest!\nWell done!", 2, 35, 4000, cancellationToken: cancellationToken);
                         Memory.WriteByte(0x21CE4411, 2);
                         monsterQuestChiefActive = false;
                     }
@@ -632,7 +632,7 @@ namespace DarkCloudEnhancedMod
             if (numNormalEnemies > 3)
             {
                 //Initialize the mini boss thread
-                minibossProcess = new Thread(() => DoMinibossSpawn(currentDungeon));
+                minibossProcess = new Thread(() => DoMinibossSpawn(currentDungeon, cancellationToken)) { IsBackground = true };
 
                 //Start the next thread
                 minibossProcess.Start();
@@ -640,9 +640,9 @@ namespace DarkCloudEnhancedMod
             else Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Not enough normal enemies in floor!");
 
             chronicle2 = CustomEffects.CheckChronicle2(chronicle2);
-            CustomChests.ChestRandomizer(currentDungeon, currentFloor, chronicle2); //Randomize the chest loot
+            CustomChests.ChestRandomizer(currentDungeon, currentFloor, chronicle2, cancellationToken); //Randomize the chest loot
 
-            CheckSidequests();
+            CheckSidequests(cancellationToken);
 
             CustomEffects.chronicleNewFloor = true;
             ReusableFunctions.ClearRecentDamageAndDamageSource();
@@ -672,15 +672,15 @@ namespace DarkCloudEnhancedMod
         /// Process to start the mini boss spawn
         /// </summary>
         /// <param name="currentDungeon">The current dungeon ID</param>
-        public static void DoMinibossSpawn(byte currentDungeon)
+        public static void DoMinibossSpawn(byte currentDungeon, CancellationToken cancellationToken)
         {
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Processing mini boss...");
            
-            hasMiniBoss = MiniBoss.MiniBossSpawn(false, currentDungeon, currentFloor); 
+            hasMiniBoss = MiniBoss.MiniBossSpawn(false, currentDungeon, currentFloor, cancellationToken); 
 
             //If the mini boss spawned, start its warning message thread
             if (hasMiniBoss) { 
-                miniBossMessage = new Thread(new ThreadStart(MiniBossMessage));
+                miniBossMessage = new Thread(() => MiniBossMessage(cancellationToken)) { IsBackground = true };
                 miniBossMessage.Start();
             }
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Mini boss has rolled: " + hasMiniBoss);
@@ -691,21 +691,26 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Displays the mini boss screen message
         /// </summary>
-        public static void MiniBossMessage()
+        public static void MiniBossMessage(CancellationToken cancellationToken)
         {
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Working on the message...");
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
 
             int ms = 0;
 
             //Wait until we get control, we use the HUD display as a flag
             while (Memory.ReadByte(Addresses.hideHud) == 1 && ms < 8000)
             {
-                Thread.Sleep(100);
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                ThreadingHelper.Sleep(100, cancellationToken);
                 ms += 100;
-                continue;
             }
 
-            Dayuppy.DisplayMessage("A mysterious enemy lurks\naround. Be careful!", 2, 24, 4000);
+            Dayuppy.DisplayMessage("A mysterious enemy lurks\naround. Be careful!", 2, 24, 4000, cancellationToken: cancellationToken);
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Finished message process!");
         }
@@ -861,8 +866,11 @@ namespace DarkCloudEnhancedMod
             }
         }
 
-        public static void CheckSidequests()
+        public static void CheckSidequests(CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             if (currentDungeon == 4 && currentFloor == 6 && Memory.ReadByte(0x21CE445E) == 1)
             {
                 //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Yellow drops challenge active");
@@ -922,7 +930,7 @@ namespace DarkCloudEnhancedMod
                         {
                             if (monstersDead[i] == false)
                             {
-                                CheckEnemyKill(currentAddress);
+                                CheckEnemyKill(currentAddress, cancellationToken);
                             }
 
                             monstersDead[i] = true;
@@ -952,7 +960,7 @@ namespace DarkCloudEnhancedMod
                     if (Memory.ReadByte(0x202A3570) == 0 && (currentweaponID == 258 || currentweaponID == 257))
                     {
                         Memory.WriteInt(0x21CE205C, 0);
-                        Dayuppy.DisplayMessage("Samba's quest started!\nClear all enemies using only Dagger!\nUsing a throwable also\ncancels the mission.", 4, 40, 8000);
+                        Dayuppy.DisplayMessage("Samba's quest started!\nClear all enemies using only Dagger!\nUsing a throwable also\ncancels the mission.", 4, 40, 8000, cancellationToken: cancellationToken);
                         sambaChallengeQuestActive = true;
 
                         for (int i = 0; i < 8; i++)
@@ -962,7 +970,7 @@ namespace DarkCloudEnhancedMod
                     }
                     else if (Memory.ReadByte(0x202A3570) == 0 && currentweaponID != 258 && currentweaponID != 257)
                     {
-                        Dayuppy.DisplayMessage("Samba's quest did not start.\nRe-enter with Dagger equipped.", 2, 30, 4000);
+                        Dayuppy.DisplayMessage("Samba's quest did not start.\nRe-enter with Dagger equipped.", 2, 30, 4000, cancellationToken: cancellationToken);
                         sambaChallengeQuestActive = false;
                     }
                     sambaChallengeQuestCheck = true;
@@ -982,7 +990,7 @@ namespace DarkCloudEnhancedMod
                         return;
 
                     ThreadingHelper.Sleep(500, cancellationToken);
-                    Dayuppy.DisplayMessage("Samba's quest has been cancelled.\nRe-enter in order to activate it.", 2, 40, 4000);
+                    Dayuppy.DisplayMessage("Samba's quest has been cancelled.\nRe-enter in order to activate it.", 2, 40, 4000, cancellationToken: cancellationToken);
                     sambaChallengeQuestActive = false;
                 }
                 byte enemieskilled = 0;
@@ -1003,7 +1011,7 @@ namespace DarkCloudEnhancedMod
 
                 if (enemieskilled == 8)
                 {
-                    Dayuppy.DisplayMessage("Samba's quest completed!\nWell done!", 2, 28, 4000);
+                    Dayuppy.DisplayMessage("Samba's quest completed!\nWell done!", 2, 28, 4000, cancellationToken: cancellationToken);
                     Memory.WriteByte(0x21CE4462, 1);
                     sambaChallengeQuest = false;
                 }
@@ -1019,7 +1027,7 @@ namespace DarkCloudEnhancedMod
                     if (Memory.ReadByte(0x202A3570) == Memory.ReadByte(0x21CE446A)) //check if correct ally for quest
                     {
                         Memory.WriteInt(0x21CE205C, 0);
-                        Dayuppy.DisplayMessage("Mayor's quest started!\nClear all enemies.\nCannot change character.\nThrowables are not allowed.", 4, 26, 5000);
+                        Dayuppy.DisplayMessage("Mayor's quest started!\nClear all enemies.\nCannot change character.\nThrowables are not allowed.", 4, 26, 5000, cancellationToken: cancellationToken);
 
                         mayorQuestActive = true;
 
@@ -1030,7 +1038,7 @@ namespace DarkCloudEnhancedMod
                     }
                     else
                     {
-                        Dayuppy.DisplayMessage("Mayor's quest did not start.\nRe-enter with correct ally.", 2, 30, 4000);
+                        Dayuppy.DisplayMessage("Mayor's quest did not start.\nRe-enter with correct ally.", 2, 30, 4000, cancellationToken: cancellationToken);
                         mayorQuestActive = false;
                     }
                     mayorQuestCheck = true;
@@ -1050,7 +1058,7 @@ namespace DarkCloudEnhancedMod
                         return;
 
                     ThreadingHelper.Sleep(500, cancellationToken);
-                    Dayuppy.DisplayMessage("Mayor's quest has been cancelled.\nRe-enter in order to re-attempt it.", 2, 40, 4000);
+                    Dayuppy.DisplayMessage("Mayor's quest has been cancelled.\nRe-enter in order to re-attempt it.", 2, 40, 4000, cancellationToken: cancellationToken);
                     mayorQuestActive = false;
                 }
 
@@ -1072,7 +1080,7 @@ namespace DarkCloudEnhancedMod
 
                 if (enemieskilled == 8)
                 {
-                    Dayuppy.DisplayMessage("Mayor's quest completed!\nWell done!", 2, 28, 4000);
+                    Dayuppy.DisplayMessage("Mayor's quest completed!\nWell done!", 2, 28, 4000, cancellationToken: cancellationToken);
                     Memory.WriteByte(0x21CE4468, 2);
                     mayorQuest = false;
                 }
@@ -1100,7 +1108,7 @@ namespace DarkCloudEnhancedMod
             }
         }
 
-        public static void CheckActiveItems()
+        public static void CheckActiveItems(CancellationToken cancellationToken)
         {
             if (Memory.ReadUShort(Addresses.buttonInputs) == (ushort)CheatCodes.InputBuffer.Button.Square && (Memory.ReadByte(0x21D5676D) > 0 && Memory.ReadInt(0x21D56770) == -1) )
             {
@@ -1117,8 +1125,8 @@ namespace DarkCloudEnhancedMod
                             if (dunEscapeConfirm == false)
                             {
                                 squareActive = true;
-                                Dayuppy.DisplayMessage("^RAre you sure you want to leave?\n^WPress square to use Escape Powder.", 2, 36, 3000);
-                                dunEscapeConfirmThread = new Thread(() => DunEscapeConfirmTimer());
+                                Dayuppy.DisplayMessage("^RAre you sure you want to leave?\n^WPress square to use Escape Powder.", 2, 36, 3000, cancellationToken: cancellationToken);
+                                dunEscapeConfirmThread = new Thread(() => DunEscapeConfirmTimer(cancellationToken)) { IsBackground = true };
                                 dunEscapeConfirmThread.Start();
                                 dunEscapeConfirm = true;
                                 dunEscapeConfirmSpamCheck = false;
@@ -1187,7 +1195,7 @@ namespace DarkCloudEnhancedMod
                             if (currentWHP < currentmaxWHP)
                             {                         
                                 Memory.WriteFloat(whp, currentmaxWHP);
-                                Dayuppy.DisplayMessage("Used Repair Powder!", 1, 20, 2000);
+                                Dayuppy.DisplayMessage("Used Repair Powder!", 1, 20, 2000, cancellationToken: cancellationToken);
                                 byte currentPowders = Memory.ReadByte(0x21CDD8B2 + (0x2 * currentSlot));
                                 currentPowders--;
                                 Memory.WriteByte(0x21CDD8B2 + (0x2 * currentSlot), currentPowders);
@@ -1207,11 +1215,22 @@ namespace DarkCloudEnhancedMod
             }          
         }
 
-        public static void DunEscapeConfirmTimer()
+        public static void DunEscapeConfirmTimer(CancellationToken cancellationToken)
         {
-            Thread.Sleep(500);
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            ThreadingHelper.Sleep(500, cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             dunEscapeConfirmSpamCheck = true;
-            Thread.Sleep(2500);
+            ThreadingHelper.Sleep(2500, cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             dunEscapeConfirm = false;
         }
 

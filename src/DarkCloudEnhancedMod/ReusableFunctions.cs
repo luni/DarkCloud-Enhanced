@@ -23,13 +23,15 @@ namespace DarkCloudEnhancedMod
         /// </summary>
         /// <param name="mode">0 = Town<br></br>1 = Dungeon</param>
         /// <returns>Returns true when the game is no longer paused</returns>
-        public static bool AwaitUnpause(byte mode) {
+        public static bool AwaitUnpause(byte mode, CancellationToken cancellationToken = default) {
 
 
             while ((mode == 0) ? Player.CheckTownIsPaused() : Player.CheckDunIsPaused())
             {
-                Thread.Sleep(100);
-                continue;
+                if (cancellationToken.IsCancellationRequested)
+                    return false;
+
+                ThreadingHelper.Sleep(100, cancellationToken);
             }
             
             return true;

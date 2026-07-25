@@ -12,7 +12,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
         {
             byte[] ram = SnapshotTestHelper.CreateEmptyRam(Capacity);
             SnapshotTestHelper.UseSnapshot(ram, Region.NTSC);
-            return LegacyProcessGameMemory.Instance;
+            return new LegacyProcessGameMemory();
         }
     }
 }

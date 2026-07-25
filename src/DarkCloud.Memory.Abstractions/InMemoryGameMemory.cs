@@ -7,7 +7,7 @@ namespace DarkCloud.Memory.Abstractions
     /// byte buffer. Reads and writes are translated through a configurable base
     /// address so in-memory fixtures can mirror PS2 virtual addresses.
     /// </summary>
-    public sealed class InMemoryGameMemory : IGameMemory
+    public sealed class InMemoryGameMemory : IProcessIdentifiableGameMemory
     {
         public const long DefaultBaseAddress = 0x20000000L;
         public const int DefaultCapacity = 32 * 1024 * 1024; // 32 MB
@@ -20,17 +20,24 @@ namespace DarkCloud.Memory.Abstractions
         }
 
         public InMemoryGameMemory(long baseAddress, int capacity)
+            : this(baseAddress, capacity, 0)
+        {
+        }
+
+        public InMemoryGameMemory(long baseAddress, int capacity, int processId)
         {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be non-negative.");
 
             BaseAddress = baseAddress;
             Capacity = capacity;
+            ProcessId = processId;
             _buffer = new byte[capacity];
         }
 
         public long BaseAddress { get; }
         public int Capacity { get; }
+        public int ProcessId { get; }
 
         /// <summary>
         /// Copies the provided data into the buffer starting at <paramref name="offset"/>

@@ -16,7 +16,7 @@ namespace DarkCloudEnhancedMod
         public const int mode = Addresses.mode;                                            
 
         private static Random random = new Random();
-        public static Thread damageFadeoutThread = new Thread(new ThreadStart(DamageFadeout));
+        public static Thread damageFadeoutThread = new Thread(() => DamageFadeout(CancellationToken.None)) { IsBackground = true };
 
         /// <summary>
         /// Toggles the effect of the bone rapier
@@ -36,12 +36,15 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Trigger to open a bone door
         /// </summary>
-        public static void BoneDoorTrigger()
+        public static void BoneDoorTrigger(CancellationToken cancellationToken = default)
         {
             while (!Dungeon.doorIsOpen &&
                     Player.InDungeonFloor() &&
                     Player.Weapon.GetCurrentWeaponId() == 290)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 //Bone door opened through Bone Rapier
                 if (Memory.ReadByte(Addresses.dungDoorType) == 250 &&
                     Dungeon.IsBypassBoneDoor() &&
@@ -51,13 +54,15 @@ namespace DarkCloudEnhancedMod
 
                     while (Memory.ReadInt(Addresses.hideHud) == 1 && ms < 2000)
                     {
-                        Thread.Sleep(100);
+                        if (cancellationToken.IsCancellationRequested)
+                            return;
+
+                        ThreadingHelper.Sleep(100, cancellationToken);
                         ms += 100;
-                        continue;
                     }
 
                     //Display our custom message
-                    Dayuppy.DisplayMessage("You can hear an ominous voice\nlaughing 'Rattle me bones!'", 2, 29, 4000);
+                    Dayuppy.DisplayMessage("You can hear an ominous voice\nlaughing 'Rattle me bones!'", 2, 29, 4000, cancellationToken: cancellationToken);
                     Dungeon.doorIsOpen = true;
                 }
                 //Bone door opened normally without Bone Rapier
@@ -69,7 +74,7 @@ namespace DarkCloudEnhancedMod
                     Dungeon.doorIsOpen = true;
                 }
 
-                Thread.Sleep(500);
+                ThreadingHelper.Sleep(500, cancellationToken);
             }
         }
         
@@ -107,11 +112,14 @@ namespace DarkCloudEnhancedMod
             return acquired;
         }
 
-        public static void Evilcise() //Currently unused effect due to memes happening
+        public static void Evilcise(CancellationToken cancellationToken = default) //Currently unused effect due to memes happening
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             if (evilciseNewFloor == true)
             {
-                Thread.Sleep(500);
+                ThreadingHelper.Sleep(500, cancellationToken);
                 for (int i = 0; i < 15; i++)
                 {
                     if (Memory.ReadByte(0x21E16BC8 + (i * 0x190)) == 8) 
@@ -136,19 +144,22 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Triggers SeventhHeaven effect: Whenever an attachment is acquired, another one is given.
         /// </summary>
-        public static void SeventhHeaven()
+        public static void SeventhHeaven(CancellationToken cancellationToken = default)
         {
             while ( Player.Weapon.GetCurrentWeaponId() == Items.seventhheaven && 
                     Memory.ReadByte(Addresses.mode) == 3 && 
                     Player.CheckDunIsWalkingMode() == true)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 //Store the first empty slot
                 int slot = Player.Inventory.GetBagAttachmentsFirstAvailableSlot();
 
                 //Store the item in that slot (by default should always be empty)
                 int oldItem = Player.Inventory.GetBagAttachments()[slot];
 
-                Thread.Sleep(250);
+                ThreadingHelper.Sleep(250, cancellationToken);
 
                 //Re-check the item again in the same slot to see if a new item has been acquired
                 int newItem = Player.Inventory.GetBagAttachments()[slot];
@@ -172,7 +183,7 @@ namespace DarkCloudEnhancedMod
                             //Put a copy of the same attachment on the next available slot
                             if (Player.Inventory.GetBagAttachmentsFirstAvailableSlot() != -1) Memory.WriteByteArray(Addresses.firstBagAttachment + (attachmentOffset * Player.Inventory.GetBagAttachmentsFirstAvailableSlot()), attachmentValues);
 
-                            Dayuppy.DisplayMessage("The 7th Heaven has blessed\nyou with a gift!", 2, 27, 3500);                          
+                            Dayuppy.DisplayMessage("The 7th Heaven has blessed\nyou with a gift!", 2, 27, 3500, cancellationToken: cancellationToken);                          
                         }
                         return;
                     }
@@ -180,7 +191,7 @@ namespace DarkCloudEnhancedMod
                     //Put a copy of the same attachment on the next available slot
                     if (Player.Inventory.GetBagAttachmentsFirstAvailableSlot() != -1) Memory.WriteByteArray(Addresses.firstBagAttachment + (attachmentOffset * Player.Inventory.GetBagAttachmentsFirstAvailableSlot()), attachmentValues);
 
-                    Dayuppy.DisplayMessage("The 7th Heaven has blessed\nyou with a gift!", 2, 27, 3500);
+                    Dayuppy.DisplayMessage("The 7th Heaven has blessed\nyou with a gift!", 2, 27, 3500, cancellationToken: cancellationToken);
                 }
             }
         }
@@ -188,8 +199,11 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Triggers Chronicle effect: Attacks now hit all nearby targets for a percentage of the damage.
         /// </summary>
-        public static void ChronicleSword()
+        public static void ChronicleSword(CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             if (chronicleNewFloor == true)
             {
                 for (int i = 0; i < 7; i++ )
@@ -218,7 +232,10 @@ namespace DarkCloudEnhancedMod
                 chronicleNewFloor = false;
             }
 
-            Thread.Sleep(50);
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            ThreadingHelper.Sleep(50, cancellationToken);
 
             //Save weapon Whp
             chronicleCurrentWHP = ReusableFunctions.GetCurrentEquippedWhp(Player.CurrentCharacterNum(), Player.Toan.GetWeaponSlot());
@@ -383,7 +400,7 @@ namespace DarkCloudEnhancedMod
 
                     if (!damageFadeoutThread.IsAlive)
                     {
-                        damageFadeoutThread = new Thread(new ThreadStart(DamageFadeout));
+                        damageFadeoutThread = new Thread(() => DamageFadeout(cancellationToken)) { IsBackground = true };
                         damageFadeoutThread.Start();
                     }
                 }            
@@ -393,14 +410,26 @@ namespace DarkCloudEnhancedMod
             chronicleFormerEnemyHP = chronicleCurrentEnemyHP;
         }
 
-        public static void DamageFadeout()
+        public static void DamageFadeout(CancellationToken cancellationToken = default)
         {
-            Thread.Sleep(500);
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            ThreadingHelper.Sleep(500, cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             for (int i = 0; i < 7; i++)
             {
                 Memory.WriteInt(0x21EC8284 + (0x60 * i), 1);
             }
-            Thread.Sleep(200);
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            ThreadingHelper.Sleep(200, cancellationToken);
+
             for (int i = 0; i < 7; i++)
             {
                 Memory.WriteInt(0x21EC829C + (0x60 * i), 0);
@@ -422,7 +451,7 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Triggers Angel Gear effect: Applies the Heal regeneration effect to all allies
         /// </summary>
-        public static void AngelGear()
+        public static void AngelGear(CancellationToken cancellationToken = default)
         {
             //Initialize variables
             ushort HpValueAdd = 1;
@@ -438,6 +467,8 @@ namespace DarkCloudEnhancedMod
                     !Player.CheckDunIsPaused() &&
                     Player.CheckDunIsWalkingMode())
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
                 //Fetch HP values for characters
                 ushort ToanHp = Player.Toan.GetHp();
                 ushort ToanMaxHp = Player.Toan.GetMaxHp();
@@ -471,22 +502,25 @@ namespace DarkCloudEnhancedMod
                 if (isHealXiao && XiaoHp < XiaoMaxHp && XiaoHp > 0) Player.Xiao.SetHp((ushort)(XiaoHp + HpValueAdd));
 
                 //Wait in between additions
-                Thread.Sleep(Delay);
+                ThreadingHelper.Sleep(Delay, cancellationToken);
             }
         }
 
         /// <summary>
         /// Triggers Tall Hammer effect: Reduces enemies size on hit
         /// </summary>
-        public static void TallHammer()
+        public static void TallHammer(CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             //Offset between the enemy's dimension addresses
             int scaleOffset = MiniBoss.scaleOffset;
 
             //Save every enemy's HP on the current floor
             int[] formerEnemyHpList = ReusableFunctions.GetEnemiesHp();
 
-            Thread.Sleep(250);
+            ThreadingHelper.Sleep(250, cancellationToken);
 
             //Re-save every enemy's HP on the current floor
             int[] currentEnemyHpList = ReusableFunctions.GetEnemiesHp();
@@ -533,8 +567,11 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Triggers Inferno effect: Increase attack power depending on health and thirst
         /// </summary>
-        public static void Inferno()
+        public static void Inferno(CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             float goroMaxHP = Player.Goro.GetMaxHp();
             float goroCurrentHP = Player.Goro.GetHp();
 
@@ -571,8 +608,11 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Triggers Mobius Ring effect: Increases damage output the longer you charge an attack
         /// </summary>
-        public static void MobiusRing()
+        public static void MobiusRing(CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             //Declare inputs
             string message;
             int height;
@@ -592,10 +632,13 @@ namespace DarkCloudEnhancedMod
 
                 while (Player.Ruby.IsChargingAttack())
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
                     //Check if the game is paused during the charge
                     if (Player.CheckDunIsPaused())
                     {
-                        ReusableFunctions.AwaitUnpause(1);
+                        ReusableFunctions.AwaitUnpause(1, cancellationToken);
                     }
                     //If the damage increase reaches the set max value, stop increasing it further
                     if (damage >= ushort.MaxValue)
@@ -621,12 +664,15 @@ namespace DarkCloudEnhancedMod
                     //Keep looping until chargeGlowTimer reaches the value 17008 or the player stops charging
                     while (Memory.ReadUShort(chargeGlowTimer) < 17008 && Player.Ruby.IsChargingAttack())
                     {
+                        if (cancellationToken.IsCancellationRequested)
+                            return;
+
                         if (Player.CheckDunIsPaused())
                         {
-                            ReusableFunctions.AwaitUnpause(1);
+                            ReusableFunctions.AwaitUnpause(1, cancellationToken);
                         }
-                        Thread.Sleep(100);
-                        continue;
+
+                        ThreadingHelper.Sleep(100, cancellationToken);
                     }
 
                     //Save the value of the timer
@@ -636,18 +682,24 @@ namespace DarkCloudEnhancedMod
                     if (chargeTimer == 17008)
                     {
                         //Display current damage
-                        Dayuppy.DisplayMessage(message, height, width, sleep + 500);
+                        Dayuppy.DisplayMessage(message, height, width, sleep + 500, cancellationToken: cancellationToken);
 
-                        Thread.Sleep(sleep);
+                        if (cancellationToken.IsCancellationRequested)
+                            return;
+
+                        ThreadingHelper.Sleep(sleep, cancellationToken);
 
                         //Reset Flash
                         Memory.WriteUShort(chargeGlowTimer, 0);
                     }
 
-                    Thread.Sleep(100);
+                    ThreadingHelper.Sleep(100, cancellationToken);
                 }
 
                 //Go through the different slots that Ruby stores her attacks in memory
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 foreach (int id in OrbIds)
                 {
                     switch (id)
@@ -656,36 +708,54 @@ namespace DarkCloudEnhancedMod
                             //Check if the orb is still alive
                             while (Memory.ReadByte(RubyOrbs.Orb0.id) == 1)
                             {
+                                if (cancellationToken.IsCancellationRequested)
+                                    return;
+
                                 Memory.WriteInt(RubyOrbs.Orb0.damage, damage); //Set the damage
                             }
                             break;
                         case 1:
                             while (Memory.ReadByte(RubyOrbs.Orb1.id) == 1)
                             {
+                                if (cancellationToken.IsCancellationRequested)
+                                    return;
+
                                 Memory.WriteInt(RubyOrbs.Orb1.damage, damage);
                             }
                             break;
                         case 2:
                             while (Memory.ReadByte(RubyOrbs.Orb2.id) == 1)
                             {
+                                if (cancellationToken.IsCancellationRequested)
+                                    return;
+
                                 Memory.WriteInt(RubyOrbs.Orb2.damage, damage);
                             }
                             break;
                         case 3:
                             while (Memory.ReadByte(RubyOrbs.Orb3.id) == 1)
                             {
+                                if (cancellationToken.IsCancellationRequested)
+                                    return;
+
                                 Memory.WriteInt(RubyOrbs.Orb3.damage, damage);
                             }
                             break;
                         case 4:
                             while (Memory.ReadByte(RubyOrbs.Orb4.id) == 1)
                             {
+                                if (cancellationToken.IsCancellationRequested)
+                                    return;
+
                                 Memory.WriteInt(RubyOrbs.Orb4.damage, damage);
                             }
                             break;
                         case 5:
                             while (Memory.ReadByte(RubyOrbs.Orb5.id) == 1)
                             {
+                                if (cancellationToken.IsCancellationRequested)
+                                    return;
+
                                 Memory.WriteInt(RubyOrbs.Orb5.damage, damage);
                             }
                             break;
@@ -758,12 +828,15 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Triggers Hercules Wrath effect: Chance on getting hit to gain Stamina.
         /// </summary>
-        public static void HerculesWrath()
+        public static void HerculesWrath(CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             //Check Ungaga's HP
             ushort formerHP = Memory.ReadUShort(Player.Ungaga.hp);
 
-            Thread.Sleep(100);
+            ThreadingHelper.Sleep(100, cancellationToken);
 
             //Re-check Ungaga's HP
             ushort currentHP = Memory.ReadUShort(Player.Ungaga.hp);
@@ -785,8 +858,11 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Triggers Babel Spear effect: Chance on hit to apply stop to all enemies.
         /// </summary>
-        public static void BabelSpear()
+        public static void BabelSpear(CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             int hit = ReusableFunctions.GetRecentDamageDealtByPlayer();
 
             bool hasHit = hit > -1 && ReusableFunctions.GetDamageSourceCharacterID() == Player.UngagaId;
@@ -824,12 +900,15 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Triggers Supernova effect: Chance on hit to apply a random status
         /// </summary>
-        public static void Supernova()
+        public static void Supernova(CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             //Get a read on all the enemies hp on the current floor
             int[] formerEnemyHpList = ReusableFunctions.GetEnemiesHp();
 
-            Thread.Sleep(250);
+            ThreadingHelper.Sleep(250, cancellationToken);
 
             int hit = ReusableFunctions.GetRecentDamageDealtByPlayer();
 
@@ -1009,12 +1088,15 @@ namespace DarkCloudEnhancedMod
         /// <summary>
         /// Triggers StarBreaker effect: Chance on kill to get an empty synthsphere (Breaks down any weapon)
         /// </summary>
-        public static void StarBreaker()
+        public static void StarBreaker(CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             //Save every enemy's HP on the current floor
             int[] formerEnemiesHP = ReusableFunctions.GetEnemiesHp();
 
-            Thread.Sleep(250);
+            ThreadingHelper.Sleep(250, cancellationToken);
 
             //Re-save every enemy's HP on the current floor
             int[] currentEnemiesHP = ReusableFunctions.GetEnemiesHp();
@@ -1033,7 +1115,7 @@ namespace DarkCloudEnhancedMod
                     Player.Inventory.SetBagAttachments(Items.synthsphere);
 
                     //Display the effect message
-                    Dayuppy.DisplayMessage("The Star Breaker sent\nyou a shooting star!", 2, 21);
+                    Dayuppy.DisplayMessage("The Star Breaker sent\nyou a shooting star!", 2, 21, cancellationToken: cancellationToken);
                 }
             }
         }

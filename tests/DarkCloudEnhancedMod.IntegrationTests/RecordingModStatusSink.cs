@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using DarkCloud.Core.Session;
 
 namespace DarkCloudEnhancedMod.IntegrationTests
@@ -23,10 +25,10 @@ namespace DarkCloudEnhancedMod.IntegrationTests
         public void ReportInGame(bool isNewGame) => Record(nameof(ReportInGame), isNewGame);
         public void ReportAnotherInstanceActive() => Record(nameof(ReportAnotherInstanceActive));
 
-        public bool PromptForGameReset()
+        public Task<bool> PromptForGameReset(CancellationToken cancellationToken = default)
         {
             Record(nameof(PromptForGameReset));
-            return PromptForGameResetResult;
+            return Task.FromResult(PromptForGameResetResult);
         }
 
         public void ReportNotEnhancedModSaveFile() => Record(nameof(ReportNotEnhancedModSaveFile));

@@ -703,7 +703,7 @@ namespace DarkCloudEnhancedMod
                         if (currentAreaFrames > 5) {
                             if (!areaEnteredClockCheck) //Enables clock for areas that dont originally have it (yellow drops & dark heaven)
                             {
-                                CheckClockAdvancement(currentArea);
+                                CheckClockAdvancement(currentArea, cancellationToken);
                                 shopkeeper = false;
                                 areaEnteredClockCheck = true;
                             }
@@ -807,12 +807,12 @@ namespace DarkCloudEnhancedMod
                             currentAddress += 0x00000001;
                         }
 
-                        Thread.Sleep(350);
+                        ThreadingHelper.Sleep(350, cancellationToken);
                         if (Memory.ReadByte(0x21D2DA4C) < 61) //sometimes when teleporting from yellow drops or dark heaven, the area might turn dark. This part tries to prevent it
                         {
                             int timerCheck = 0;
                             while (Memory.ReadByte(0x21D2DA4C) < 58 && timerCheck <= 25) {
-                                Thread.Sleep(50);
+                                ThreadingHelper.Sleep(50, cancellationToken);
                                 timerCheck++;
                             }
                         }
@@ -836,7 +836,7 @@ namespace DarkCloudEnhancedMod
                     }
 
                     if (fishingActive == true) {
-                        CheckFishingQuest(currentArea); //as long as player is in fishing mode, enter this function to observe fishing
+                        CheckFishingQuest(currentArea, cancellationToken); //as long as player is in fishing mode, enter this function to observe fishing
                         if (checkFishing == 0) {
                             fishingActive = false;
                         }
@@ -883,7 +883,7 @@ namespace DarkCloudEnhancedMod
 
                 if (MainMenuThread.userMode == true) {
                     if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1) {
-                        Thread.Sleep(100);
+                        ThreadingHelper.Sleep(100, cancellationToken);
                         if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1) {
                             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Not ingame anymore! Exited from Towncharacter!");
                             break;
@@ -1194,13 +1194,13 @@ namespace DarkCloudEnhancedMod
             }
         }
 
-        public static void CheckClockAdvancement(int area)
+        public static void CheckClockAdvancement(int area, CancellationToken cancellationToken)
         {
             if (area == 23 || area == 40 || area == 38) {
                 float currentClock = Memory.ReadFloat(0x21CD4310);
 
                 Memory.WriteByte(0x21F1001C, 1);
-                Thread.Sleep(10);
+                ThreadingHelper.Sleep(10, cancellationToken);
 
                 Memory.WriteByte(0x203A3920, 0); //enable clock
                 Memory.WriteFloat(0x202A28F4, currentClock);
@@ -1209,7 +1209,7 @@ namespace DarkCloudEnhancedMod
             }
         }
 
-        public static void CheckFishingQuest(int area) //handles fishing mode, checks for caught fish and quest progress
+        public static void CheckFishingQuest(int area, CancellationToken cancellationToken) //handles fishing mode, checks for caught fish and quest progress
         {
             //this entire function could be shortened by 75% if the area check is utilized better instead of copying the whole process...
             if (area == 0) {
@@ -1232,7 +1232,7 @@ namespace DarkCloudEnhancedMod
                     }
                     if (hasMardanSword) //apply mardan sword effect
                     {
-                        Thread.Sleep(300);
+                        ThreadingHelper.Sleep(300, cancellationToken);
                         currentAddress = 0x214798E0;
                         for (int i = 0; i < 4; i++) {
                             if (fishArray[i] != 5) {
@@ -1323,7 +1323,7 @@ namespace DarkCloudEnhancedMod
                         maxFishSize = Memory.ReadByte(0x21CE4424);
                     }
                     if (hasMardanSword) {
-                        Thread.Sleep(300);
+                        ThreadingHelper.Sleep(300, cancellationToken);
                         currentAddress = 0x214D9920;
                         for (int i = 0; i < 5; i++) {
                             if (fishArray[i] != 5) {
@@ -1411,7 +1411,7 @@ namespace DarkCloudEnhancedMod
                         maxFishSize = Memory.ReadByte(0x21CE442D);
                     }
                     if (hasMardanSword) {
-                        Thread.Sleep(300);
+                        ThreadingHelper.Sleep(300, cancellationToken);
                         currentAddress = 0x20DE0720;
                         for (int i = 0; i < 5; i++) {
                             if (fishArray[i] != 5) {
@@ -1516,7 +1516,7 @@ namespace DarkCloudEnhancedMod
                         maxFishSize = Memory.ReadByte(0x21CE4437);
                     }
                     if (hasMardanSword) {
-                        Thread.Sleep(300);
+                        ThreadingHelper.Sleep(300, cancellationToken);
                         currentAddress = 0x213C3160;
                         for (int i = 0; i < 4; i++) {
                             if (fishArray[i] != 5) {

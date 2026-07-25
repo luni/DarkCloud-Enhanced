@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using DarkCloud.Core.Session;
 
 namespace DarkCloudEnhancedMod
@@ -34,7 +36,8 @@ namespace DarkCloudEnhancedMod
 
         public void ReportAnotherInstanceActive() => ModWindow.EnhancedModAlreadyOpen();
 
-        public bool PromptForGameReset() => ModWindow.PromptForGameReset();
+        public Task<bool> PromptForGameReset(CancellationToken cancellationToken = default)
+            => ModWindow.PromptForGameResetAsync(cancellationToken);
 
         public void ReportNotEnhancedModSaveFile() => ModWindow.NotEnhancedModSaveFile();
 

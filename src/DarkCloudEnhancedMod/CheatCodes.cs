@@ -86,37 +86,37 @@ namespace DarkCloudEnhancedMod
                         {
                             if (Memory.ReadByte(Player.Ultraman) == 0)
                             {
-                                toggleGodMode(true);
+                                toggleGodMode(true, cancellationToken);
                             }
                             else
                             {
-                                toggleGodMode(false);
+                                toggleGodMode(false, cancellationToken);
                             }
                             Memory.WriteByte(0x21CE446C, 1);
                         }
 
                         if (CheckSequence(cheatBrokenDagger))
                         {
-                            SpawnBrokenDagger();
+                            SpawnBrokenDagger(cancellationToken);
                             Memory.WriteByte(0x21CE446C, 1);
                         }
 
                         if (CheckSequence(cheatPowerupPowders))
                         {
-                            SpawnPowerupPowders();
+                            SpawnPowerupPowders(cancellationToken);
                             Memory.WriteByte(0x21CE446C, 1);
                         }
 
                         if (CheckSequence(cheatMaxMoney))
                         {
-                            GiveMaxGilda();
+                            GiveMaxGilda(cancellationToken);
                             Memory.WriteByte(0x21CE446C, 1);
                         }
 
                         if (CheckSequence(cheatDebugMenusPart1))
                         {
                             if (firstDebugCheatActive == false)
-                                DebugMenusFirstPart();
+                                DebugMenusFirstPart(cancellationToken);
                         }
 
                         if (CheckSequence(cheatDebugMenusPart2))
@@ -131,7 +131,7 @@ namespace DarkCloudEnhancedMod
                         if (CheckSequence(cheatUnlockFloors))
                         {
                             byte currentdungeon = Memory.ReadByte(Addresses.checkDungeon);
-                            UnlockFloors(currentdungeon);
+                            UnlockFloors(currentdungeon, cancellationToken);
                             Memory.WriteByte(0x21CE446C, 1);
                         }
                     }
@@ -198,63 +198,80 @@ namespace DarkCloudEnhancedMod
                 return false;
             }
 
-            private static void toggleGodMode(bool toggle)
+            private static void toggleGodMode(bool toggle, CancellationToken cancellationToken = default)
             {
                 if (toggle == true)
                 {
                     Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "God mode activated");
-                    Dayuppy.DisplayMessage("^BCheater!!\n God Mode activated!^W", 2, 30, 3000);
+                    Dayuppy.DisplayMessage("^BCheater!!\n God Mode activated!^W", 2, 30, 3000, cancellationToken: cancellationToken);
                     Memory.WriteByte(Player.Ultraman, 2);
                 }
                 else
                 {
                     Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "God mode de-activated");
-                    Dayuppy.DisplayMessage("^RCheat de-activated - God Mode^W", 1, 30, 3000);
+                    Dayuppy.DisplayMessage("^RCheat de-activated - God Mode^W", 1, 30, 3000, cancellationToken: cancellationToken);
                     Memory.WriteByte(Player.Ultraman, 0);
                 }
             }
 
-            private static void SpawnBrokenDagger()
+            private static void SpawnBrokenDagger(CancellationToken cancellationToken = default)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Cheat: Broken Dagger");
-                Dayuppy.DisplayMessage("^BCheater!!\n Broken Dagger acquired!^W", 2, 30, 3000);
+                Dayuppy.DisplayMessage("^BCheater!!\n Broken Dagger acquired!^W", 2, 30, 3000, cancellationToken: cancellationToken);
                 if (Player.Inventory.GetBagAttachmentsFirstAvailableSlot() != -1) Memory.WriteByteArray(Addresses.firstBagAttachment + (0x20 * Player.Inventory.GetBagAttachmentsFirstAvailableSlot()), attachmentValues);
             }
 
-            private static void SpawnPowerupPowders()
+            private static void SpawnPowerupPowders(CancellationToken cancellationToken = default)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Cheat: Powerup Powders");
-                Dayuppy.DisplayMessage("^BCheater!!\n Acquired 10 Powerup Powders!!^W", 2, 30, 3000);
+                Dayuppy.DisplayMessage("^BCheater!!\n Acquired 10 Powerup Powders!!^W", 2, 30, 3000, cancellationToken: cancellationToken);
                 for (int i = 0; i < 10; i++)
                 {
                     if(Player.Inventory.GetBagItemsFirstAvailableSlot() != -1) Memory.WriteUShort(Addresses.firstBagItem + (0x2 * Player.Inventory.GetBagItemsFirstAvailableSlot()), 178);
                 }
             }
 
-            private static void GiveMaxGilda()
+            private static void GiveMaxGilda(CancellationToken cancellationToken = default)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Cheat: Max Gilda");
-                Dayuppy.DisplayMessage("^BCheater!!\n Acquired Max Gilda!^W", 2, 30, 3000);
+                Dayuppy.DisplayMessage("^BCheater!!\n Acquired Max Gilda!^W", 2, 30, 3000, cancellationToken: cancellationToken);
                 Memory.WriteUShort(Addresses.gilda, 65535);
             }
 
-            private static void DebugMenusFirstPart()
+            private static void DebugMenusFirstPart(CancellationToken cancellationToken = default)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Cheat: Debug Menus Part 1");
-                Dayuppy.DisplayMessage("^BWhat are you doing?^W", 1, 20, 2500);
+                Dayuppy.DisplayMessage("^BWhat are you doing?^W", 1, 20, 2500, cancellationToken: cancellationToken);
                 firstDebugCheatActive = true;
             }
 
             private static void UnlockDebugMenus(CancellationToken cancellationToken)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Cheat: Debug Menus Unlocked");
-                Dayuppy.DisplayMessage("^BCheater!!\n Debug Menus Unlocked!\n Have fun and be careful not to crash the game!^W", 3, 50, 5500);
+                Dayuppy.DisplayMessage("^BCheater!!\n Debug Menus Unlocked!\n Have fun and be careful not to crash the game!^W", 3, 50, 5500, cancellationToken: cancellationToken);
 
                 ThreadingHelper.RestartThread(ref debugThread, () => DebugOptions(cancellationToken));
             }
 
-            private static void UnlockFloors(byte currentDng)
+            private static void UnlockFloors(byte currentDng, CancellationToken cancellationToken = default)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
                 switch (currentDng)
                 {
                     case 0:
@@ -281,7 +298,7 @@ namespace DarkCloudEnhancedMod
                 }
 
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Cheat: Unlock Floors");
-                Dayuppy.DisplayMessage("^BCheater!!\n Unlocked all floors in this dungeon!^W", 2, 40, 3500);
+                Dayuppy.DisplayMessage("^BCheater!!\n Unlocked all floors in this dungeon!^W", 2, 40, 3500, cancellationToken: cancellationToken);
             }
 
             private static Button[] ShiftElements(Button[] cheatCodeArray, int amount)

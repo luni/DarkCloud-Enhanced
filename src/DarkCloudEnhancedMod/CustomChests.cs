@@ -134,11 +134,14 @@ namespace DarkCloudEnhancedMod
             }
         }
 
-        public static void ChestRandomizer(int currentDungeon, int currentFloor, bool chronicle2)
+        public static void ChestRandomizer(int currentDungeon, int currentFloor, bool chronicle2, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Custom chests activated");
             itemQuestSpawn = false;
-            Thread.Sleep(100);
+            ThreadingHelper.Sleep(100, cancellationToken);
 
             switch (currentDungeon) //set loot tables and addresses based on current dungeon
             {

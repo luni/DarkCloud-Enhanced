@@ -38,44 +38,68 @@ namespace DarkCloud.Core.Session
         public async Task RunAsync(CancellationToken cancellationToken = default)
         {
             var state = GameSessionState.None;
+            IGameMemory lastMemory = null;
 
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                IGameMemory memory = null;
-                GameSessionState newState;
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    IGameMemory memory = null;
+                    GameSessionState newState;
 
-                try
-                {
-                    bool connected = _memoryProvider.TryRefresh();
-                    memory = connected ? _memoryProvider.Current : null;
-                    newState = _detector.Detect(memory, state);
-                }
-                catch (Exception exception)
-                {
-                    _observer.OnError(exception, state);
-                    newState = state;
-                }
+                    try
+                    {
+                        bool connected = _memoryProvider.TryRefresh();
+                        memory = connected ? _memoryProvider.Current : null;
+                        newState = _detector.Detect(memory, state);
+                    }
+                    catch (Exception exception)
+                    {
+                        _observer.OnError(exception, state);
+                        newState = state;
+                    }
 
-                if (newState != state)
-                {
-                    var context = new GameSessionContext(memory, _translator, cancellationToken);
-                    await _observer.OnStateChanged(state, newState, context);
-                    state = newState;
-                }
+                    if (memory != null)
+                        lastMemory = memory;
 
-                TimeSpan delay = _delaySelector(state);
+                    if (newState != state)
+                    {
+                        var context = new GameSessionContext(memory, _translator, cancellationToken);
+                        try
+                        {
+                            await _observer.OnStateChanged(state, newState, context);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            break;
+                        }
 
-                try
-                {
-                    await _clock.Delay(delay, cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
+                        state = newState;
+                    }
+
+                    TimeSpan delay = _delaySelector(state);
+
+                    try
+                    {
+                        await _clock.Delay(delay, cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
             }
-
-            await _observer.OnShutdown(cancellationToken);
+            finally
+            {
+                try
+                {
+                    await _observer.OnShutdown(cancellationToken);
+                }
+                finally
+                {
+                    _detector.ReleaseModFlag(lastMemory);
+                }
+            }
         }
 
         private static TimeSpan DefaultDelaySelector(GameSessionState state)

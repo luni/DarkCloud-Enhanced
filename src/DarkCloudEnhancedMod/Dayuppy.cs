@@ -752,7 +752,7 @@ namespace DarkCloudEnhancedMod
                                                     default: width = 33; break;
                                                 }
 
-                                                DisplayMessage("Changed current attribute to " + elementName[elementSelected], 1, width, 1000);
+                                                DisplayMessage("Changed current attribute to " + elementName[elementSelected], 1, width, 1000, cancellationToken: cancellationToken);
 
                                                 if (cancellationToken.IsCancellationRequested)
                                                     return;
@@ -848,12 +848,12 @@ namespace DarkCloudEnhancedMod
         /// <param name="width">The width of the message window. Each value represents a character in the string, ie 24 = 24 characters wide.</param>
         /// <param name="displayTime">The amount of time to display the message. Keep in mind there is a 5 second timeout threshold in place.</param>
         /// <returns>An array of bytes with the output message.</returns>
-        public static void DisplayMessage(string message, int height = 4, int width = 40, int displayTime = 8000, bool isFloorClearMessage = false)
+        public static void DisplayMessage(string message, int height = 4, int width = 40, int displayTime = 8000, bool isFloorClearMessage = false, CancellationToken cancellationToken = default)
         {
             //Convert miliseconds to frames per second
             displayTime = (int)System.Math.Round(displayTime / 16.7f);
 
-            messageThread = new Thread(() => DisplayMessageProcess(message, height, width, displayTime, isFloorClearMessage));
+            messageThread = new Thread(() => DisplayMessageProcess(message, height, width, displayTime, isFloorClearMessage, cancellationToken)) { IsBackground = true };
             messageThread.Start();
         }
 
@@ -862,8 +862,11 @@ namespace DarkCloudEnhancedMod
         /// </summary>
         /// <param name="timeout">Set a timeout in miliseconds (Default is 8 seconds)</param>
         /// <returns></returns>
-        internal static bool CheckDisplayMessageAvailable(int timeout = 8000)
+        internal static bool CheckDisplayMessageAvailable(int timeout = 8000, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return false;
+
             int ms;
 
             //Check if a dungeon message is displaying / player is on chest opening state
@@ -879,9 +882,11 @@ namespace DarkCloudEnhancedMod
                 //Wait for whatever message is currently displaying
                 while (Memory.ReadInt(Addresses.dunMessage) != -1 && ms < timeout)
                 {
-                    Thread.Sleep(100);
+                    if (cancellationToken.IsCancellationRequested)
+                        return false;
+
+                    ThreadingHelper.Sleep(100, cancellationToken);
                     ms += 100;
-                    continue;
                 }
                 //if(ms < timeout) return true; else return false;
                 return true;
@@ -889,11 +894,15 @@ namespace DarkCloudEnhancedMod
             else return true;
         }
 
-        static byte[] DisplayMessageProcess(string message, int height, int width, int displayTime, bool isFloorClearMessage)
+        static byte[] DisplayMessageProcess(string message, int height, int width, int displayTime, bool isFloorClearMessage, CancellationToken cancellationToken)
         {
-            while (!CheckDisplayMessageAvailable())
+            if (cancellationToken.IsCancellationRequested)
+                return null;
+
+            while (!CheckDisplayMessageAvailable(8000, cancellationToken))
             {
-                continue;
+                if (cancellationToken.IsCancellationRequested)
+                    return null;
             }
 
             byte[] customMessage = Encoding.GetEncoding(10000).GetBytes(message);
@@ -1074,8 +1083,16 @@ namespace DarkCloudEnhancedMod
             Memory.WriteByteArray(messageAddress, outputMessage);       //Write our message string onto memory
             Memory.WriteInt(Addresses.dunMessage, messageId);           //Display our custom message
             Memory.WriteInt(Addresses.dunMessageDuration, displayTime); //Set our custom message duration
-            Thread.Sleep(300);
-            if (isFloorClearMessage && CheckDisplayMessageAvailable()) Memory.WriteByteArray(messageAddress, hornHead); //In case it is the floor clear message, re-write the HornHead string back onto memory
+
+            if (cancellationToken.IsCancellationRequested)
+                return null;
+
+            ThreadingHelper.Sleep(300, cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested)
+                return null;
+
+            if (isFloorClearMessage && CheckDisplayMessageAvailable(8000, cancellationToken)) Memory.WriteByteArray(messageAddress, hornHead); //In case it is the floor clear message, re-write the HornHead string back onto memory
 
             return outputMessage;
         }

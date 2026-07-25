@@ -42,16 +42,22 @@ namespace DarkCloudEnhancedMod
         /// <param name="dungeon">The number of the current dungeon.</param>
         /// <param name="floor">The number of the current floor.</param>
         /// <returns></returns>
-        public static bool MiniBossSpawn(bool skipFirstRoll = false, byte dungeon = 255, byte floor = 255)
+        public static bool MiniBossSpawn(bool skipFirstRoll = false, byte dungeon = 255, byte floor = 255, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return false;
+
             //Rolls for a 30% chance to spawn the miniboss
             if (rnd.Next(100) <= 30 || skipFirstRoll)
             {
 
                 if (skipFirstRoll == false)
                 {
-                    Thread.Sleep(200);
+                    ThreadingHelper.Sleep(200, cancellationToken);
                 }
+
+                if (cancellationToken.IsCancellationRequested)
+                    return false;
 
                 //Choose the enemy to convert into mini boss
                 enemyNumber = rnd.Next(Enemies.GetFloorEnemiesIds().Count);
@@ -147,10 +153,10 @@ namespace DarkCloudEnhancedMod
                         return true;
                     }
                     //Retry if landing on a flying enemy
-                    else { Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Miniboss landed on flying enemy!"); MiniBossSpawn(true, dungeon, floor); return true; }
+                    else { Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Miniboss landed on flying enemy!"); MiniBossSpawn(true, dungeon, floor, cancellationToken); return true; }
                 }
                 //Retry if landing on a enemy with ID 0
-                else { Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Chosen enemy ID must not be 0!"); MiniBossSpawn(true, dungeon, floor); return true; }
+                else { Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Chosen enemy ID must not be 0!"); MiniBossSpawn(true, dungeon, floor, cancellationToken); return true; }
             }
             else
             {

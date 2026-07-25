@@ -21,7 +21,19 @@ namespace DarkCloudEnhancedMod
             if (millisecondsTimeout <= 0 || cancellationToken.IsCancellationRequested)
                 return;
 
-            cancellationToken.WaitHandle.WaitOne(millisecondsTimeout);
+            try
+            {
+                // WaitOne returns immediately when the token is already cancelled.
+                // Thread.Interrupt can also wake it during RestartThread, in which
+                // case the caller checks IsCancellationRequested and exits.
+                cancellationToken.WaitHandle.WaitOne(millisecondsTimeout);
+            }
+            catch (ThreadInterruptedException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
         }
 
         /// <summary>

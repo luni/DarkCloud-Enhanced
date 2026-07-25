@@ -76,7 +76,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             var ram = SnapshotTestHelper.CreateEmptyRam();
             SnapshotTestHelper.UseSnapshot(ram, Region.NTSC);
 
-            var writer = new GameMemoryWriter(LegacyProcessGameMemory.Instance);
+            var writer = new GameMemoryWriter(new LegacyProcessGameMemory());
             writer.WriteByte(Addresses.mode, 0);
             writer.WriteByte(0x21CE448A, 1);
             writer.WriteByte((long)Addresses.checkFloor + 1, 255);
@@ -84,7 +84,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             var sink = new RecordingModStatusSink();
             var clock = new NoDelayClock();
             var observer = new ModWindowGameSessionObserver(sink, clock);
-            var context = new GameSessionContext(LegacyProcessGameMemory.Instance, new PassthroughAddressTranslator());
+            var context = new GameSessionContext(new LegacyProcessGameMemory(), new PassthroughAddressTranslator());
 
             await observer.OnStateChanged(GameSessionState.None, GameSessionState.MainMenu, context);
             sink.Calls.Clear();
@@ -96,7 +96,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
 
             Assert.Equal(nameof(RecordingModStatusSink.ReportNotEnhancedModSaveFile), sink.LastCallName);
 
-            var reader = new GameMemoryReader(LegacyProcessGameMemory.Instance);
+            var reader = new GameMemoryReader(new LegacyProcessGameMemory());
             Assert.Equal(1, reader.ReadByte(Addresses.mode));
 
             await observer.OnShutdown();
@@ -108,7 +108,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             var ram = SnapshotTestHelper.CreateEmptyRam();
             SnapshotTestHelper.UseSnapshot(ram, Region.NTSC);
 
-            var writer = new GameMemoryWriter(LegacyProcessGameMemory.Instance);
+            var writer = new GameMemoryWriter(new LegacyProcessGameMemory());
             writer.WriteByte(Addresses.mode, 0);
             writer.WriteByte(0x21CE448A, 1);
             writer.WriteByte((long)Addresses.checkFloor + 1, 255);
@@ -116,7 +116,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             var sink = new RecordingModStatusSink();
             var clock = new NoDelayClock();
             var observer = new ModWindowGameSessionObserver(sink, clock);
-            var context = new GameSessionContext(LegacyProcessGameMemory.Instance, new PassthroughAddressTranslator());
+            var context = new GameSessionContext(new LegacyProcessGameMemory(), new PassthroughAddressTranslator());
 
             await observer.OnStateChanged(GameSessionState.None, GameSessionState.MainMenu, context);
             sink.Calls.Clear();
@@ -127,7 +127,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
 
             Assert.Equal(nameof(RecordingModStatusSink.ReportSaveStateDetected), sink.LastCallName);
 
-            var reader = new GameMemoryReader(LegacyProcessGameMemory.Instance);
+            var reader = new GameMemoryReader(new LegacyProcessGameMemory());
             Assert.Equal(1, reader.ReadByte(Addresses.townSoftReset));
 
             await observer.OnShutdown();
@@ -139,19 +139,19 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             var ram = SnapshotTestHelper.CreateEmptyRam();
             SnapshotTestHelper.UseSnapshot(ram, Region.NTSC);
 
-            var writer = new GameMemoryWriter(LegacyProcessGameMemory.Instance);
+            var writer = new GameMemoryWriter(new LegacyProcessGameMemory());
             writer.WriteByte((long)Addresses.checkFloor + 1, 255);
 
             var sink = new RecordingModStatusSink { PromptForGameResetResult = true };
             var clock = new NoDelayClock();
             var observer = new ModWindowGameSessionObserver(sink, clock);
-            var context = new GameSessionContext(LegacyProcessGameMemory.Instance, new PassthroughAddressTranslator());
+            var context = new GameSessionContext(new LegacyProcessGameMemory(), new PassthroughAddressTranslator());
 
             await observer.OnStateChanged(GameSessionState.None, GameSessionState.InGame, context);
 
             Assert.Equal(nameof(RecordingModStatusSink.PromptForGameReset), sink.LastCallName);
 
-            var reader = new GameMemoryReader(LegacyProcessGameMemory.Instance);
+            var reader = new GameMemoryReader(new LegacyProcessGameMemory());
             Assert.Equal(1, reader.ReadByte(Addresses.townSoftReset));
 
             await observer.OnShutdown();
@@ -163,7 +163,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             var ram = SnapshotTestHelper.CreateEmptyRam();
             SnapshotTestHelper.UseSnapshot(ram, Region.NTSC);
 
-            var writer = new GameMemoryWriter(LegacyProcessGameMemory.Instance);
+            var writer = new GameMemoryWriter(new LegacyProcessGameMemory());
             writer.WriteByte(Addresses.mode, 0);
             writer.WriteByte(0x21CE448A, 1);
             writer.WriteByte((long)Addresses.checkFloor + 1, 255);
@@ -171,7 +171,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             var sink = new RecordingModStatusSink();
             var clock = new NoDelayClock();
             var observer = new ModWindowGameSessionObserver(sink, clock);
-            var context = new GameSessionContext(LegacyProcessGameMemory.Instance, new PassthroughAddressTranslator());
+            var context = new GameSessionContext(new LegacyProcessGameMemory(), new PassthroughAddressTranslator());
 
             // Boot from the main menu, then enter in-game.
             await observer.OnStateChanged(GameSessionState.None, GameSessionState.MainMenu, context);
@@ -187,7 +187,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             Assert.DoesNotContain(sink.Calls, c => c.Name == nameof(RecordingModStatusSink.PromptForGameReset));
             Assert.Equal(nameof(RecordingModStatusSink.ReportInGame), sink.LastCallName);
 
-            var reader = new GameMemoryReader(LegacyProcessGameMemory.Instance);
+            var reader = new GameMemoryReader(new LegacyProcessGameMemory());
             Assert.Equal(2, reader.ReadByte(Addresses.mode));
 
             await observer.OnShutdown();
@@ -197,7 +197,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
         {
             var ram = SnapshotTestHelper.CreateEmptyRam();
             SnapshotTestHelper.UseSnapshot(ram, Region.NTSC);
-            context = new GameSessionContext(LegacyProcessGameMemory.Instance, new PassthroughAddressTranslator());
+            context = new GameSessionContext(new LegacyProcessGameMemory(), new PassthroughAddressTranslator());
         }
 
         /// <summary>

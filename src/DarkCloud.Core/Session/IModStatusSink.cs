@@ -1,3 +1,6 @@
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace DarkCloud.Core.Session
 {
     /// <summary>
@@ -17,7 +20,7 @@ namespace DarkCloud.Core.Session
         void ReportTitleScreen();
         void ReportInGame(bool isNewGame);
         void ReportAnotherInstanceActive();
-        bool PromptForGameReset();
+        Task<bool> PromptForGameReset(CancellationToken cancellationToken = default);
         void ReportNotEnhancedModSaveFile();
         void ReportSaveStateDetected();
     }

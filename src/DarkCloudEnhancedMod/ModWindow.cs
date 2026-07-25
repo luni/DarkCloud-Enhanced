@@ -116,12 +116,41 @@ namespace DarkCloudEnhancedMod
             instance.FormNotEnhancedModSaveFile(true);
         }
 
-        internal static bool PromptForGameReset()
+        internal static async Task<bool> PromptForGameResetAsync(CancellationToken cancellationToken = default)
         {
-            if (instance == null)
+            if (instance == null || cancellationToken.IsCancellationRequested)
                 return false;
 
-            return (bool)instance.Invoke(new Func<bool>(instance.PromptForGameResetInternal));
+            var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using (cancellationToken.Register(() => completion.TrySetResult(false), useSynchronizationContext: false))
+            {
+                try
+                {
+                    instance.BeginInvoke(new Action(() =>
+                    {
+                        try
+                        {
+                            if (cancellationToken.IsCancellationRequested || instance.IsDisposed)
+                            {
+                                completion.TrySetResult(false);
+                                return;
+                            }
+
+                            completion.TrySetResult(instance.PromptForGameResetInternal());
+                        }
+                        catch (Exception exception)
+                        {
+                            completion.TrySetException(exception);
+                        }
+                    }));
+                }
+                catch (InvalidOperationException)
+                {
+                    completion.TrySetResult(false);
+                }
+
+                return await completion.Task;
+            }
         }
 
         public static void EnhancedModAlreadyOpen()
@@ -380,15 +409,6 @@ namespace DarkCloudEnhancedMod
             // Stop the runner and wait for its OnShutdown handler to complete so the
             // mod flag is released before the form closes.
             StopSessionRunner();
-
-            try
-            {
-                GameSessionDetector.ReleaseModFlag(LegacyProcessGameMemory.Instance);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Failed to release mod mutex on form close: " + exception.Message);
-            }
 
             base.OnFormClosed(e);
         }

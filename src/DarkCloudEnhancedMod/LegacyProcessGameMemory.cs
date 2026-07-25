@@ -9,12 +9,55 @@ namespace DarkCloudEnhancedMod
     /// the abstraction while the legacy WinForms application continues to own the
     /// process handle and platform-specific I/O.
     /// </summary>
-    internal sealed class LegacyProcessGameMemory : IGameMemory
+    internal sealed class LegacyProcessGameMemory : IProcessIdentifiableGameMemory
     {
-        public static readonly LegacyProcessGameMemory Instance = new LegacyProcessGameMemory();
+        private readonly int _processId;
 
-        private LegacyProcessGameMemory()
+        internal LegacyProcessGameMemory()
         {
+            _processId = GetCurrentProcessId();
+        }
+
+        public int ProcessId => _processId;
+
+        private static int GetCurrentProcessId()
+        {
+            var process = Memory.emulatorProcess;
+            if (process == null)
+                return -1;
+
+            try
+            {
+                return process.Id;
+            }
+            catch (InvalidOperationException)
+            {
+                return -1;
+            }
+            catch (NotSupportedException)
+            {
+                return -1;
+            }
+        }
+
+        private bool IsCurrentProcess()
+        {
+            var process = Memory.emulatorProcess;
+            if (process == null)
+                return false;
+
+            try
+            {
+                return process.Id == _processId;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (NotSupportedException)
+            {
+                return false;
+            }
         }
 
         public bool TryRead(long address, byte[] destination, int offset, int count)
@@ -22,9 +65,9 @@ namespace DarkCloudEnhancedMod
             ValidateBufferArgs(destination, offset, count);
 
             if (count == 0)
-                return Memory.emulatorProcess != null;
+                return IsCurrentProcess();
 
-            if (Memory.emulatorProcess == null)
+            if (!IsCurrentProcess())
                 return false;
 
             if (!Memory.TryReadByteArray(address, count, out byte[] data))
@@ -39,9 +82,9 @@ namespace DarkCloudEnhancedMod
             ValidateBufferArgs(source, offset, count);
 
             if (count == 0)
-                return Memory.emulatorProcess != null;
+                return IsCurrentProcess();
 
-            if (Memory.emulatorProcess == null)
+            if (!IsCurrentProcess())
                 return false;
 
             byte[] segment = new byte[count];

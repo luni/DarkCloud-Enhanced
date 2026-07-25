@@ -12,8 +12,10 @@ namespace DarkCloudEnhancedMod
     internal sealed class ModWindowGameMemoryProvider : IGameMemoryProvider
     {
         private int _lastProcessId;
+        private LegacyProcessGameMemory _cachedMemory;
+        private bool _isConnected;
 
-        public IGameMemory Current => LegacyProcessGameMemory.Instance;
+        public IGameMemory Current => _isConnected ? _cachedMemory : null;
 
         public bool TryRefresh()
         {
@@ -26,7 +28,7 @@ namespace DarkCloudEnhancedMod
             Process process = Memory.emulatorProcess;
             if (process == null)
             {
-                _lastProcessId = 0;
+                _isConnected = false;
                 return false;
             }
 
@@ -37,20 +39,29 @@ namespace DarkCloudEnhancedMod
             }
             catch (InvalidOperationException)
             {
-                _lastProcessId = 0;
+                _isConnected = false;
                 return false;
             }
 
-            // When the provider reconnects to a different emulator process,
-            // force one disconnected tick so the detector resets its ownership
-            // of the mutual-exclusion flag before claiming it on the new process.
-            if (reinitialized && _lastProcessId != 0 && currentId != _lastProcessId)
+            // Keep the same IGameMemory instance across transient disconnects so
+            // the detector does not lose ownership. Create a new instance only
+            // when the process identity actually changes; then force one
+            // disconnected tick so the runner observes the transition before
+            // claiming the flag on the new process.
+            bool processChanged = _lastProcessId != 0 && currentId != _lastProcessId;
+            if (_cachedMemory == null || processChanged)
             {
+                _cachedMemory = new LegacyProcessGameMemory();
                 _lastProcessId = currentId;
+            }
+
+            if (processChanged)
+            {
+                _isConnected = false;
                 return false;
             }
 
-            _lastProcessId = currentId;
+            _isConnected = true;
             return true;
         }
 

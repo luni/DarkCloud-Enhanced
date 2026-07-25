@@ -170,13 +170,13 @@ namespace DarkCloud.Core.Tests.Session
         }
 
         [Fact]
-        public void ReleaseModFlag_WritesZero()
+        public void TryReleaseModFlag_WritesZero()
         {
             var memory = CreateBootedMemory();
             var writer = new GameMemoryWriter(memory);
             writer.WriteByte(0x21F10024L, 1);
 
-            Assert.True(GameSessionDetector.ReleaseModFlag(memory));
+            Assert.True(GameSessionDetector.TryReleaseModFlag(memory));
             Assert.Equal(0, new GameMemoryReader(memory).ReadByte(0x21F10024L));
         }
 
@@ -213,7 +213,7 @@ namespace DarkCloud.Core.Tests.Session
             return memory;
         }
 
-        private sealed class FlakyGameMemory : IGameMemory
+        private sealed class FlakyGameMemory : IProcessIdentifiableGameMemory
         {
             private readonly IGameMemory _inner;
             private int _failCount;
@@ -222,6 +222,16 @@ namespace DarkCloud.Core.Tests.Session
             {
                 _inner = inner;
                 _failCount = failCount;
+            }
+
+            public int ProcessId
+            {
+                get
+                {
+                    return _inner is IProcessIdentifiableGameMemory identifiable
+                        ? identifiable.ProcessId
+                        : 0;
+                }
             }
 
             public bool TryRead(long address, byte[] destination, int offset, int count)

@@ -15,5 +15,11 @@ namespace DarkCloud.Core.Session
         /// <param name="previousState">The state returned on the previous tick.</param>
         /// <returns>The detected session state.</returns>
         GameSessionState Detect(IGameMemory memory, GameSessionState previousState);
+
+        /// <summary>
+        /// Releases any mutual-exclusion flag the detector claimed in <see cref="Detect"/>.
+        /// </summary>
+        /// <param name="memory">The memory to write to, or <c>null</c> if no emulator is connected.</param>
+        void ReleaseModFlag(IGameMemory memory);
     }
 }

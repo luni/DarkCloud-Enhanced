@@ -14,5 +14,9 @@ namespace DarkCloud.Core.Tests.Session
         {
             return NextState;
         }
+
+        public void ReleaseModFlag(IGameMemory memory)
+        {
+        }
     }
 }
