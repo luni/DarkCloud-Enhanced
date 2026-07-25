@@ -137,7 +137,7 @@ namespace Dark_Cloud_Improved_Version
         {
             address = RegionAddresses.Translate(address);
             byte[] dataBuffer = new byte[numBytes];
-            Platform.ReadMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out _); //_ seems to act as NULL, we don't need numOfBytesRead
+            Platform.ReadMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out ulong _); //_ seems to act as NULL, we don't need numOfBytesRead
             return dataBuffer;
         }
 
@@ -194,7 +194,7 @@ namespace Dark_Cloud_Improved_Version
             // http://stackoverflow.com/questions/1003275/how-to-convert-byte-to-string
             address = RegionAddresses.Translate(address);
             byte[] dataBuffer = new byte[length];
-            Platform.ReadMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, length, out _);
+            Platform.ReadMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, length, out ulong _);
             return Encoding.GetEncoding(10000).GetString(dataBuffer);
         }
 
@@ -203,19 +203,19 @@ namespace Dark_Cloud_Improved_Version
             // http://stackoverflow.com/questions/16072709/converting-string-to-byte-array-in-c-sharp
             address = RegionAddresses.Translate(address);
             byte[] dataBuffer = Encoding.GetEncoding(10000).GetBytes(stringToWrite); //Western European (Mac) Encoding Table
-            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out _);
+            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out ulong _);
         }
 
         internal static bool Write(long address, byte[] value)
         {
             address = RegionAddresses.Translate(address);
-            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, value, value.LongLength, out _);
+            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, value, value.LongLength, out ulong _);
         }
 
         internal static bool WriteOneByte(long address, byte[] value)
         {
             address = RegionAddresses.Translate(address);
-            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, value, sizeof(byte), out _);
+            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, value, sizeof(byte), out ulong _);
         }
 
         internal static bool WriteByte(long address, byte value) => WriteOneByte(address, BitConverter.GetBytes(value));
@@ -223,7 +223,7 @@ namespace Dark_Cloud_Improved_Version
         internal static void WriteByteArray(long address, byte[] byteArray)  //Write byte array at address + EEMem_Offset
         {
             address = RegionAddresses.Translate(address);
-            bool successful = Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, byteArray, byteArray.LongLength, out _);
+            bool successful = Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, byteArray, byteArray.LongLength, out ulong _);
 
             if (!successful)
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + GetLastError() + " - " + GetSystemMessage(GetLastError()));
@@ -244,7 +244,7 @@ namespace Dark_Cloud_Improved_Version
             byte[] stringBuffer = new byte[searchString.LongCount()];
             List<long> resultsList = new List<long>();
 
-            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _); //Change our protection first
+            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchString + ". This may take awhile.");
 
@@ -261,7 +261,7 @@ namespace Dark_Cloud_Improved_Version
         {
             List<long> resultsList = new List<long>();
 
-            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _); //Change our protection first
+            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchValue + ". This may take awhile.");
 
@@ -276,7 +276,7 @@ namespace Dark_Cloud_Improved_Version
         {
             List<long> resultsList = new List<long>();
 
-            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
+            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _);
 
             for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++) {
                 if (ReadByteArray(currentOffset, byteArray.LongLength).SequenceEqual(byteArray)) {

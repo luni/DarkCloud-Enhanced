@@ -59,7 +59,7 @@ namespace Dark_Cloud_Improved_Version
                 return 0;
 
             byte[] buffer = new byte[8];
-            if (ReadProcessMemory(processH, variableAddress, buffer, 8, out _))
+            if (ReadProcessMemory(processH, variableAddress, buffer, 8, out ulong _))
                 return BitConverter.ToInt64(buffer, 0);
 
             return 0;
