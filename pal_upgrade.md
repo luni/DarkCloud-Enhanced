@@ -65,13 +65,14 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - Convert it to `CHANGELOG.md`, preserving the per-page sections and bullet lists.
 - Update `README.md` to point to `CHANGELOG.md` instead of the PDF link.
 
-### 9. Linux compatibility
-- Add OS detection in `MemoryFunctions.cs` (Windows vs Linux/Unix).
-- On Linux replace `ReadProcessMemory`/`WriteProcessMemory` with `process_vm_readv`/`process_vm_writev` or `/proc/<pid>/mem`.
-- Replace `VirtualProtectEx` with a no-op or `mprotect`-based helper where the target page is writable.
-- Replace `DebugActiveProcess`/`DebugActiveProcessStop` suspend/resume with `kill(pid, SIGSTOP/SIGCONT)`.
-- Implement a Linux `GetEEMem` that locates the PCSX2 `EEmem` exported pointer (parse `/proc/<pid>/maps` + ELF `.dynsym`, or heuristic by finding the large PCSX2 shared-memory mapping).
-- Make the `pcsx2_offsetreader.dll` `DllImport` conditional/optional so it does not fail on Linux.
+### 9. Linux compatibility (implemented as `Platform.cs`)
+- Add OS detection in `MemoryFunctions.cs` / `Platform.cs` (Windows vs Linux/Unix).
+- On Linux `Platform.cs` uses `/proc/<pid>/mem` for reads/writes with a per-PID cached, locked `FileStream`.
+- `VirtualProtectEx` is a no-op on Linux (`/proc/<pid>/mem` reads do not need explicit protection changes).
+- Suspend/resume uses `kill(pid, SIGSTOP/SIGCONT)` on Linux; Windows keeps `DebugActiveProcess`.
+- Linux `GetEEMem` is a heuristic that searches `/proc/<pid>/maps` for the large PCSX2 shared data mapping (`rw-p`/`rw-s`, path contains `pcsx2`). A future improvement is to parse the ELF `.dynsym` for the exported `EEmem` symbol and read its value.
+- `pcsx2_offsetreader.dll` `DllImport` is now in `Platform.cs` and is only invoked on Windows.
+- Process lookup made case-insensitive so `PCSX2`/`pcsx2-qt` are found on Linux.
 - Build and smoke-test on Linux with Mono (`msbuild`) or modern .NET if the project is converted to SDK-style.
 
 ## Files to Modify
@@ -84,7 +85,7 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - `Addresses.cs`, `Player.cs`, `Weapons.cs`, `Shop.cs`, `SideQuestManager.cs`, `TownCharacter.cs`, `Dialogues.cs`, `Dungeon.cs`, `CustomChests.cs`, `DailyShopItem.cs`, `CheatCodes.cs` (PAL address mapping if non-uniform delta)
 - `README.md`
 - `CHANGELOG.md` (new, converted from PDF)
-- `MemoryFunctions.cs` / new `PlatformMemory.cs` (Linux P/Invokes and `GetEEMem`)
+- `Dark Cloud Improved Version/Platform.cs` (Linux P/Invokes and `GetEEMem`)
 
 ## Verification Checklist
 - [x] `readelf` segment diff between NTSC/PAL ELFs produces a clear delta/translation table.
@@ -98,6 +99,7 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 ## Generated/Modified files
 - `Dark Cloud Improved Version/RegionAddresses.cs`
 - `Dark Cloud Improved Version/MemoryFunctions.cs`
+- `Dark Cloud Improved Version/Platform.cs`
 - `Dark Cloud Improved Version/MainMenuThread.cs`
 - `Dark Cloud Improved Version/Dark Cloud Improved Version.csproj`
 - `Dark Cloud Improved Version/Resources/PNACH/SCES-50295_0BAA8DD8.pnach`
@@ -110,5 +112,7 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - PAL code/data may not shift by a single uniform delta; that would require per-address mapping and a larger refactor of the ~1,500 hardcoded addresses.
 - Conditional `.pnach` lines encode addresses inside their data words, so a simple address-column shift is not enough.
 - `Dialogues.cs` and language-dependent dialogue IDs may differ in the multi-language PAL build.
-- `pcsx2_offsetreader.dll` is a native Windows DLL; the port stays Windows-x86/x64.
+- `pcsx2_offsetreader.dll` is still used on Windows; Linux uses a `/proc/<pid>/maps` heuristic instead.
+- Linux `EEmem` discovery is heuristic. If `HostMemoryMap::EEmemOffset` is not zero or PCSX2 changes its shared-memory layout, the mapping start may not equal the EE RAM base and reads/writes will be wrong.
+- `/proc/<pid>/mem` writes may fail for read-only guest pages; the mod does not currently `mprotect` remote pages on Linux.
 - Only the provided CHDs will be used; no redistribution.
