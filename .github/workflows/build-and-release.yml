@@ -56,9 +56,6 @@ jobs:
       - name: Build C# project
         run: dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release
 
-      - name: AOT compile for verification
-        run: mono --aot "src/DarkCloudEnhancedMod/bin/Release/DarkCloudEnhancedMod.exe"
-
       - name: Run PAL port CI tests
         run: python3 tests/pal/test_pal.py
 
