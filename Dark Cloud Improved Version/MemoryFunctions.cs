@@ -45,58 +45,29 @@ namespace Dark_Cloud_Improved_Version
 
         }
 
-        [DllImport("\\Resources\\pcsx2_offsetreader.dll", EntryPoint = "?GetEEMem@@YAJH@Z", CallingConvention = CallingConvention.Cdecl)]
-        private static extern long GetEEMem(int procID);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern uint GetLastErrorWin();
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern uint GetLastError();
+        private static extern int FormatMessageWin(uint dwFlags, IntPtr lpSource, uint dwMessageId, uint dwLanguageId, ref IntPtr lpBuffer, uint nSize, IntPtr Arguments);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern int FormatMessage(uint dwFlags, IntPtr lpSource, uint dwMessageId, uint dwLanguageId, ref IntPtr lpBuffer, uint nSize, IntPtr Arguments);
-
-        [DllImport("user32.dll", SetLastError = true)] //Import DLL that will allow us to retrieve processIDs from Window Handles.
-        private static extern int GetWindowThreadProcessId(IntPtr hWnd, out int processID); //This is a function within the dll that we are adding to our program.
-
-        [DllImport("kernel32.dll", SetLastError = true)] //Import DLL for reading processes and add the function to our program.
         private static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
-        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.ThisCall)]
-        public static extern bool VirtualProtect(IntPtr processH, long lpAddress, long lpBuffer, uint flNewProtect, out uint lpflOldProtect);
+        public static void SuspendProcess() => Platform.SuspendProcess(emulatorProcess.Id);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool VirtualProtectEx(IntPtr processH, long lpAddress, long lpBuffer, uint flNewProtect, out uint lpflOldProtect);
+        public static void ResumeProcess() => Platform.ResumeProcess(emulatorProcess.Id);
 
-        [DllImport("kernel32.dll", SetLastError = true)] //Import for reading process memory.
-        private static extern bool ReadProcessMemory(IntPtr processH, long lpBaseAddress, byte[] lpBuffer, long dwSize, out ulong lpNumberOfBytesRead);
-
-        [DllImport("kernel32.dll", SetLastError = true)] //Import for writing process memory.
-        private static extern bool WriteProcessMemory(IntPtr processH, long lpBaseAddress, byte[] lpBuffer, long dwSize, out ulong lpNumberOfBytesWritten);
-
-        [DllImport("kernel32.dll", SetLastError = true)]  //Import DLL again for Closing Handles to processes and add the function to our program.
-        internal static extern bool CloseHandle(IntPtr processH);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool DebugActiveProcess(int PID);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool DebugSetProcessKillOnExit(bool boolean);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool DebugActiveProcessStop(int PID);
-
-        public static void SuspendProcess()
-        {
-            DebugActiveProcess(emulatorProcess.Id);
-            DebugSetProcessKillOnExit(false);
-        }
-
-        public static void ResumeProcess() => DebugActiveProcessStop(emulatorProcess.Id);
+        internal static uint GetLastError() => Platform.IsLinux ? 0 : GetLastErrorWin();
 
         internal static string GetSystemMessage(uint errorCode)
         {
+            if (Platform.IsLinux)
+                return string.Empty;
+
             IntPtr messageBuffer = IntPtr.Zero;
 
-            _ = FormatMessage(
+            _ = FormatMessageWin(
                 (uint) WinAPIFlags.SystemMessageOptions.All,
                 IntPtr.Zero,
                 errorCode,
@@ -114,7 +85,7 @@ namespace Dark_Cloud_Improved_Version
             emulatorProcess = GetProcess(emulatorName);
 
             if (emulatorProcess != null) {
-                CheckEEMemAddress = ReadLong(GetEEMem(emulatorProcess.Id));
+                CheckEEMemAddress = Platform.GetEEMem(emulatorProcess.Handle, emulatorProcess.Id);
                 CheckEEMemOffset = CheckEEMemAddress - 0x20000000;
 
                 switch (emulatorProcess.ProcessName) {
@@ -143,7 +114,7 @@ namespace Dark_Cloud_Improved_Version
         {
             var found = Process.GetProcesses()
                 .Where(p => p.ProcessName
-                    .Contains(processToFind))
+                    .IndexOf(processToFind, StringComparison.OrdinalIgnoreCase) >= 0)
                 .ToList();
 
             if (found.Count > 1) {
@@ -154,14 +125,19 @@ namespace Dark_Cloud_Improved_Version
             return found.LastOrDefault();
         }
 
-        public static IntPtr GetProcessHandle(int processId) => OpenProcess((uint) WinAPIFlags.ProcessModes.All, false, processId);
+        public static IntPtr GetProcessHandle(int processId)
+        {
+            if (Platform.IsLinux)
+                return new IntPtr(processId);
+            return OpenProcess((uint) WinAPIFlags.ProcessModes.All, false, processId);
+        }
 
 
         internal static byte[] ReadByteArray(long address, long numBytes)  //Read byte array from address + EEMem_Offset
         {
             address = RegionAddresses.Translate(address);
             byte[] dataBuffer = new byte[numBytes];
-            ReadProcessMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out _); //_ seems to act as NULL, we don't need numOfBytesRead
+            Platform.ReadMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out _); //_ seems to act as NULL, we don't need numOfBytesRead
             return dataBuffer;
         }
 
@@ -218,7 +194,7 @@ namespace Dark_Cloud_Improved_Version
             // http://stackoverflow.com/questions/1003275/how-to-convert-byte-to-string
             address = RegionAddresses.Translate(address);
             byte[] dataBuffer = new byte[length];
-            ReadProcessMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, length, out _);
+            Platform.ReadMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, length, out _);
             return Encoding.GetEncoding(10000).GetString(dataBuffer);
         }
 
@@ -227,19 +203,19 @@ namespace Dark_Cloud_Improved_Version
             // http://stackoverflow.com/questions/16072709/converting-string-to-byte-array-in-c-sharp
             address = RegionAddresses.Translate(address);
             byte[] dataBuffer = Encoding.GetEncoding(10000).GetBytes(stringToWrite); //Western European (Mac) Encoding Table
-            return WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out _);
+            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out _);
         }
 
         internal static bool Write(long address, byte[] value)
         {
             address = RegionAddresses.Translate(address);
-            return WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, value, value.LongLength, out _);
+            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, value, value.LongLength, out _);
         }
 
         internal static bool WriteOneByte(long address, byte[] value)
         {
             address = RegionAddresses.Translate(address);
-            return WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, value, sizeof(byte), out _);
+            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, value, sizeof(byte), out _);
         }
 
         internal static bool WriteByte(long address, byte value) => WriteOneByte(address, BitConverter.GetBytes(value));
@@ -247,7 +223,7 @@ namespace Dark_Cloud_Improved_Version
         internal static void WriteByteArray(long address, byte[] byteArray)  //Write byte array at address + EEMem_Offset
         {
             address = RegionAddresses.Translate(address);
-            bool successful = WriteProcessMemory(emulatorProcess.Handle, address + EEMemOffset, byteArray, byteArray.LongLength, out _);
+            bool successful = Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, byteArray, byteArray.LongLength, out _);
 
             if (!successful)
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + GetLastError() + " - " + GetSystemMessage(GetLastError()));
@@ -268,7 +244,7 @@ namespace Dark_Cloud_Improved_Version
             byte[] stringBuffer = new byte[searchString.LongCount()];
             List<long> resultsList = new List<long>();
 
-            VirtualProtectEx(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _); //Change our protection first
+            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _); //Change our protection first
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchString + ". This may take awhile.");
 
@@ -285,7 +261,7 @@ namespace Dark_Cloud_Improved_Version
         {
             List<long> resultsList = new List<long>();
 
-            VirtualProtectEx(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _); //Change our protection first
+            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _); //Change our protection first
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchValue + ". This may take awhile.");
 
@@ -300,7 +276,7 @@ namespace Dark_Cloud_Improved_Version
         {
             List<long> resultsList = new List<long>();
 
-            VirtualProtectEx(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
+            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out _);
 
             for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++) {
                 if (ReadByteArray(currentOffset, byteArray.LongLength).SequenceEqual(byteArray)) {

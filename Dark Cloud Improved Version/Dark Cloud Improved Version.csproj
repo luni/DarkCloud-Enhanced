@@ -91,6 +91,7 @@
     <Compile Include="Player.cs" />
     <Compile Include="MemoryFunctions.cs" />
     <Compile Include="RegionAddresses.cs" />
+    <Compile Include="Platform.cs" />
     <Compile Include="ModWindow.cs">
       <SubType>Form</SubType>
     </Compile>

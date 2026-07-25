@@ -11,7 +11,13 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - Generated `Resources/PNACH/SCES-50295_0BAA8DD8.pnach` (PAL CRC `0BAA8DD8`), preserving `.pnach` top-nibble size/test-type digits and re-encoding MIPS `jal`/`j`/`lui`/`lw`/`sw`/`beq` values.
 - Wired `Memory` read/write methods and `MainMenuThread` to detect region and translate addresses on the fly.
 - Added the new pnach and `RegionAddresses.cs` to `.csproj`.
+- Migrated the public changelog PDF to `CHANGELOG.md` and updated `README.md`.
+- Started Linux compatibility work with a new `Platform.cs` abstraction (`process_vm`/`-proc/pid/mem` fallback, `SIGSTOP`/`SIGCONT`, heuristic `GetEEMem` from `/proc/<pid>/maps`).
 - Still needs a build/test run to verify.
+
+## New scope added
+- Migrate the public-release `Full_Change_Log_Public_Release_v1.00.pdf` to `CHANGELOG.md` and update `README.md` to reference it.
+- Make the mod Linux-compatible: replace Windows-only P/Invokes (`ReadProcessMemory`, `WriteProcessMemory`, `VirtualProtectEx`, `DebugActiveProcess`, `pcsx2_offsetreader.dll`) with cross-platform equivalents, and provide a Linux `GetEEMem` implementation.
 
 ## Files available for comparison
 - NTSC-U: `/home/calvin/Dark Cloud (USA).chd`
@@ -54,6 +60,20 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - Update `README.md` for PAL installation (new `.pnach` filename/CRC) and region selection.
 - Add derivation notes to `AGENTS.md` or project notes.
 
+### 8. Migrate the changelog PDF to Markdown
+- Download or locate `Full_Change_Log_Public_Release_v1.00.pdf` from the project Releases.
+- Convert it to `CHANGELOG.md`, preserving the per-page sections and bullet lists.
+- Update `README.md` to point to `CHANGELOG.md` instead of the PDF link.
+
+### 9. Linux compatibility
+- Add OS detection in `MemoryFunctions.cs` (Windows vs Linux/Unix).
+- On Linux replace `ReadProcessMemory`/`WriteProcessMemory` with `process_vm_readv`/`process_vm_writev` or `/proc/<pid>/mem`.
+- Replace `VirtualProtectEx` with a no-op or `mprotect`-based helper where the target page is writable.
+- Replace `DebugActiveProcess`/`DebugActiveProcessStop` suspend/resume with `kill(pid, SIGSTOP/SIGCONT)`.
+- Implement a Linux `GetEEMem` that locates the PCSX2 `EEmem` exported pointer (parse `/proc/<pid>/maps` + ELF `.dynsym`, or heuristic by finding the large PCSX2 shared-memory mapping).
+- Make the `pcsx2_offsetreader.dll` `DllImport` conditional/optional so it does not fail on Linux.
+- Build and smoke-test on Linux with Mono (`msbuild`) or modern .NET if the project is converted to SDK-style.
+
 ## Files to Modify
 - `Resources/PNACH/A5C05C78.pnach` (source for translation)
 - `Resources/PNACH/<PAL>.pnach` (new)
@@ -63,13 +83,17 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - `ModWindow.cs` (region-aware option flags and UI)
 - `Addresses.cs`, `Player.cs`, `Weapons.cs`, `Shop.cs`, `SideQuestManager.cs`, `TownCharacter.cs`, `Dialogues.cs`, `Dungeon.cs`, `CustomChests.cs`, `DailyShopItem.cs`, `CheatCodes.cs` (PAL address mapping if non-uniform delta)
 - `README.md`
+- `CHANGELOG.md` (new, converted from PDF)
+- `MemoryFunctions.cs` / new `PlatformMemory.cs` (Linux P/Invokes and `GetEEMem`)
 
 ## Verification Checklist
 - [x] `readelf` segment diff between NTSC/PAL ELFs produces a clear delta/translation table.
+- [x] `Full_Change_Log_Public_Release_v1.00.pdf` migrated to `CHANGELOG.md`.
 - [ ] `msbuild` succeeds with no errors.
 - [ ] PAL `.pnach` loads in PCSX2 without invalid-address warnings.
 - [ ] `0x21F10020` / `0x21F10024` handshake works in PAL.
 - [ ] NTSC build still passes basic smoke test.
+- [ ] Linux build/run path works on Mono / modern .NET (process memory reads, `EEmem` discovery, suspend/resume).
 
 ## Generated/Modified files
 - `Dark Cloud Improved Version/RegionAddresses.cs`
@@ -78,6 +102,8 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - `Dark Cloud Improved Version/Dark Cloud Improved Version.csproj`
 - `Dark Cloud Improved Version/Resources/PNACH/SCES-50295_0BAA8DD8.pnach`
 - `Dark Cloud Improved Version/Resources/PNACH/A5C05C78.pnach` (source, not modified)
+- `CHANGELOG.md` (converted from PDF)
+- `README.md` (PAL + changelog link updates)
 - `/home/calvin/dc_extract/` (temporary ELF/symbol mapping artifacts)
 
 ## Risks / Considerations
