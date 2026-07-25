@@ -1,0 +1,123 @@
+using System;
+using System.Diagnostics;
+using System.Reflection;
+using System.Text;
+
+// Stand-alone smoke test for the Linux/Flatpak PCSX2 memory path.
+// Build with:
+//   mcs /out:SmokeTest.exe /r:../../Dark Cloud Improved Version/bin/Release/Dark Cloud Enhanced Mod.exe SmokeTest.cs
+// Then:
+//   ./SmokeTest.exe
+class SmokeTest
+{
+    static int Main(string[] args)
+    {
+        string fakeExe = "fake_pcsx2";
+        var start = new ProcessStartInfo(fakeExe);
+        start.UseShellExecute = false;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
+        start.CreateNoWindow = true;
+        start.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+        Process fake = null;
+        try
+        {
+            fake = Process.Start(start);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("FAIL: could not start {0}: {1}", fakeExe, ex.Message);
+            return 1;
+        }
+
+        string line = fake.StandardOutput.ReadLine();
+        Console.WriteLine("Fake PCSX2 output: {0}", line);
+
+        long expectedEEmem = 0;
+        int pid = fake.Id;
+        var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var p in parts)
+        {
+            if (p.StartsWith("pid="))
+                int.TryParse(p.Substring(4), out pid);
+            if (p.StartsWith("EEmem=0x"))
+                expectedEEmem = Convert.ToInt64(p.Substring(6), 16);
+        }
+
+        if (expectedEEmem == 0)
+        {
+            Console.WriteLine("FAIL: could not parse EEmem from fake output");
+            fake.Kill();
+            return 1;
+        }
+
+        Console.WriteLine("Fake pid={0} expected EEmem=0x{1:X}", pid, expectedEEmem);
+
+        string asmPath = args.Length > 0 ? args[0] : "../../Dark Cloud Improved Version/bin/Release/Dark Cloud Enhanced Mod.exe";
+        var asm = Assembly.LoadFrom(asmPath);
+        var platform = asm.GetType("Dark_Cloud_Improved_Version.Platform");
+        var getEEMem = platform.GetMethod("GetEEMem", BindingFlags.NonPublic | BindingFlags.Static);
+        long eemem = (long)getEEMem.Invoke(null, new object[] { new IntPtr(pid), pid });
+        Console.WriteLine("Platform.GetEEMem returned: 0x{0:X}", eemem);
+
+        if (eemem != expectedEEmem)
+        {
+            Console.WriteLine("FAIL: GetEEMem 0x{0:X} != expected 0x{1:X}", eemem, expectedEEmem);
+            fake.Kill();
+            return 1;
+        }
+
+        var readMem = platform.GetMethod("ReadMemory", BindingFlags.NonPublic | BindingFlags.Static, null,
+            new Type[] { typeof(IntPtr), typeof(long), typeof(byte[]), typeof(long), typeof(ulong).MakeByRefType() }, null);
+        if (readMem == null)
+        {
+            Console.WriteLine("FAIL: could not find ReadMemory");
+            fake.Kill();
+            return 1;
+        }
+
+        byte[] buf = new byte[8];
+        object[] readArgs = new object[] { new IntPtr(pid), eemem, buf, (long)8, (ulong)0 };
+        bool ok = (bool)readMem.Invoke(null, readArgs);
+        ulong bytesRead = (ulong)readArgs[4];
+        string text = Encoding.ASCII.GetString(buf, 0, (int)bytesRead);
+        Console.WriteLine("ReadMemory ok={0} bytesRead={1} data='{2}'", ok, bytesRead, text);
+
+        if (!ok || text != "DarkClou")
+        {
+            Console.WriteLine("FAIL: could not read DarkClou marker");
+            fake.Kill();
+            return 1;
+        }
+
+        long bootAddr = eemem + 0x29540;
+        byte[] boot = new byte[4];
+        object[] bootArgs = new object[] { new IntPtr(pid), bootAddr, boot, (long)4, (ulong)0 };
+        readMem.Invoke(null, bootArgs);
+        string bootStr = Encoding.ASCII.GetString(boot);
+        Console.WriteLine("Boot string at 0x20299540: {0}", bootStr);
+        if (bootStr != "Dark")
+        {
+            Console.WriteLine("FAIL: boot string not Dark");
+            fake.Kill();
+            return 1;
+        }
+
+        long palFlagAddr = eemem + 0x1F22EA0;
+        byte[] flag = new byte[1];
+        object[] flagArgs = new object[] { new IntPtr(pid), palFlagAddr, flag, (long)1, (ulong)0 };
+        readMem.Invoke(null, flagArgs);
+        Console.WriteLine("PAL flag at 0x21F22EA0: {0}", flag[0]);
+        if (flag[0] != 1)
+        {
+            Console.WriteLine("FAIL: PAL flag not 1");
+            fake.Kill();
+            return 1;
+        }
+
+        Console.WriteLine("PASS: smoke test succeeded");
+        fake.Kill();
+        return 0;
+    }
+}
