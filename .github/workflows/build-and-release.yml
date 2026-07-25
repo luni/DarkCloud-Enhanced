@@ -85,3 +85,9 @@ jobs:
 
       - name: Run Linux memory smoke test
         run: tests/linux_smoke/run.sh
+
+      - name: Upload Linux build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: DarkCloud-Enhanced-Mod-Linux
+          path: "Dark Cloud Improved Version/bin/Release"
