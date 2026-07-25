@@ -78,14 +78,75 @@ namespace Dark_Cloud_Improved_Version
 
         private static long? GetEEMemFromElfSymbol(int pid)
         {
+            string cmdline = string.Empty;
+            string exeName = "pcsx2";
+            var elfPaths = new List<string>();
+
             try
             {
-                string exePath = $"/proc/{pid}/exe";
-                string cmdline = File.ReadAllText($"/proc/{pid}/cmdline").TrimEnd('\0');
-                string exeName = Path.GetFileName(cmdline.Split('\0')[0]);
+                cmdline = File.ReadAllText($"/proc/{pid}/cmdline").TrimEnd('\0');
+                string firstArg = cmdline.Split('\0')[0];
+                exeName = Path.GetFileName(firstArg);
                 if (string.IsNullOrEmpty(exeName))
                     exeName = "pcsx2";
 
+                // Try the magic /proc/PID/exe symlink first.
+                elfPaths.Add($"/proc/{pid}/exe");
+
+                // Flatpak/Snap/Docker expose the process's own filesystem view
+                // via /proc/PID/root. If /proc/PID/exe can't be opened directly
+                // (e.g., it points to a path in a different mount namespace),
+                // fall back to the executable path as seen by the process.
+                if (!string.IsNullOrEmpty(firstArg) && firstArg.StartsWith("/"))
+                    elfPaths.Add($"/proc/{pid}/root{firstArg}");
+
+                // Last resort: use the path from /proc/PID/maps resolved through
+                // the process root filesystem.
+                string mapsPath = GetFirstExecutableMappingPath(pid, exeName);
+                if (!string.IsNullOrEmpty(mapsPath))
+                    elfPaths.Add($"/proc/{pid}/root{mapsPath}");
+            }
+            catch
+            {
+                elfPaths.Add($"/proc/{pid}/exe");
+            }
+
+            foreach (string exePath in elfPaths)
+            {
+                long? result = TryReadEEmemFromElf(exePath, pid, exeName);
+                if (result.HasValue && result.Value != 0)
+                    return result;
+            }
+            return null;
+        }
+
+        private static string GetFirstExecutableMappingPath(int pid, string exeName)
+        {
+            try
+            {
+                string maps = File.ReadAllText($"/proc/{pid}/maps");
+                foreach (string line in maps.Split('\n'))
+                {
+                    Match m = Regex.Match(line, @"^[0-9a-fA-F]+-[0-9a-fA-F]+\s+(\S+)\s+\S+\s+\S+\s+\S+\s*(.*)$");
+                    if (!m.Success)
+                        continue;
+                    string perms = m.Groups[1].Value;
+                    string path = m.Groups[2].Value.Trim();
+                    if (perms.StartsWith("r", StringComparison.Ordinal) &&
+                        Path.GetFileName(path).Equals(exeName, StringComparison.OrdinalIgnoreCase))
+                        return path;
+                }
+            }
+            catch
+            {
+            }
+            return null;
+        }
+
+        private static long? TryReadEEmemFromElf(string exePath, int pid, string exeName)
+        {
+            try
+            {
                 using (FileStream fs = new FileStream(exePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 using (BinaryReader br = new BinaryReader(fs))
                 {
@@ -215,7 +276,8 @@ namespace Dark_Cloud_Improved_Version
             try
             {
                 string maps = File.ReadAllText($"/proc/{pid}/maps");
-                long largest = 0;
+                long bestMatch = -1;
+                long bestRx = -1;
                 foreach (string line in maps.Split('\n'))
                 {
                     Match m = Regex.Match(line, @"^([0-9a-fA-F]+)-([0-9a-fA-F]+)\s+(\S+)\s+\S+\s+\S+\s+\S+\s*(.*)$");
@@ -226,14 +288,22 @@ namespace Dark_Cloud_Improved_Version
                     string perms = m.Groups[3].Value;
                     string path = m.Groups[4].Value.Trim();
 
-                    if (perms.StartsWith("r-x", StringComparison.Ordinal) &&
+                    // First PT_LOAD is often r--p for PIE executables; any readable
+                    // mapping for the executable is a valid base candidate.
+                    if (perms.StartsWith("r", StringComparison.Ordinal) &&
                         Path.GetFileName(path).Equals(exeName, StringComparison.OrdinalIgnoreCase))
-                        return start;
+                    {
+                        if (bestMatch == -1 || start < bestMatch)
+                            bestMatch = start;
+                    }
 
-                    if (perms.StartsWith("r-x", StringComparison.Ordinal) && start > largest)
-                        largest = start;
+                    if (perms.StartsWith("r-x", StringComparison.Ordinal) && (bestRx == -1 || start < bestRx))
+                        bestRx = start;
                 }
-                return largest;
+
+                if (bestMatch != -1)
+                    return bestMatch;
+                return bestRx != -1 ? bestRx : 0;
             }
             catch
             {
