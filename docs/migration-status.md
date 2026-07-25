@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 1.3: Add repository security automation
+Phase 2: Introduce memory abstractions
 
 ## Completed
 
@@ -14,17 +14,16 @@ Phase 1.3: Add repository security automation
 - [x] First memory-abstraction pull request proposed
 - [x] Phase 1.1 — Split `.github/workflows/build-and-release.yml` into `ci.yml` and `release.yml`
 - [x] Phase 1.2 — Add `packages.lock.json`, locked restore, and test-result artifacts
+- [x] Phase 1.3 — Add CodeQL, dependency review, and Dependabot
 
 ## In progress
 
-- [ ] Phase 1.3 — Add CodeQL, dependency review, and Dependabot
+- [ ] Phase 2.1 — Create `DarkCloud.Memory.Abstractions`
 
 ## Next
 
-- Phase 2: Introduce memory abstractions
-  - Create `DarkCloud.Memory.Abstractions`
-  - Implement `InMemoryGameMemory`
-  - Create `LegacyProcessGameMemory` adapter
+- Phase 2.2 — Implement `InMemoryGameMemory` with boundary tests
+- Phase 2.3 — Create `LegacyProcessGameMemory` adapter
 
 ## Known blockers
 

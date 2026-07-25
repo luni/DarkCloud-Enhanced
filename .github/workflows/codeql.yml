@@ -1,0 +1,74 @@
+name: CodeQL
+
+permissions:
+  contents: read
+  security-events: write
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+  schedule:
+    - cron: '0 0 * * 0'
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-csharp:
+    name: Analyze C#
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+          build-mode: manual
+          queries: security-extended,security-and-quality
+
+      - name: Install Mono
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mono-runtime
+
+      - name: Build C# project
+        run: |
+          dotnet restore "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" --locked-mode
+          dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release --no-restore
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  analyze-cpp:
+    name: Analyze C/C++
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: cpp
+          queries: security-extended,security-and-quality
+
+      - name: Build native helper
+        run: msbuild -restore "native/pcsx2_offsetreader/pcsx2_offsetreader.vcxproj" /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
