@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 4.3: Generate PNACH data
+Phase 6: Add platform integration tests
 
 ## Completed
 
@@ -22,15 +22,17 @@ Phase 4.3: Generate PNACH data
 - [x] Phase 3.2 — Add symbolic `GameAddress` pilot in `RegionAddresses.DetectRegion`
 - [x] Phase 4.1 — Define `data/addresses.json` schema and pilot addresses
 - [x] Phase 4.2 — Create `AddressGenerator` and `GameAddresses.g.cs`
+- [x] Phase 5 — Add shared `DarkCloud.Memory.ContractTests`
 
 ## In progress
 
-- [ ] Phase 4.3 — Generate PNACH data
+- [ ] Phase 6 — Add platform integration tests
 
 ## Next
 
-- Phase 4.4 — Complete address migration
-- Phase 5: Shared memory contract tests
+- Phase 7 — Windows integration tests
+- Phase 8: Extract session state machine
+- Phase 9: Decouple UI notifications
 
 ## Known blockers
 

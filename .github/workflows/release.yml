@@ -61,12 +61,15 @@ jobs:
         run: |
           dotnet restore "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" --locked-mode
           dotnet restore "tests/DarkCloud.Memory.Abstractions.Tests/DarkCloud.Memory.Abstractions.Tests.csproj" --locked-mode
+          dotnet restore "tests/DarkCloud.Memory.ContractTests/DarkCloud.Memory.ContractTests.csproj" --locked-mode
 
       - name: Build C# project
         run: dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release --no-restore
 
       - name: Run unit tests
-        run: dotnet test "tests/DarkCloud.Memory.Abstractions.Tests/DarkCloud.Memory.Abstractions.Tests.csproj" --no-restore
+        run: |
+          dotnet test "tests/DarkCloud.Memory.Abstractions.Tests/DarkCloud.Memory.Abstractions.Tests.csproj" --no-restore
+          dotnet test "tests/DarkCloud.Memory.ContractTests/DarkCloud.Memory.ContractTests.csproj" --no-restore
 
       - name: Verify generated files are current
         run: |
