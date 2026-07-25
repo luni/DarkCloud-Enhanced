@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 8: Extract session state machine
+Phase 9: Decouple UI notifications
 
 ## Completed
 
@@ -25,14 +25,15 @@ Phase 8: Extract session state machine
 - [x] Phase 5 — Add shared `DarkCloud.Memory.ContractTests`
 - [x] Phase 6 — Add `IMemoryBackend` abstraction, `SnapshotMemoryBackend`, and `DarkCloudEnhancedMod.IntegrationTests` covering Linux synthetic and snapshot-based scenarios
 - [x] Phase 7 — Add Windows synthetic process target and `DarkCloud.Memory.Windows.IntegrationTests`
+- [x] Phase 8 — Extract session state machine
 
 ## In progress
 
-- [ ] Phase 8 — Extract session state machine
+- [ ] Phase 9 — Decouple UI notifications
 
 ## Next
 
-- Phase 9: Decouple UI notifications
+- Phase 10: Extract domain logic
 
 ## Known blockers
 

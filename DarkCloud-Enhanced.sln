@@ -27,6 +27,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FakeProcess", "tests\window
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DarkCloud.Memory.Windows.IntegrationTests", "tests\DarkCloud.Memory.Windows.IntegrationTests\DarkCloud.Memory.Windows.IntegrationTests.csproj", "{1302D096-8FA6-4152-B4D2-E5EDB1A6817E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DarkCloud.Core", "src\DarkCloud.Core\DarkCloud.Core.csproj", "{34805B4E-98BE-4D80-BA53-420D92C05427}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DarkCloud.Core.Tests", "tests\DarkCloud.Core.Tests\DarkCloud.Core.Tests.csproj", "{C0CFD894-D4D9-4FB3-99DB-53C19BFECC74}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -86,6 +90,18 @@ Global
 		{1302D096-8FA6-4152-B4D2-E5EDB1A6817E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1302D096-8FA6-4152-B4D2-E5EDB1A6817E}.Release|x64.ActiveCfg = Release|Any CPU
 		{1302D096-8FA6-4152-B4D2-E5EDB1A6817E}.Release|x64.Build.0 = Release|Any CPU
+		{34805B4E-98BE-4D80-BA53-420D92C05427}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34805B4E-98BE-4D80-BA53-420D92C05427}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34805B4E-98BE-4D80-BA53-420D92C05427}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34805B4E-98BE-4D80-BA53-420D92C05427}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34805B4E-98BE-4D80-BA53-420D92C05427}.Release|x64.ActiveCfg = Release|Any CPU
+		{34805B4E-98BE-4D80-BA53-420D92C05427}.Release|x64.Build.0 = Release|Any CPU
+		{C0CFD894-D4D9-4FB3-99DB-53C19BFECC74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0CFD894-D4D9-4FB3-99DB-53C19BFECC74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0CFD894-D4D9-4FB3-99DB-53C19BFECC74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0CFD894-D4D9-4FB3-99DB-53C19BFECC74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0CFD894-D4D9-4FB3-99DB-53C19BFECC74}.Release|x64.ActiveCfg = Release|Any CPU
+		{C0CFD894-D4D9-4FB3-99DB-53C19BFECC74}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -104,5 +120,7 @@ Global
 		{D7B1BF64-20B3-4F17-9FD1-5CBDF4651D9B} = {A548299F-A303-4598-A685-4CD180EFF77D}
 		{A09E496D-64FB-4BC5-B290-5FDB9A115140} = {6DE9B69B-162A-47E6-AC39-E40AE35AA716}
 		{1302D096-8FA6-4152-B4D2-E5EDB1A6817E} = {6DE9B69B-162A-47E6-AC39-E40AE35AA716}
+		{34805B4E-98BE-4D80-BA53-420D92C05427} = {0B3B4EB0-F44F-4302-8C75-4FD25AE23591}
+		{C0CFD894-D4D9-4FB3-99DB-53C19BFECC74} = {6DE9B69B-162A-47E6-AC39-E40AE35AA716}
 	EndGlobalSection
 EndGlobal

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using DarkCloud.Core.Session;
 
 namespace DarkCloudEnhancedMod
 {
@@ -25,7 +27,9 @@ namespace DarkCloudEnhancedMod
         public static Thread TASSThread2 = new Thread(new ThreadStart(TASThread.RecordTAS));
         public static Thread dungeonthread = new Thread(new ThreadStart(Dungeon.InsideDungeonThread));
         public static Thread debugThread = new Thread(new ThreadStart(CheatCodes.DebugOptions));
-        public static Thread launchThread = new Thread(new ThreadStart(MainMenuThread.CheckEmulatorAndGame));
+
+        private CancellationTokenSource _runnerCts;
+        private Task _runnerTask;
 
         public int[] attackSoundAddresses = { 0x20265DBC, 0x20265DC2, 0x20265DC8, 0x20265DCE, 0x20265F0C, 0x20265F12, 0x2026605C, 0x20266062, 0x202661AC, 0x202661B8, 0x202662FC, 0x20266302, 0x20266308, 0x2026644C };
         public byte[] attackSoundValues = { 68, 69, 70, 71, 83, 84, 98, 99, 113, 115, 128, 129, 130, 156 };
@@ -242,7 +246,7 @@ namespace DarkCloudEnhancedMod
             while (true)
             {
                 Label_UserMode_PlaceholderText.Text = "A possible save state used! Mod has been terminated.";
-                launchThread.Abort();
+                StopSessionRunner();
                 Memory.WriteByte(0x21F10024, 0);
                 if (result == DialogResult.OK)
                 {
@@ -378,14 +382,34 @@ namespace DarkCloudEnhancedMod
         {
             TabControl_USER.Visible = true;
             Container_MainModes.Visible = false;
-            if (!launchThread.IsAlive) launchThread.Start();
+            StartSessionRunner();
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e) //when mod is quit
         {
-            launchThread.Abort();
+            StopSessionRunner();
             Memory.WriteByte(0x21F10024, 0);
             base.OnFormClosed(e);
+        }
+
+        private void StartSessionRunner()
+        {
+            StopSessionRunner();
+
+            _runnerCts = new CancellationTokenSource();
+
+            var provider = new ModWindowGameMemoryProvider();
+            var detector = new GameSessionDetector();
+            var observer = new ModWindowGameSessionObserver();
+            var clock = new SystemClock();
+            var runner = new GameSessionRunner(provider, detector, observer, clock);
+
+            _runnerTask = Task.Run(() => runner.RunAsync(_runnerCts.Token));
+        }
+
+        private void StopSessionRunner()
+        {
+            _runnerCts?.Cancel();
         }
         #endregion
 
@@ -394,7 +418,7 @@ namespace DarkCloudEnhancedMod
         {
             TabControl_USER.Visible = true;
             Container_MainModes.Visible = false;
-            if (!launchThread.IsAlive) launchThread.Start();
+            StartSessionRunner();
         }
 
         private void buttonLaunchModAsDev(object sender, EventArgs e) //Launch Mod with dev buttons

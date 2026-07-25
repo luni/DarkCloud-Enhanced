@@ -50,6 +50,12 @@
         "resolved": "4.5.2",
         "contentHash": "wprSFgext8cwqymChhrBLu62LMg/1u92bU+VOwyfBimSPVFXtsNqEWC92Pf9ofzJFlk4IHmJA75EDJn1b2goAQ=="
       },
+      "darkcloud.core": {
+        "type": "Project",
+        "dependencies": {
+          "DarkCloud.Memory.Abstractions": "[1.0.0, )"
+        }
+      },
       "darkcloud.memory.abstractions": {
         "type": "Project"
       }
