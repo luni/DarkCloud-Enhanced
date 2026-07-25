@@ -22,8 +22,8 @@ int main(void)
     // Marker at the start of EE memory.
     memcpy(EEmem, "DarkClou", 8);
 
-    // Boot string marker at PS2 offset 0x20299540 (offset 0x29540).
-    memcpy((char*)EEmem + 0x29540, "Dark", 4);
+    // Boot string marker at PS2 offset 0x20299540 (offset 0x299540).
+    memcpy((char*)EEmem + 0x299540, "Dark", 4);
 
     // PAL flag marker at PS2 offset 0x21F22EA1 (offset 0x1F22EA0).
     *((uint8_t*)EEmem + 0x1F22EA0) = 1;

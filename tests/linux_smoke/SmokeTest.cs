@@ -91,7 +91,7 @@ class SmokeTest
             return 1;
         }
 
-        long bootAddr = eemem + 0x29540;
+        long bootAddr = eemem + 0x299540;
         byte[] boot = new byte[4];
         object[] bootArgs = new object[] { new IntPtr(pid), bootAddr, boot, (long)4, (ulong)0 };
         readMem.Invoke(null, bootArgs);
@@ -116,7 +116,65 @@ class SmokeTest
             return 1;
         }
 
-        Console.WriteLine("PASS: smoke test succeeded");
+        // Integration tests against the Memory and RegionAddresses classes.
+        var memory = asm.GetType("DarkCloudEnhancedMod.Memory");
+        memory.GetField("emulatorProcess", BindingFlags.NonPublic | BindingFlags.Static)
+              .SetValue(null, Process.GetProcessById(pid));
+        memory.GetField("EEMemAddress", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, eemem);
+        memory.GetField("EEMemOffset", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, eemem - 0x20000000L);
+
+        var regionAddresses = asm.GetType("DarkCloudEnhancedMod.RegionAddresses");
+        regionAddresses.GetProperty("RegionDetected", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, false, null);
+        regionAddresses.GetProperty("CurrentRegion", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, 0, null);
+        regionAddresses.GetMethod("DetectRegion", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
+        bool regionDetected = (bool)regionAddresses.GetProperty("RegionDetected", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null, null);
+        int currentRegion = (int)regionAddresses.GetProperty("CurrentRegion", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null, null);
+        Console.WriteLine("RegionDetected={0} CurrentRegion={1}", regionDetected, currentRegion);
+        if (!regionDetected || currentRegion != 0)
+        {
+            Console.WriteLine("FAIL: region detection did not report NTSC");
+            fake.Kill();
+            return 1;
+        }
+
+        var readByte = memory.GetMethod("ReadByte", BindingFlags.NonPublic | BindingFlags.Static);
+        byte bootFirst = (byte)readByte.Invoke(null, new object[] { 0x20299540L });
+        Console.WriteLine("Memory.ReadByte boot marker: 0x{0:X} ({1})", bootFirst, (char)bootFirst);
+        if (bootFirst != (byte)'D')
+        {
+            Console.WriteLine("FAIL: Memory.ReadByte did not return 'D'");
+            fake.Kill();
+            return 1;
+        }
+
+        var writeByte = memory.GetMethod("WriteByte", BindingFlags.NonPublic | BindingFlags.Static);
+        writeByte.Invoke(null, new object[] { 0x20001000L, (byte)0xAB });
+        byte roundTrip = (byte)readByte.Invoke(null, new object[] { 0x20001000L });
+        Console.WriteLine("Memory Write/Read byte round-trip: 0x{0:X}", roundTrip);
+        if (roundTrip != 0xAB)
+        {
+            Console.WriteLine("FAIL: Memory Write/Read round-trip failed");
+            fake.Kill();
+            return 1;
+        }
+
+        regionAddresses.GetProperty("CurrentRegion", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, 1, null);
+        regionAddresses.GetProperty("RegionDetected", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, true, null);
+        var translate = regionAddresses.GetMethod("Translate", BindingFlags.NonPublic | BindingFlags.Static);
+        long translated = (long)translate.Invoke(null, new object[] { 0x20299540L });
+        long[] ntscArr = (long[])regionAddresses.GetField("NTSC", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+        long[] palArr = (long[])regionAddresses.GetField("PAL", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+        int idx = Array.IndexOf(ntscArr, 0x20299540L);
+        long expectedPal = palArr[idx];
+        Console.WriteLine("RegionAddresses.Translate(PAL, 0x20299540) = 0x{0:X}, expected 0x{1:X}", translated, expectedPal);
+        if (translated != expectedPal)
+        {
+            Console.WriteLine("FAIL: PAL address translation mismatch");
+            fake.Kill();
+            return 1;
+        }
+
+        Console.WriteLine("PASS: smoke test and integration checks succeeded");
         fake.Kill();
         return 0;
     }

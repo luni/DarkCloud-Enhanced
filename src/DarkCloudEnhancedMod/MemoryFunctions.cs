@@ -15,6 +15,8 @@ namespace DarkCloudEnhancedMod
         internal static long EEMemAddress, EEMemOffset;
         internal static long CheckEEMemAddress, CheckEEMemOffset;
 
+        private static IntPtr ProcessHandle => Platform.IsLinux ? new IntPtr(emulatorProcess.Id) : emulatorProcess.Handle;
+
         internal static class WinAPIFlags
         {
             [Flags]
@@ -86,7 +88,7 @@ namespace DarkCloudEnhancedMod
             emulatorProcess = GetProcess(emulatorName);
 
             if (emulatorProcess != null) {
-                CheckEEMemAddress = Platform.GetEEMem(emulatorProcess.Handle, emulatorProcess.Id);
+                CheckEEMemAddress = Platform.GetEEMem(ProcessHandle, emulatorProcess.Id);
                 CheckEEMemOffset = CheckEEMemAddress - 0x20000000;
 
                 switch (emulatorProcess.ProcessName) {
@@ -209,7 +211,7 @@ namespace DarkCloudEnhancedMod
         {
             address = RegionAddresses.Translate(address);
             byte[] dataBuffer = new byte[numBytes];
-            Platform.ReadMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out ulong _); //_ seems to act as NULL, we don't need numOfBytesRead
+            Platform.ReadMemory(ProcessHandle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out ulong _); //_ seems to act as NULL, we don't need numOfBytesRead
             return dataBuffer;
         }
 
@@ -266,7 +268,7 @@ namespace DarkCloudEnhancedMod
             // http://stackoverflow.com/questions/1003275/how-to-convert-byte-to-string
             address = RegionAddresses.Translate(address);
             byte[] dataBuffer = new byte[length];
-            Platform.ReadMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, length, out ulong _);
+            Platform.ReadMemory(ProcessHandle, address + EEMemOffset, dataBuffer, length, out ulong _);
             return Encoding.GetEncoding(10000).GetString(dataBuffer);
         }
 
@@ -275,19 +277,19 @@ namespace DarkCloudEnhancedMod
             // http://stackoverflow.com/questions/16072709/converting-string-to-byte-array-in-c-sharp
             address = RegionAddresses.Translate(address);
             byte[] dataBuffer = Encoding.GetEncoding(10000).GetBytes(stringToWrite); //Western European (Mac) Encoding Table
-            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out ulong _);
+            return Platform.WriteMemory(ProcessHandle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out ulong _);
         }
 
         internal static bool Write(long address, byte[] value)
         {
             address = RegionAddresses.Translate(address);
-            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, value, value.LongLength, out ulong _);
+            return Platform.WriteMemory(ProcessHandle, address + EEMemOffset, value, value.LongLength, out ulong _);
         }
 
         internal static bool WriteOneByte(long address, byte[] value)
         {
             address = RegionAddresses.Translate(address);
-            return Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, value, sizeof(byte), out ulong _);
+            return Platform.WriteMemory(ProcessHandle, address + EEMemOffset, value, sizeof(byte), out ulong _);
         }
 
         internal static bool WriteByte(long address, byte value) => WriteOneByte(address, BitConverter.GetBytes(value));
@@ -295,7 +297,7 @@ namespace DarkCloudEnhancedMod
         internal static void WriteByteArray(long address, byte[] byteArray)  //Write byte array at address + EEMem_Offset
         {
             address = RegionAddresses.Translate(address);
-            bool successful = Platform.WriteMemory(emulatorProcess.Handle, address + EEMemOffset, byteArray, byteArray.LongLength, out ulong _);
+            bool successful = Platform.WriteMemory(ProcessHandle, address + EEMemOffset, byteArray, byteArray.LongLength, out ulong _);
 
             if (!successful)
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + GetLastError() + " - " + GetSystemMessage(GetLastError()));
@@ -316,7 +318,7 @@ namespace DarkCloudEnhancedMod
             byte[] stringBuffer = new byte[searchString.LongCount()];
             List<long> resultsList = new List<long>();
 
-            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
+            Platform.ProtectMemory(ProcessHandle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchString + ". This may take awhile.");
 
@@ -333,7 +335,7 @@ namespace DarkCloudEnhancedMod
         {
             List<long> resultsList = new List<long>();
 
-            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
+            Platform.ProtectMemory(ProcessHandle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchValue + ". This may take awhile.");
 
@@ -348,7 +350,7 @@ namespace DarkCloudEnhancedMod
         {
             List<long> resultsList = new List<long>();
 
-            Platform.ProtectMemory(emulatorProcess.Handle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _);
+            Platform.ProtectMemory(ProcessHandle, startOffset, stopOffset - startOffset, (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _);
 
             for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++) {
                 if (ReadByteArray(currentOffset, byteArray.LongLength).SequenceEqual(byteArray)) {
