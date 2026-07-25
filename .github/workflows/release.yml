@@ -58,10 +58,20 @@ jobs:
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mono-runtime mono-mcs gcc python3 libgdiplus
 
       - name: Restore dependencies (locked)
-        run: dotnet restore "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" --locked-mode
+        run: |
+          dotnet restore "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" --locked-mode
+          dotnet restore "tests/DarkCloud.Memory.Abstractions.Tests/DarkCloud.Memory.Abstractions.Tests.csproj" --locked-mode
 
       - name: Build C# project
         run: dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release --no-restore
+
+      - name: Run unit tests
+        run: dotnet test "tests/DarkCloud.Memory.Abstractions.Tests/DarkCloud.Memory.Abstractions.Tests.csproj" --no-restore
+
+      - name: Verify generated files are current
+        run: |
+          dotnet run --project tools/AddressGenerator/AddressGenerator.csproj -- data/addresses.json src/DarkCloud.Memory.Abstractions/Generated/GameAddresses.g.cs
+          git diff --exit-code src/DarkCloud.Memory.Abstractions/Generated/
 
       - name: Run PAL port CI tests
         run: |

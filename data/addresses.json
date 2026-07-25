@@ -1,0 +1,25 @@
+{
+  "addresses": [
+    {
+      "name": "Game.BootMarker",
+      "dataType": "UInt32",
+      "ntsc": "0x20299540",
+      "pal": "0x2029BCA0",
+      "description": "Boot string marker used for console region detection."
+    },
+    {
+      "name": "Game.NtscRegionFlag",
+      "dataType": "UInt8",
+      "ntsc": "0x21F10020",
+      "pal": "0x21F10020",
+      "description": "NTSC region flag."
+    },
+    {
+      "name": "Game.PalRegionFlag",
+      "dataType": "UInt8",
+      "ntsc": "0x21F22EA0",
+      "pal": "0x21F22EA0",
+      "description": "PAL region flag."
+    }
+  ]
+}

@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 4: Structured address data and generators
+Phase 4.3: Generate PNACH data
 
 ## Completed
 
@@ -20,14 +20,16 @@ Phase 4: Structured address data and generators
 - [x] Phase 2.3 — Create `LegacyProcessGameMemory` adapter
 - [x] Phase 3.1 — Extract `IAddressTranslator` and `RegionAddressTranslator`
 - [x] Phase 3.2 — Add symbolic `GameAddress` pilot in `RegionAddresses.DetectRegion`
+- [x] Phase 4.1 — Define `data/addresses.json` schema and pilot addresses
+- [x] Phase 4.2 — Create `AddressGenerator` and `GameAddresses.g.cs`
 
 ## In progress
 
-- [ ] Phase 4.1 — Define structured address data
+- [ ] Phase 4.3 — Generate PNACH data
 
 ## Next
 
-- Phase 4.2 — Create generator tooling
+- Phase 4.4 — Complete address migration
 - Phase 5: Shared memory contract tests
 
 ## Known blockers

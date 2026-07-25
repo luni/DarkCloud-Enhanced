@@ -5,14 +5,16 @@ namespace DarkCloud.Memory.Abstractions
     /// </summary>
     public readonly struct GameAddress
     {
-        public GameAddress(string name, long ntscAddress)
+        public GameAddress(string name, long ntscAddress, string dataType = null)
         {
             Name = name;
             NtscAddress = ntscAddress;
+            DataType = dataType;
         }
 
         public string Name { get; }
         public long NtscAddress { get; }
+        public string DataType { get; }
 
         /// <summary>
         /// Resolves this address for the given region using the supplied translator.
