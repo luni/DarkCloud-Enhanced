@@ -135,7 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="ModIcon.ico" />
-    <Content Include="Resources\pcsx2_offsetreader.dll">
+    <Content Include="Resources\pcsx2_offsetreader.dll" Condition="'$(OS)' == 'Windows_NT'">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

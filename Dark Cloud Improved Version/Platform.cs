@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Dark_Cloud_Improved_Version
@@ -66,6 +68,193 @@ namespace Dark_Cloud_Improved_Version
         }
 
         private static long GetEEMemLinux(int pid)
+        {
+            long? result = GetEEMemFromElfSymbol(pid);
+            if (result.HasValue && result.Value != 0)
+                return result.Value;
+
+            return GetEEMemLinuxHeuristic(pid);
+        }
+
+        private static long? GetEEMemFromElfSymbol(int pid)
+        {
+            try
+            {
+                string exePath = $"/proc/{pid}/exe";
+                string cmdline = File.ReadAllText($"/proc/{pid}/cmdline").TrimEnd('\0');
+                string exeName = Path.GetFileName(cmdline.Split('\0')[0]);
+                if (string.IsNullOrEmpty(exeName))
+                    exeName = "pcsx2";
+
+                using (FileStream fs = new FileStream(exePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (BinaryReader br = new BinaryReader(fs))
+                {
+                    // ELF identification
+                    byte[] eIdent = br.ReadBytes(16);
+                    if (eIdent.Length < 16 ||
+                        eIdent[0] != 0x7F || eIdent[1] != (byte)'E' || eIdent[2] != (byte)'L' || eIdent[3] != (byte)'F' ||
+                        eIdent[4] != 2) // 64-bit
+                        return null;
+
+                    fs.Position = 16;
+                    ushort eType = br.ReadUInt16();
+                    br.ReadUInt16(); // e_machine
+                    br.ReadUInt32(); // e_version
+                    br.ReadUInt64(); // e_entry
+                    ulong ePhoff = br.ReadUInt64();
+                    ulong eShoff = br.ReadUInt64();
+                    br.ReadUInt32(); // e_flags
+                    br.ReadUInt16(); // e_ehsize
+                    br.ReadUInt16(); // e_phentsize
+                    ushort ePhnum = br.ReadUInt16();
+                    br.ReadUInt16(); // e_shentsize
+                    ushort eShnum = br.ReadUInt16();
+                    ushort eShstrndx = br.ReadUInt16();
+
+                    if (eShoff == 0 || eShnum == 0)
+                        return null;
+
+                    // Read section headers
+                    var sections = new List<ElfSection>(eShnum);
+                    fs.Position = (long)eShoff;
+                    for (int i = 0; i < eShnum; i++)
+                    {
+                        uint nameOffset = br.ReadUInt32();
+                        br.ReadUInt32(); // sh_type
+                        br.ReadUInt64(); // sh_flags
+                        br.ReadUInt64(); // sh_addr
+                        ulong offset = br.ReadUInt64();
+                        ulong size = br.ReadUInt64();
+                        br.ReadUInt32(); // sh_link
+                        br.ReadUInt32(); // sh_info
+                        br.ReadUInt64(); // sh_addralign
+                        br.ReadUInt64(); // sh_entsize
+
+                        sections.Add(new ElfSection
+                        {
+                            NameOffset = nameOffset,
+                            Offset = offset,
+                            Size = size
+                        });
+                    }
+
+                    // Read section name string table
+                    if (eShstrndx >= sections.Count)
+                        return null;
+                    ElfSection shStrSection = sections[eShstrndx];
+                    fs.Position = (long)shStrSection.Offset;
+                    byte[] shStrData = br.ReadBytes((int)shStrSection.Size);
+
+                    foreach (ElfSection sec in sections)
+                        sec.Name = ReadNullTerminatedAscii(shStrData, (int)sec.NameOffset);
+
+                    ElfSection dynsym = sections.Find(s => s.Name == ".dynsym");
+                    ElfSection dynstr = sections.Find(s => s.Name == ".dynstr");
+                    if (dynsym == null || dynstr == null)
+                        return null;
+
+                    // Read dynamic string table
+                    fs.Position = (long)dynstr.Offset;
+                    byte[] dynstrData = br.ReadBytes((int)dynstr.Size);
+
+                    // Iterate dynamic symbols looking for "EEmem"
+                    fs.Position = (long)dynsym.Offset;
+                    int symCount = (int)(dynsym.Size / 24);
+                    for (int i = 0; i < symCount; i++)
+                    {
+                        uint nameOffset = br.ReadUInt32();
+                        br.ReadByte();  // st_info
+                        br.ReadByte();  // st_other
+                        br.ReadUInt16(); // st_shndx
+                        ulong stValue = br.ReadUInt64();
+                        br.ReadUInt64(); // st_size
+
+                        string symName = ReadNullTerminatedAscii(dynstrData, (int)nameOffset);
+                        if (symName != "EEmem")
+                            continue;
+
+                        long baseAddr = GetExecutableBaseAddress(pid, exeName);
+                        if (baseAddr == 0)
+                            return null;
+
+                        // ET_EXEC (2) -> st_value is absolute; ET_DYN (3) -> relative to base
+                        long varAddr = eType == 2 ? (long)stValue : baseAddr + (long)stValue;
+                        return ReadInt64FromProcMem(pid, varAddr);
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore and fall through to heuristic
+            }
+            return null;
+        }
+
+        private class ElfSection
+        {
+            internal uint NameOffset;
+            internal ulong Offset;
+            internal ulong Size;
+            internal string Name;
+        }
+
+        private static string ReadNullTerminatedAscii(byte[] data, int offset)
+        {
+            if (offset < 0 || offset >= data.Length)
+                return string.Empty;
+
+            int end = offset;
+            while (end < data.Length && data[end] != 0)
+                end++;
+
+            return Encoding.ASCII.GetString(data, offset, end - offset);
+        }
+
+        private static long GetExecutableBaseAddress(int pid, string exeName)
+        {
+            try
+            {
+                string maps = File.ReadAllText($"/proc/{pid}/maps");
+                long largest = 0;
+                foreach (string line in maps.Split('\n'))
+                {
+                    Match m = Regex.Match(line, @"^([0-9a-fA-F]+)-([0-9a-fA-F]+)\s+(\S+)\s+\S+\s+\S+\s+\S+\s*(.*)$");
+                    if (!m.Success)
+                        continue;
+
+                    long start = Convert.ToInt64(m.Groups[1].Value, 16);
+                    string perms = m.Groups[3].Value;
+                    string path = m.Groups[4].Value.Trim();
+
+                    if (perms.StartsWith("r-x", StringComparison.Ordinal) &&
+                        Path.GetFileName(path).Equals(exeName, StringComparison.OrdinalIgnoreCase))
+                        return start;
+
+                    if (perms.StartsWith("r-x", StringComparison.Ordinal) && start > largest)
+                        largest = start;
+                }
+                return largest;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        private static long ReadInt64FromProcMem(int pid, long address)
+        {
+            using (FileStream mem = File.Open($"/proc/{pid}/mem", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                mem.Position = address;
+                byte[] buffer = new byte[8];
+                int read = mem.Read(buffer, 0, 8);
+                if (read != 8)
+                    return 0;
+                return BitConverter.ToInt64(buffer, 0);
+            }
+        }
+
+        private static long GetEEMemLinuxHeuristic(int pid)
         {
             try
             {

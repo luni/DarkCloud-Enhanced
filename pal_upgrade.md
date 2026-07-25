@@ -12,7 +12,7 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - Wired `Memory` read/write methods and `MainMenuThread` to detect region and translate addresses on the fly.
 - Added the new pnach and `RegionAddresses.cs` to `.csproj`.
 - Migrated the public changelog PDF to `CHANGELOG.md` and updated `README.md`.
-- Added Linux compatibility with a new `Platform.cs` abstraction (`/proc/<pid>/mem`, `SIGSTOP`/`SIGCONT`, heuristic `GetEEMem` from `/proc/<pid>/maps`).
+- Added Linux compatibility with a new `Platform.cs` abstraction (`/proc/<pid>/mem`, `SIGSTOP`/`SIGCONT`, native PCSX2 ELF `.dynsym` `EEmem` resolution, with a `/proc/<pid>/maps` fallback).
 - Added a GitHub Actions CI/CD workflow that builds on Windows, creates a GitHub Release + ZIP when a `v*` tag is pushed, and also builds + AOT-verifies on Mono/Linux.
 - Verified locally on Mono: `xbuild` compiles the solution with 0 errors and `mono --aot` compiles all 785 methods; full runtime smoke test still needs Windows/Wine because the UI is WinForms and `kernel32`/`user32` P/Invokes are used.
 
@@ -72,8 +72,8 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - On Linux `Platform.cs` uses `/proc/<pid>/mem` for reads/writes with a per-PID cached, locked `FileStream`.
 - `VirtualProtectEx` is a no-op on Linux (`/proc/<pid>/mem` reads do not need explicit protection changes).
 - Suspend/resume uses `kill(pid, SIGSTOP/SIGCONT)` on Linux; Windows keeps `DebugActiveProcess`.
-- Linux `GetEEMem` is a heuristic that searches `/proc/<pid>/maps` for the large PCSX2 shared data mapping (`rw-p`/`rw-s`, path contains `pcsx2`). A future improvement is to parse the ELF `.dynsym` for the exported `EEmem` symbol and read its value.
-- `pcsx2_offsetreader.dll` `DllImport` is now in `Platform.cs` and is only invoked on Windows.
+- Linux `GetEEMem` parses the native PCSX2 ELF (`/proc/<pid>/exe`), reads `.dynsym` for the exported `EEmem` symbol, then reads that exported pointer from `/proc/<pid>/mem` to get the EE RAM base. A heuristic based on `/proc/<pid>/maps` is kept as a fallback.
+- `pcsx2_offsetreader.dll` is only included/copied on Windows; Linux uses the native PCSX2 executable's symbol table instead.
 - Process lookup made case-insensitive so `PCSX2`/`pcsx2-qt` are found on Linux.
 - Build and smoke-test on Linux with Mono (`msbuild`) or modern .NET if the project is converted to SDK-style.
 
@@ -124,7 +124,7 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - PAL code/data may not shift by a single uniform delta; that would require per-address mapping and a larger refactor of the ~1,500 hardcoded addresses.
 - Conditional `.pnach` lines encode addresses inside their data words, so a simple address-column shift is not enough.
 - `Dialogues.cs` and language-dependent dialogue IDs may differ in the multi-language PAL build.
-- `pcsx2_offsetreader.dll` is still used on Windows; Linux uses a `/proc/<pid>/maps` heuristic instead.
-- Linux `EEmem` discovery is heuristic. If `HostMemoryMap::EEmemOffset` is not zero or PCSX2 changes its shared-memory layout, the mapping start may not equal the EE RAM base and reads/writes will be wrong.
+- `pcsx2_offsetreader.dll` is still used on Windows; Linux reads the native PCSX2 ELF `.dynsym` for the exported `EEmem` pointer instead.
+- Linux `EEmem` discovery falls back to a `/proc/<pid>/maps` heuristic if the ELF symbol cannot be read.
 - `/proc/<pid>/mem` writes may fail for read-only guest pages; the mod does not currently `mprotect` remote pages on Linux.
 - Only the provided CHDs will be used; no redistribution.
