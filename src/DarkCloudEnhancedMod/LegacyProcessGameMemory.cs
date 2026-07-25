@@ -27,8 +27,7 @@ namespace DarkCloudEnhancedMod
             if (Memory.emulatorProcess == null)
                 return false;
 
-            byte[] data = Memory.ReadByteArray(address, count);
-            if (data == null || data.Length != count)
+            if (!Memory.TryReadByteArray(address, count, out byte[] data))
                 return false;
 
             Buffer.BlockCopy(data, 0, destination, offset, count);

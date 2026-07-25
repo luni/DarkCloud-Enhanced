@@ -20,8 +20,11 @@ namespace DarkCloud.Memory.Abstractions
             if (ntsc.Length != pal.Length)
                 throw new ArgumentException("NTSC and PAL tables must have the same length.");
 
-            _ntsc = ntsc;
-            _pal = pal;
+            _ntsc = new long[ntsc.Length];
+            _pal = new long[pal.Length];
+            Array.Copy(ntsc, _ntsc, ntsc.Length);
+            Array.Copy(pal, _pal, pal.Length);
+            Array.Sort(_ntsc, _pal);
         }
 
         public long Translate(GameRegion region, long ntscAddress)

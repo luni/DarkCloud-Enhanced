@@ -23,6 +23,17 @@ namespace AddressGenerator
 
     internal static class Program
     {
+        private static readonly HashSet<string> CSharpKeywords = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const",
+            "continue", "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern",
+            "false", "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit", "in", "int", "interface",
+            "internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator", "out", "override",
+            "params", "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof",
+            "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true", "try", "typeof", "uint",
+            "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void", "volatile", "while"
+        };
+
         private static int Main(string[] args)
         {
             string inputPath = args.Length > 0 ? args[0] : "data/addresses.json";
@@ -72,9 +83,9 @@ namespace AddressGenerator
                 sb.AppendLine($"        /// {EscapeXml(entry.Description)}");
                 sb.AppendLine($"        /// </summary>");
                 sb.AppendLine($"        public static readonly GameAddress {fieldName} = new GameAddress(");
-                sb.AppendLine($"            \"{entry.Name}\",");
+                sb.AppendLine($"            \"{EscapeCSharpString(entry.Name)}\",");
                 sb.AppendLine($"            0x{ntsc:X}L,");
-                sb.AppendLine($"            \"{entry.DataType}\");");
+                sb.AppendLine($"            \"{EscapeCSharpString(entry.DataType)}\");");
             }
 
             sb.AppendLine();
@@ -120,10 +131,28 @@ namespace AddressGenerator
         private static string ToFieldName(string name)
         {
             if (string.IsNullOrEmpty(name))
-                return name;
+                return "_";
 
-            // Convert dotted names like Game.BootMarker to Game_BootMarker to be valid C# identifiers.
-            return name.Replace('.', '_').Replace(' ', '_').Replace('-', '_');
+            var sb = new StringBuilder(name.Length);
+            foreach (char c in name)
+            {
+                if (c == '.' || c == ' ' || c == '-' || c == '_')
+                    sb.Append('_');
+                else if (char.IsLetterOrDigit(c))
+                    sb.Append(c);
+            }
+
+            if (sb.Length == 0)
+                sb.Append('_');
+
+            if (char.IsDigit(sb[0]))
+                sb.Insert(0, '_');
+
+            string result = sb.ToString();
+            if (CSharpKeywords.Contains(result))
+                result = "_" + result;
+
+            return result;
         }
 
         private static string EscapeXml(string value)
@@ -134,7 +163,18 @@ namespace AddressGenerator
             return value
                 .Replace("&", "&amp;")
                 .Replace("<", "&lt;")
-                .Replace(">", "&gt;");
+                .Replace(">", "&gt;")
+                .Replace("\r\n", " ")
+                .Replace("\n", " ")
+                .Replace("\r", " ");
+        }
+
+        private static string EscapeCSharpString(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+
+            return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
         }
     }
 }

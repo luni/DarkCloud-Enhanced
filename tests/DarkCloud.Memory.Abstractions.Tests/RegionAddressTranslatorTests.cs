@@ -88,15 +88,16 @@ namespace DarkCloud.Memory.Abstractions.Tests
         }
 
         [Fact]
-        public void UnsortedMappings_AreHandledByBinarySearch()
+        public void UnsortedMappings_AreSortedAndTranslated()
         {
-            // Array.BinarySearch requires sorted input; test verifies behavior with an unsorted array.
+            // Input is supplied out of order; the translator should sort internally
+            // before using binary search so the result is deterministic.
             var translator = new RegionAddressTranslator(
                 new[] { 0x3000L, 0x1000L, 0x2000L },
                 new[] { 0x3300L, 0x1100L, 0x2200L });
 
-            long result = translator.Translate(GameRegion.Pal, 0x1500L);
-            Assert.NotEqual(0x1500L, result);
+            // 0x1500 falls between the sorted entries 0x1000 -> 0x1100 (+0x100).
+            Assert.Equal(0x1600L, translator.Translate(GameRegion.Pal, 0x1500L));
         }
 
         [Fact]

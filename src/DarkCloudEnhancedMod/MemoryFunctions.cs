@@ -215,6 +215,15 @@ namespace DarkCloudEnhancedMod
             return dataBuffer;
         }
 
+        internal static bool TryReadByteArray(long address, long numBytes, out byte[] data)
+        {
+            address = RegionAddresses.Translate(address);
+            data = new byte[numBytes];
+            if (!Platform.ReadMemory(ProcessHandle, address + EEMemOffset, data, data.LongLength, out ulong bytesRead))
+                return false;
+            return bytesRead == (ulong)numBytes;
+        }
+
         internal static byte ReadByte(long address)  //Read byte from address + EEMem_Offset
         {
             var dataBuffer = ReadByteArray(address, 1);
