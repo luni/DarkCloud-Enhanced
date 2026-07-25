@@ -65,6 +65,7 @@ jobs:
           dotnet restore "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" --locked-mode
           dotnet restore "tests/DarkCloud.Memory.Abstractions.Tests/DarkCloud.Memory.Abstractions.Tests.csproj" --locked-mode
           dotnet restore "tests/DarkCloud.Memory.ContractTests/DarkCloud.Memory.ContractTests.csproj" --locked-mode
+          dotnet restore "tests/DarkCloudEnhancedMod.IntegrationTests/DarkCloudEnhancedMod.IntegrationTests.csproj" --locked-mode
 
       - name: Build C# project
         run: dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release --no-restore
