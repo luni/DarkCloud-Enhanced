@@ -17,3 +17,9 @@ dotnet test "DarkCloud-Enhanced.sln" --no-build
 - Build with `dotnet build`.
 - Run `dotnet test` for Core, Memory Abstractions, and integration test projects.
 - The WinForms project targets .NET Framework and builds on Linux with Mono/.NET reference assemblies.
+
+## Domain migration notes
+
+- Place new domain abstractions in `src/DarkCloud.Core` and keep legacy WinForms/process-specific code in `src/DarkCloudEnhancedMod`.
+- `DarkCloud.Core` targets .NET Standard 2.0 with `LangVersion` 7.3; avoid capturing `ref`/`out` parameters in lambdas.
+- The legacy `Player` static methods are being preserved as thin facades that delegate to `DarkCloud.Core.Players` services and repositories.

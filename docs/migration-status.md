@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 10: Extract domain logic (pending)
+Phase 10: Extract domain logic (in progress)
 
 ## Completed
 
@@ -28,6 +28,7 @@ Phase 10: Extract domain logic (pending)
 - [x] Phase 8 — Extract session state machine
 - [x] Phase 9.1 — Introduce `IModStatusSink` and `WinFormsModStatusSink` adapter
 - [x] Phase 9.2 — Remove `ModWindow.NightlyVersionCheck` from `Memory.Initialize` and route all UI updates through `IModStatusSink`
+- [x] Phase 10.1 — Extract player presence/identity and character state (HP/MaxHP/defense/thirst/max thirst/status) into `DarkCloud.Core/Players` repository and service
 
 ## In progress
 
@@ -35,7 +36,7 @@ Phase 10: Extract domain logic (pending)
 
 ## Next
 
-- Phase 10: Extract domain logic
+- Phase 10.2 — Continue extracting domain logic (weapons, items, dungeons, etc.)
 - Phase 11: Replace feature threads with modules
 
 ## Known blockers

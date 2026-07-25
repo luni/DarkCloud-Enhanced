@@ -1,4 +1,5 @@
 ﻿using System;
+using DarkCloud.Core.Players;
 
 namespace DarkCloudEnhancedMod
 {
@@ -50,19 +51,9 @@ namespace DarkCloudEnhancedMod
         /// <br>5 = Osmond</br></returns>
         public static int CurrentCharacterNum()
         {
-            int character = Memory.ReadByte(currentCharacter);
-
-            switch (character)
-            {
-                case ToanId: return ToanId;
-                case XiaoId: return XiaoId;
-                case GoroId: return GoroId;
-                case RubyId: return RubyId;
-                case UngagaId: return UngagaId;
-                case OsmondId: return OsmondId;
-
-                default: return 255;
-            }
+            var memory = new LegacyProcessGameMemory();
+            var service = new PlayerPresenceService(memory);
+            return (int)service.GetCurrentCharacter();
         }
 
         /// <summary>
@@ -85,16 +76,7 @@ namespace DarkCloudEnhancedMod
         /// <br>5 = "Osmond"</br></returns>
         public static string GetCharacterName(int character)
         {
-            switch (character)
-            {
-                case ToanId: return "Toan";
-                case XiaoId: return "Xiao";
-                case GoroId: return "Goro";
-                case RubyId: return "Ruby";
-                case UngagaId: return "Ungaga";
-                case OsmondId: return "Osmond";
-                default: return null;
-            }
+            return ((CharacterType)character).GetName();
         }
 
         /// <summary>
@@ -102,11 +84,17 @@ namespace DarkCloudEnhancedMod
         /// </summary>
         public static bool InDungeonFloor()
         {
-            if (Memory.ReadByte(0x21CD954F) != 255)
-                return true;
+            var memory = new LegacyProcessGameMemory();
+            var service = new PlayerPresenceService(memory);
+            return service.IsInDungeonFloor();
+        }
 
-            else
-                return false;
+        private static PlayerStateService GetPlayerStateService()
+        {
+            var memory = new LegacyProcessGameMemory();
+            var layout = new PlayerCharacterMemoryLayout();
+            var repository = new PlayerStateRepository(memory, layout);
+            return new PlayerStateService(repository);
         }
 
         /// <summary>
@@ -827,104 +815,29 @@ namespace DarkCloudEnhancedMod
 
         internal class Toan
         {
-            private const int hp = 0x21CD955E;
-            private const int maxHP = 0x21CD9552;
-            private const int defense = 0x21CDD894;
-            private const int thirst = 0x21CDD850;
-            private const int thirstMax = 0x21CDD83A;
+            internal const int hp = 0x21CD955E;
+            internal const int maxHP = 0x21CD9552;
+            internal const int defense = 0x21CDD894;
+            internal const int thirst = 0x21CDD850;
+            internal const int thirstMax = 0x21CDD83A;
             //private const int pocketSize = 0x21CDD8AC;
-            private const int status = 0x21CDD814;           //02 Near Death, 04 Freeze, 08 Stamina, 16 Poison, 32 Curse, 64 Goo.
-            private const int statusTimer = 0x21CDD824;
-            private const int currentWeaponSlot = 0x21CDD88C;
+            internal const int status = 0x21CDD814;           //02 Near Death, 04 Freeze, 08 Stamina, 16 Poison, 32 Curse, 64 Goo.
+            internal const int statusTimer = 0x21CDD824;
+            internal const int currentWeaponSlot = 0x21CDD88C;
             
 
-            public static ushort GetHp()
-            {
-                return Memory.ReadUShort(hp);
-            }
-
-            public static void SetHp(ushort newhp)
-            {
-                Memory.WriteUShort(hp, newhp);
-            }
-            public static ushort GetMaxHp()
-            {
-                return Memory.ReadUShort(maxHP);
-            }
-
-            public static void SetMaxHp(int newmaxhp)
-            {
-                Memory.WriteInt(maxHP, newmaxhp);
-            }
-            public static int GetDefense()
-            {
-                return Memory.ReadInt(defense);
-            }
-
-            public static void SetDefense(int newdef)
-            {
-                Memory.WriteInt(defense, newdef);
-            }
-
-            public static float GetThirst()
-            {
-                return Memory.ReadFloat(thirst);
-            }
-
-            public static void SetThirst(float newthirst)
-            {
-                Memory.WriteFloat(thirst, newthirst);
-            }
-            public static float GetMaxThirst()
-            {
-                return Memory.ReadFloat(thirst);
-            }
-
-            public static void SetMaxThirst(float newmaxthirst)
-            {
-                Memory.WriteFloat(thirstMax, newmaxthirst);
-            }
-
-            public static int GetStatus()
-            {
-                return Memory.ReadUShort(status);
-            }
-
-            /// <summary>
-            /// Sets the character status.
-            /// </summary>
-            /// <param name="type">The type of status ("freeze", "stamina", "poison", "curse", "goo"</param>
-            /// <param name="timer">The amount of time in frames (60 = 1 sec) to set the status for.</param>
-            public static void SetStatus(string type, ushort timer)
-            {
-                switch (type.ToLower())
-                {
-                    case "freeze":
-                        Memory.WriteUShort(status, 4);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "stamina":
-                        Memory.WriteUShort(status, 8);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "poison":
-                        Memory.WriteUShort(status, 16);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "curse":
-                        Memory.WriteUShort(status, 32);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "goo":
-                        Memory.WriteUShort(status, 64);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-                }
-            }
+            public static ushort GetHp() => GetPlayerStateService().GetHp(CharacterType.Toan);
+            public static void SetHp(ushort newhp) => GetPlayerStateService().SetHp(CharacterType.Toan, newhp);
+            public static ushort GetMaxHp() => GetPlayerStateService().GetMaxHp(CharacterType.Toan);
+            public static void SetMaxHp(int newmaxhp) => GetPlayerStateService().SetMaxHp(CharacterType.Toan, newmaxhp);
+            public static int GetDefense() => GetPlayerStateService().GetDefense(CharacterType.Toan);
+            public static void SetDefense(int newdef) => GetPlayerStateService().SetDefense(CharacterType.Toan, newdef);
+            public static float GetThirst() => GetPlayerStateService().GetThirst(CharacterType.Toan);
+            public static void SetThirst(float newthirst) => GetPlayerStateService().SetThirst(CharacterType.Toan, newthirst);
+            public static float GetMaxThirst() => GetPlayerStateService().GetMaxThirst(CharacterType.Toan);
+            public static void SetMaxThirst(float newmaxthirst) => GetPlayerStateService().SetMaxThirst(CharacterType.Toan, newmaxthirst);
+            public static int GetStatus() => (int)GetPlayerStateService().GetStatus(CharacterType.Toan);
+            public static void SetStatus(string type, ushort timer) => GetPlayerStateService().SetStatus(CharacterType.Toan, type, timer);
 
             /// <summary>
             /// Returns an array with all of Toan's weapon IDs.
@@ -942,7 +855,7 @@ namespace DarkCloudEnhancedMod
             {
                 return Memory.ReadByte(currentWeaponSlot);
             }
-            
+
             //Addresses taken from https://deconstruction.fandom.com/wiki/Dark_Cloud
             internal class WeaponSlot0
             {
@@ -1605,88 +1518,18 @@ namespace DarkCloudEnhancedMod
             public const int statusTimer = 0x21CDD828;
             public const int currentWeaponSlot = 0x21CDD88D;
 
-            public static ushort GetHp()
-            {
-                return Memory.ReadUShort(hp);
-            }
-
-            public static void SetHp(ushort newhp)
-            {
-                Memory.WriteUShort(hp, newhp);
-            }
-            public static ushort GetMaxHp()
-            {
-                return Memory.ReadUShort(maxHP);
-            }
-
-            public static void SetMaxHp(ushort newmaxhp)
-            {
-                Memory.WriteUShort(maxHP, newmaxhp);
-            }
-            public static int GetDefense()
-            {
-                return Memory.ReadInt(defense);
-            }
-
-            public static void SetDefense(int newdef)
-            {
-                Memory.WriteInt(defense, newdef);
-            }
-
-            public static float GetThirst()
-            {
-                return Memory.ReadFloat(thirst);
-            }
-
-            public static void SetThirst(float newthirst)
-            {
-                Memory.WriteFloat(thirst, newthirst);
-            }
-            public static float GetMaxThirst()
-            {
-                return Memory.ReadFloat(thirst);
-            }
-
-            public static void SetMaxThirst(float newmaxthirst)
-            {
-                Memory.WriteFloat(thirstMax, newmaxthirst);
-            }
-
-            public static int GetStatus()
-            {
-                return Memory.ReadUShort(status);
-            }
-
-            public static void SetStatus(string type, ushort timer)
-            {
-                switch (type.ToLower())
-                {
-                    case "freeze":
-                        Memory.WriteUShort(status, 4);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "stamina":
-                        Memory.WriteUShort(status, 8);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "poison":
-                        Memory.WriteUShort(status, 16);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "curse":
-                        Memory.WriteUShort(status, 32);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "goo":
-                        Memory.WriteUShort(status, 64);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-                }
-            }
+            public static ushort GetHp() => GetPlayerStateService().GetHp(CharacterType.Xiao);
+            public static void SetHp(ushort newhp) => GetPlayerStateService().SetHp(CharacterType.Xiao, newhp);
+            public static ushort GetMaxHp() => GetPlayerStateService().GetMaxHp(CharacterType.Xiao);
+            public static void SetMaxHp(ushort newmaxhp) => GetPlayerStateService().SetMaxHp(CharacterType.Xiao, newmaxhp);
+            public static int GetDefense() => GetPlayerStateService().GetDefense(CharacterType.Xiao);
+            public static void SetDefense(int newdef) => GetPlayerStateService().SetDefense(CharacterType.Xiao, newdef);
+            public static float GetThirst() => GetPlayerStateService().GetThirst(CharacterType.Xiao);
+            public static void SetThirst(float newthirst) => GetPlayerStateService().SetThirst(CharacterType.Xiao, newthirst);
+            public static float GetMaxThirst() => GetPlayerStateService().GetMaxThirst(CharacterType.Xiao);
+            public static void SetMaxThirst(float newmaxthirst) => GetPlayerStateService().SetMaxThirst(CharacterType.Xiao, newmaxthirst);
+            public static int GetStatus() => (int)GetPlayerStateService().GetStatus(CharacterType.Xiao);
+            public static void SetStatus(string type, ushort timer) => GetPlayerStateService().SetStatus(CharacterType.Xiao, type, timer);
 
             public static int[] GetWeaponsList()
             {
@@ -2351,88 +2194,18 @@ namespace DarkCloudEnhancedMod
             public const int statusTimer = 0x21CDD82C;
             public const int currentWeaponSlot = 0x21CDD88E;
 
-            public static ushort GetHp()
-            {
-                return Memory.ReadUShort(hp);
-            }
-
-            public static void SetHp(ushort newhp)
-            {
-                Memory.WriteUShort(hp, newhp);
-            }
-            public static ushort GetMaxHp()
-            {
-                return Memory.ReadUShort(maxHP);
-            }
-
-            public static void SetMaxHp(ushort newmaxhp)
-            {
-                Memory.WriteUShort(maxHP, newmaxhp);
-            }
-            public static int GetDefense()
-            {
-                return Memory.ReadInt(defense);
-            }
-
-            public static void SetDefense(int newdef)
-            {
-                Memory.WriteInt(defense, newdef);
-            }
-
-            public static float GetThirst()
-            {
-                return Memory.ReadFloat(thirst);
-            }
-
-            public static void SetThirst(float newthirst)
-            {
-                Memory.WriteFloat(thirst, newthirst);
-            }
-            public static float GetMaxThirst()
-            {
-                return Memory.ReadFloat(thirstMax);
-            }
-
-            public static void SetMaxThirst(float newmaxthirst)
-            {
-                Memory.WriteFloat(thirstMax, newmaxthirst);
-            }
-
-            public static int GetStatus()
-            {
-                return Memory.ReadUShort(status);
-            }
-
-            public static void SetStatus(string type, ushort timer)
-            {
-                switch (type.ToLower())
-                {
-                    case "freeze":
-                        Memory.WriteUShort(status, 4);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "stamina":
-                        Memory.WriteUShort(status, 8);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "poison":
-                        Memory.WriteUShort(status, 16);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "curse":
-                        Memory.WriteUShort(status, 32);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "goo":
-                        Memory.WriteUShort(status, 64);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-                }
-            }
+            public static ushort GetHp() => GetPlayerStateService().GetHp(CharacterType.Goro);
+            public static void SetHp(ushort newhp) => GetPlayerStateService().SetHp(CharacterType.Goro, newhp);
+            public static ushort GetMaxHp() => GetPlayerStateService().GetMaxHp(CharacterType.Goro);
+            public static void SetMaxHp(ushort newmaxhp) => GetPlayerStateService().SetMaxHp(CharacterType.Goro, newmaxhp);
+            public static int GetDefense() => GetPlayerStateService().GetDefense(CharacterType.Goro);
+            public static void SetDefense(int newdef) => GetPlayerStateService().SetDefense(CharacterType.Goro, newdef);
+            public static float GetThirst() => GetPlayerStateService().GetThirst(CharacterType.Goro);
+            public static void SetThirst(float newthirst) => GetPlayerStateService().SetThirst(CharacterType.Goro, newthirst);
+            public static float GetMaxThirst() => GetPlayerStateService().GetMaxThirst(CharacterType.Goro);
+            public static void SetMaxThirst(float newmaxthirst) => GetPlayerStateService().SetMaxThirst(CharacterType.Goro, newmaxthirst);
+            public static int GetStatus() => (int)GetPlayerStateService().GetStatus(CharacterType.Goro);
+            public static void SetStatus(string type, ushort timer) => GetPlayerStateService().SetStatus(CharacterType.Goro, type, timer);
 
             public static int[] GetWeaponsList()
             {
@@ -3097,88 +2870,18 @@ namespace DarkCloudEnhancedMod
             public const int statusTimer = 0x21CDD830;
             public const int currentWeaponSlot = 0x21CDD88F;
 
-            public static ushort GetHp()
-            {
-                return Memory.ReadUShort(hp);
-            }
-
-            public static void SetHp(ushort newhp)
-            {
-                Memory.WriteUShort(hp, newhp);
-            }
-            public static ushort GetMaxHp()
-            {
-                return Memory.ReadUShort(maxHP);
-            }
-
-            public static void SetMaxHp(ushort newmaxhp)
-            {
-                Memory.WriteUShort(maxHP, newmaxhp);
-            }
-            public static int GetDefense()
-            {
-                return Memory.ReadInt(defense);
-            }
-
-            public static void SetDefense(int newdef)
-            {
-                Memory.WriteInt(defense, newdef);
-            }
-
-            public static float GetThirst()
-            {
-                return Memory.ReadFloat(thirst);
-            }
-
-            public static void SetThirst(float newthirst)
-            {
-                Memory.WriteFloat(thirst, newthirst);
-            }
-            public static float GetMaxThirst()
-            {
-                return Memory.ReadFloat(thirst);
-            }
-
-            public static void SetMaxThirst(float newmaxthirst)
-            {
-                Memory.WriteFloat(thirstMax, newmaxthirst);
-            }
-
-            public static int GetStatus()
-            {
-                return Memory.ReadUShort(status);
-            }
-
-            public static void SetStatus(string type, ushort timer)
-            {
-                switch (type.ToLower())
-                {
-                    case "freeze":
-                        Memory.WriteUShort(status, 4);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "stamina":
-                        Memory.WriteUShort(status, 8);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "poison":
-                        Memory.WriteUShort(status, 16);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "curse":
-                        Memory.WriteUShort(status, 32);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "goo":
-                        Memory.WriteUShort(status, 64);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-                }
-            }
+            public static ushort GetHp() => GetPlayerStateService().GetHp(CharacterType.Ruby);
+            public static void SetHp(ushort newhp) => GetPlayerStateService().SetHp(CharacterType.Ruby, newhp);
+            public static ushort GetMaxHp() => GetPlayerStateService().GetMaxHp(CharacterType.Ruby);
+            public static void SetMaxHp(ushort newmaxhp) => GetPlayerStateService().SetMaxHp(CharacterType.Ruby, newmaxhp);
+            public static int GetDefense() => GetPlayerStateService().GetDefense(CharacterType.Ruby);
+            public static void SetDefense(int newdef) => GetPlayerStateService().SetDefense(CharacterType.Ruby, newdef);
+            public static float GetThirst() => GetPlayerStateService().GetThirst(CharacterType.Ruby);
+            public static void SetThirst(float newthirst) => GetPlayerStateService().SetThirst(CharacterType.Ruby, newthirst);
+            public static float GetMaxThirst() => GetPlayerStateService().GetMaxThirst(CharacterType.Ruby);
+            public static void SetMaxThirst(float newmaxthirst) => GetPlayerStateService().SetMaxThirst(CharacterType.Ruby, newmaxthirst);
+            public static int GetStatus() => (int)GetPlayerStateService().GetStatus(CharacterType.Ruby);
+            public static void SetStatus(string type, ushort timer) => GetPlayerStateService().SetStatus(CharacterType.Ruby, type, timer);
 
             public static bool IsChargingAttack()
             {
@@ -3852,88 +3555,18 @@ namespace DarkCloudEnhancedMod
             public const int status = 0x21CDD824;
             public const int statusTimer = 0x21CDD834;
             public const int currentWeaponSlot = 0x21CDD890;
-            public static ushort GetHp()
-            {
-                return Memory.ReadUShort(hp);
-            }
-
-            public static void SetHp(ushort newhp)
-            {
-                Memory.WriteUShort(hp, newhp);
-            }
-            public static ushort GetMaxHp()
-            {
-                return Memory.ReadUShort(maxHP);
-            }
-
-            public static void SetMaxHp(ushort newmaxhp)
-            {
-                Memory.WriteUShort(maxHP, newmaxhp);
-            }
-            public static int GetDefense()
-            {
-                return Memory.ReadInt(defense);
-            }
-
-            public static void SetDefense(int newdef)
-            {
-                Memory.WriteInt(defense, newdef);
-            }
-
-            public static float GetThirst()
-            {
-                return Memory.ReadFloat(thirst);
-            }
-
-            public static void SetThirst(float newthirst)
-            {
-                Memory.WriteFloat(thirst, newthirst);
-            }
-            public static float GetMaxThirst()
-            {
-                return Memory.ReadFloat(thirst);
-            }
-
-            public static void SetMaxThirst(float newmaxthirst)
-            {
-                Memory.WriteFloat(thirstMax, newmaxthirst);
-            }
-
-            public static int GetStatus()
-            {
-                return Memory.ReadUShort(status);
-            }
-
-            public static void SetStatus(string type, ushort timer)
-            {
-                switch (type.ToLower())
-                {
-                    case "freeze":
-                        Memory.WriteUShort(status, 4);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "stamina":
-                        Memory.WriteUShort(status, 8);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "poison":
-                        Memory.WriteUShort(status, 16);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "curse":
-                        Memory.WriteUShort(status, 32);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "goo":
-                        Memory.WriteUShort(status, 64);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-                }
-            }
+            public static ushort GetHp() => GetPlayerStateService().GetHp(CharacterType.Ungaga);
+            public static void SetHp(ushort newhp) => GetPlayerStateService().SetHp(CharacterType.Ungaga, newhp);
+            public static ushort GetMaxHp() => GetPlayerStateService().GetMaxHp(CharacterType.Ungaga);
+            public static void SetMaxHp(ushort newmaxhp) => GetPlayerStateService().SetMaxHp(CharacterType.Ungaga, newmaxhp);
+            public static int GetDefense() => GetPlayerStateService().GetDefense(CharacterType.Ungaga);
+            public static void SetDefense(int newdef) => GetPlayerStateService().SetDefense(CharacterType.Ungaga, newdef);
+            public static float GetThirst() => GetPlayerStateService().GetThirst(CharacterType.Ungaga);
+            public static void SetThirst(float newthirst) => GetPlayerStateService().SetThirst(CharacterType.Ungaga, newthirst);
+            public static float GetMaxThirst() => GetPlayerStateService().GetMaxThirst(CharacterType.Ungaga);
+            public static void SetMaxThirst(float newmaxthirst) => GetPlayerStateService().SetMaxThirst(CharacterType.Ungaga, newmaxthirst);
+            public static int GetStatus() => (int)GetPlayerStateService().GetStatus(CharacterType.Ungaga);
+            public static void SetStatus(string type, ushort timer) => GetPlayerStateService().SetStatus(CharacterType.Ungaga, type, timer);
 
             public static int[] GetWeaponsList()
             {
@@ -4598,88 +4231,18 @@ namespace DarkCloudEnhancedMod
             public const int statusTimer = 0x21CDD838;
             public const int currentWeaponSlot = 0x21CDD891;
 
-            public static ushort GetHp()
-            {
-                return Memory.ReadUShort(hp);
-            }
-
-            public static void SetHp(ushort newhp)
-            {
-                Memory.WriteUShort(hp, newhp);
-            }
-            public static ushort GetMaxHp()
-            {
-                return Memory.ReadUShort(maxHP);
-            }
-
-            public static void SetMaxHp(ushort newmaxhp)
-            {
-                Memory.WriteUShort(maxHP, newmaxhp);
-            }
-            public static int GetDefense()
-            {
-                return Memory.ReadInt(defense);
-            }
-
-            public static void SetDefense(int newdef)
-            {
-                Memory.WriteInt(defense, newdef);
-            }
-
-            public static float GetThirst()
-            {
-                return Memory.ReadFloat(thirst);
-            }
-
-            public static void SetThirst(float newthirst)
-            {
-                Memory.WriteFloat(thirst, newthirst);
-            }
-            public static float GetMaxThirst()
-            {
-                return Memory.ReadFloat(thirst);
-            }
-
-            public static void SetMaxThirst(float newmaxthirst)
-            {
-                Memory.WriteFloat(thirstMax, newmaxthirst);
-            }
-
-            public static int GetStatus()
-            {
-                return Memory.ReadUShort(status);
-            }
-
-            public static void SetStatus(string type, ushort timer)
-            {
-                switch (type.ToLower())
-                {
-                    case "freeze":
-                        Memory.WriteUShort(status, 4);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "stamina":
-                        Memory.WriteUShort(status, 8);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "poison":
-                        Memory.WriteUShort(status, 16);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "curse":
-                        Memory.WriteUShort(status, 32);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-
-                    case "goo":
-                        Memory.WriteUShort(status, 64);
-                        Memory.WriteUShort(statusTimer, timer);
-                        break;
-                }
-            }
+            public static ushort GetHp() => GetPlayerStateService().GetHp(CharacterType.Osmond);
+            public static void SetHp(ushort newhp) => GetPlayerStateService().SetHp(CharacterType.Osmond, newhp);
+            public static ushort GetMaxHp() => GetPlayerStateService().GetMaxHp(CharacterType.Osmond);
+            public static void SetMaxHp(ushort newmaxhp) => GetPlayerStateService().SetMaxHp(CharacterType.Osmond, newmaxhp);
+            public static int GetDefense() => GetPlayerStateService().GetDefense(CharacterType.Osmond);
+            public static void SetDefense(int newdef) => GetPlayerStateService().SetDefense(CharacterType.Osmond, newdef);
+            public static float GetThirst() => GetPlayerStateService().GetThirst(CharacterType.Osmond);
+            public static void SetThirst(float newthirst) => GetPlayerStateService().SetThirst(CharacterType.Osmond, newthirst);
+            public static float GetMaxThirst() => GetPlayerStateService().GetMaxThirst(CharacterType.Osmond);
+            public static void SetMaxThirst(float newmaxthirst) => GetPlayerStateService().SetMaxThirst(CharacterType.Osmond, newmaxthirst);
+            public static int GetStatus() => (int)GetPlayerStateService().GetStatus(CharacterType.Osmond);
+            public static void SetStatus(string type, ushort timer) => GetPlayerStateService().SetStatus(CharacterType.Osmond, type, timer);
 
             public static int[] GetWeaponsList()
             {
