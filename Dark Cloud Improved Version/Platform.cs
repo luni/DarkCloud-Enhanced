@@ -47,6 +47,7 @@ namespace Dark_Cloud_Improved_Version
 
         private static FileStream _linuxMemStream;
         private static int _linuxPid = -1;
+        private static readonly object _linuxLock = new object();
 
         internal static long GetEEMem(IntPtr processH, int pid)
         {
@@ -84,7 +85,7 @@ namespace Dark_Cloud_Improved_Version
                     string path = m.Groups[4].Value.Trim();
                     long size = end - start;
 
-                    if (perms != "rw-p")
+                    if (perms != "rw-p" && perms != "rw-s")
                         continue;
 
                     if (path.IndexOf("pcsx2", StringComparison.OrdinalIgnoreCase) >= 0 && size > pcsx2Size)
@@ -142,35 +143,38 @@ namespace Dark_Cloud_Improved_Version
         {
             if (IsLinux)
             {
-                int pid = processH.ToInt32();
-                if (_linuxMemStream == null || _linuxPid != pid)
+                lock (_linuxLock)
                 {
-                    if (!OpenLinuxMemoryStream(pid))
+                    int pid = processH.ToInt32();
+                    if (_linuxMemStream == null || _linuxPid != pid)
+                    {
+                        if (!OpenLinuxMemoryStream(pid))
+                        {
+                            bytesRead = 0;
+                            return false;
+                        }
+                    }
+
+                    try
+                    {
+                        _linuxMemStream.Position = address;
+                        int toRead = (int)size;
+                        int total = 0;
+                        while (total < toRead)
+                        {
+                            int read = _linuxMemStream.Read(buffer, total, toRead - total);
+                            if (read == 0)
+                                break;
+                            total += read;
+                        }
+                        bytesRead = (ulong)total;
+                        return total == toRead;
+                    }
+                    catch
                     {
                         bytesRead = 0;
                         return false;
                     }
-                }
-
-                try
-                {
-                    _linuxMemStream.Position = address;
-                    int toRead = (int)size;
-                    int total = 0;
-                    while (total < toRead)
-                    {
-                        int read = _linuxMemStream.Read(buffer, total, toRead - total);
-                        if (read == 0)
-                            break;
-                        total += read;
-                    }
-                    bytesRead = (ulong)total;
-                    return total == toRead;
-                }
-                catch
-                {
-                    bytesRead = 0;
-                    return false;
                 }
             }
 
@@ -181,28 +185,31 @@ namespace Dark_Cloud_Improved_Version
         {
             if (IsLinux)
             {
-                int pid = processH.ToInt32();
-                if (_linuxMemStream == null || _linuxPid != pid)
+                lock (_linuxLock)
                 {
-                    if (!OpenLinuxMemoryStream(pid))
+                    int pid = processH.ToInt32();
+                    if (_linuxMemStream == null || _linuxPid != pid)
+                    {
+                        if (!OpenLinuxMemoryStream(pid))
+                        {
+                            bytesWritten = 0;
+                            return false;
+                        }
+                    }
+
+                    try
+                    {
+                        _linuxMemStream.Position = address;
+                        _linuxMemStream.Write(buffer, 0, (int)size);
+                        _linuxMemStream.Flush();
+                        bytesWritten = (ulong)size;
+                        return true;
+                    }
+                    catch
                     {
                         bytesWritten = 0;
                         return false;
                     }
-                }
-
-                try
-                {
-                    _linuxMemStream.Position = address;
-                    _linuxMemStream.Write(buffer, 0, (int)size);
-                    _linuxMemStream.Flush();
-                    bytesWritten = (ulong)size;
-                    return true;
-                }
-                catch
-                {
-                    bytesWritten = 0;
-                    return false;
                 }
             }
 
