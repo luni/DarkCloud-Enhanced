@@ -13,8 +13,8 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 - Added the new pnach and `RegionAddresses.cs` to `.csproj`.
 - Migrated the public changelog PDF to `CHANGELOG.md` and updated `README.md`.
 - Added Linux compatibility with a new `Platform.cs` abstraction (`/proc/<pid>/mem`, `SIGSTOP`/`SIGCONT`, heuristic `GetEEMem` from `/proc/<pid>/maps`).
-- Added a GitHub Actions CI/CD workflow that builds on Windows and automatically creates a GitHub Release + ZIP when a `v*` tag is pushed.
-- Still needs a build/test run to verify.
+- Added a GitHub Actions CI/CD workflow that builds on Windows, creates a GitHub Release + ZIP when a `v*` tag is pushed, and also builds + AOT-verifies on Mono/Linux.
+- Verified locally on Mono: `xbuild` compiles the solution with 0 errors and `mono --aot` compiles all 785 methods; full runtime smoke test still needs Windows/Wine because the UI is WinForms and `kernel32`/`user32` P/Invokes are used.
 
 ## New scope added
 - Migrate the public-release `Full_Change_Log_Public_Release_v1.00.pdf` to `CHANGELOG.md` and update `README.md` to reference it.
@@ -98,6 +98,8 @@ The NTSC-U mod currently targets `[SCUS-97111] (A5C05C78)`. Both the NTSC and PA
 ## Verification Checklist
 - [x] `readelf` segment diff between NTSC/PAL ELFs produces a clear delta/translation table.
 - [x] `Full_Change_Log_Public_Release_v1.00.pdf` migrated to `CHANGELOG.md`.
+- [x] `xbuild` (Mono) compiles the solution with 0 errors.
+- [x] `mono --aot` compiles all 785 methods.
 - [ ] `msbuild` succeeds with no errors.
 - [ ] PAL `.pnach` loads in PCSX2 without invalid-address warnings.
 - [ ] `0x21F10020` / `0x21F10024` handshake works in PAL.

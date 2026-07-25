@@ -60,3 +60,22 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-mono:
+    name: Build (Mono / Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Mono
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mono-complete mono-xbuild
+
+      - name: Build solution with xbuild
+        run: xbuild "Dark Cloud Improved Version.sln" /p:Configuration=Release
+
+      - name: AOT compile for verification
+        run: mono --aot "Dark Cloud Improved Version/bin/Release/Dark Cloud Enhanced Mod.exe"
