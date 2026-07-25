@@ -1,4 +1,5 @@
 using System;
+using DarkCloud.Memory.Abstractions;
 
 namespace DarkCloudEnhancedMod
 {
@@ -237,21 +238,14 @@ namespace DarkCloudEnhancedMod
             0x21F22E98L, 0x21F22E9CL, 0x21F22EA0L, 0x21F22EA4L, 0x21F22EA8L, 0x21F22EACL, 0x21F22EB0L, 0x21F22EB4L
         };
 
+        private static readonly RegionAddressTranslator Translator = new RegionAddressTranslator(NTSC, PAL);
+
         internal static long Translate(long address)
         {
             if (!RegionDetected || CurrentRegion != Region.PAL)
                 return address;
 
-            int index = Array.BinarySearch(NTSC, address);
-            if (index >= 0)
-                return PAL[index];
-
-            // If not an exact match, find the nearest preceding mapped address and apply its delta.
-            index = ~index - 1;
-            if (index >= 0 && index < NTSC.Length)
-                return address + (PAL[index] - NTSC[index]);
-
-            return address;
+            return Translator.Translate(GameRegion.Pal, address);
         }
 
         internal static void DetectRegion()

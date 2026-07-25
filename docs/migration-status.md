@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 3: Extract address translation
+Phase 3.2: Add symbolic `GameAddress` pilot
 
 ## Completed
 
@@ -18,14 +18,14 @@ Phase 3: Extract address translation
 - [x] Phase 2.1 — Create `DarkCloud.Memory.Abstractions` with `IGameMemory` and typed reader/writer
 - [x] Phase 2.2 — Implement `InMemoryGameMemory` with boundary tests
 - [x] Phase 2.3 — Create `LegacyProcessGameMemory` adapter
+- [x] Phase 3.1 — Extract `IAddressTranslator` and `RegionAddressTranslator`
 
 ## In progress
 
-- [ ] Phase 3.1 — Extract `IAddressTranslator`
+- [ ] Phase 3.2 — Add symbolic `GameAddress` pilot
 
 ## Next
 
-- Phase 3.2 — Add symbolic `GameAddress` pilot
 - Phase 4: Structured address data and generators
 
 ## Known blockers
