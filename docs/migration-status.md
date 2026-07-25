@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 3.2: Add symbolic `GameAddress` pilot
+Phase 4: Structured address data and generators
 
 ## Completed
 
@@ -19,14 +19,16 @@ Phase 3.2: Add symbolic `GameAddress` pilot
 - [x] Phase 2.2 — Implement `InMemoryGameMemory` with boundary tests
 - [x] Phase 2.3 — Create `LegacyProcessGameMemory` adapter
 - [x] Phase 3.1 — Extract `IAddressTranslator` and `RegionAddressTranslator`
+- [x] Phase 3.2 — Add symbolic `GameAddress` pilot in `RegionAddresses.DetectRegion`
 
 ## In progress
 
-- [ ] Phase 3.2 — Add symbolic `GameAddress` pilot
+- [ ] Phase 4.1 — Define structured address data
 
 ## Next
 
-- Phase 4: Structured address data and generators
+- Phase 4.2 — Create generator tooling
+- Phase 5: Shared memory contract tests
 
 ## Known blockers
 

@@ -251,10 +251,10 @@ namespace DarkCloudEnhancedMod
         internal static void DetectRegion()
         {
             // During detection RegionDetected is false so Translate returns the raw address.
-            int ntscBoot = Memory.ReadInt(0x20299540);
-            int palBoot = Memory.ReadInt(0x2029BCA0);
-            byte ntscFlag = Memory.ReadByte(0x21F10020);
-            byte palFlag = Memory.ReadByte(0x21F22EA0);
+            int ntscBoot = Memory.ReadInt(KnownGameAddresses.BootMarker.NtscAddress);
+            int palBoot = Memory.ReadInt(KnownGameAddresses.PalBootMarker.NtscAddress);
+            byte ntscFlag = Memory.ReadByte(KnownGameAddresses.NtscRegionFlag.NtscAddress);
+            byte palFlag = Memory.ReadByte(KnownGameAddresses.PalRegionFlag.NtscAddress);
 
             if (ntscBoot == 1802658116 || ntscFlag == 1)
             {
