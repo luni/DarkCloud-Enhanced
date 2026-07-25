@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <Nullable>disable</Nullable>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>7.2</LangVersion>
     <IsPackable>false</IsPackable>
+    <RootNamespace>DarkCloudEnhancedMod.Windows.IntegrationTests</RootNamespace>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 
@@ -15,8 +16,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/DarkCloud.Memory.Abstractions/DarkCloud.Memory.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" />
     <ProjectReference Include="../DarkCloud.Memory.ContractTests/DarkCloud.Memory.ContractTests.csproj" />
+    <ProjectReference Include="../windows_smoke/FakeProcess.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>

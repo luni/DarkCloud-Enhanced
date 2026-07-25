@@ -100,8 +100,12 @@ namespace DarkCloud.Memory.Abstractions.Tests
             {
                 Assert.True(long.TryParse(entry.Ntsc.Trim().Substring(2), System.Globalization.NumberStyles.HexNumber, null, out _),
                     $"Invalid NTSC hex value for {entry.Name}: {entry.Ntsc}");
-                Assert.True(long.TryParse(entry.Pal.Trim().Substring(2), System.Globalization.NumberStyles.HexNumber, null, out _),
-                    $"Invalid PAL hex value for {entry.Name}: {entry.Pal}");
+
+                if (!string.IsNullOrWhiteSpace(entry.Pal))
+                {
+                    Assert.True(long.TryParse(entry.Pal.Trim().Substring(2), System.Globalization.NumberStyles.HexNumber, null, out _),
+                        $"Invalid PAL hex value for {entry.Name}: {entry.Pal}");
+                }
             }
         }
 
@@ -126,10 +130,13 @@ namespace DarkCloud.Memory.Abstractions.Tests
             foreach (var entry in root.Addresses)
             {
                 long ntsc = ParseHex(entry.Ntsc);
-                long pal = ParseHex(entry.Pal);
-
                 Assert.InRange(ntsc, ps2Base, ps2End);
-                Assert.InRange(pal, ps2Base, ps2End);
+
+                if (!string.IsNullOrWhiteSpace(entry.Pal))
+                {
+                    long pal = ParseHex(entry.Pal);
+                    Assert.InRange(pal, ps2Base, ps2End);
+                }
             }
         }
 

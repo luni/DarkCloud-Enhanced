@@ -78,6 +78,7 @@ namespace AddressGenerator
             foreach (var entry in entries)
             {
                 long ntsc = ParseHex(entry.Ntsc);
+                long pal = string.IsNullOrWhiteSpace(entry.Pal) ? 0 : ParseHex(entry.Pal);
                 string fieldName = ToFieldName(entry.Name);
                 sb.AppendLine($"        /// <summary>");
                 sb.AppendLine($"        /// {EscapeXml(entry.Description)}");
@@ -85,7 +86,8 @@ namespace AddressGenerator
                 sb.AppendLine($"        public static readonly GameAddress {fieldName} = new GameAddress(");
                 sb.AppendLine($"            \"{EscapeCSharpString(entry.Name)}\",");
                 sb.AppendLine($"            0x{ntsc:X}L,");
-                sb.AppendLine($"            \"{EscapeCSharpString(entry.DataType)}\");");
+                sb.AppendLine($"            \"{EscapeCSharpString(entry.DataType)}\",");
+                sb.AppendLine($"            0x{pal:X}L);");
             }
 
             sb.AppendLine();

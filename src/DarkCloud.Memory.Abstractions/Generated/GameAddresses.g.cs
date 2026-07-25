@@ -16,21 +16,16 @@ namespace DarkCloud.Memory.Abstractions.Generated
         public static readonly GameAddress Game_BootMarker = new GameAddress(
             "Game.BootMarker",
             0x20299540L,
-            "UInt32");
+            "UInt32",
+            0x2029BCA0L);
         /// <summary>
-        /// NTSC region flag.
+        /// Console region flag (NTSC address; translates to 0x21F22EA0 for PAL).
         /// </summary>
         public static readonly GameAddress Game_NtscRegionFlag = new GameAddress(
             "Game.NtscRegionFlag",
             0x21F10020L,
-            "UInt8");
-        /// <summary>
-        /// PAL region flag.
-        /// </summary>
-        public static readonly GameAddress Game_PalRegionFlag = new GameAddress(
-            "Game.PalRegionFlag",
-            0x21F22EA0L,
-            "UInt8");
+            "UInt8",
+            0x21F22EA0L);
 
         /// <summary>
         /// All generated addresses in stable order.
@@ -39,8 +34,7 @@ namespace DarkCloud.Memory.Abstractions.Generated
             new System.Collections.Generic.List<GameAddress>
             {
                 Game_BootMarker,
-                Game_NtscRegionFlag,
-                Game_PalRegionFlag
+                Game_NtscRegionFlag
             };
     }
 }

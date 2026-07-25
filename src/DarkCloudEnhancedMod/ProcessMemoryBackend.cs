@@ -22,6 +22,7 @@ namespace DarkCloudEnhancedMod
 
         private FileStream _linuxMemStream;
         private int _linuxPid = -1;
+        private bool _disposed;
         private readonly object _linuxLock = new object();
 
         public bool ReadMemory(IntPtr processH, long address, byte[] buffer, long size, out ulong bytesRead)
@@ -30,6 +31,12 @@ namespace DarkCloudEnhancedMod
             {
                 lock (_linuxLock)
                 {
+                    if (_disposed)
+                    {
+                        bytesRead = 0;
+                        return false;
+                    }
+
                     int pid = processH.ToInt32();
                     if (_linuxMemStream == null || _linuxPid != pid)
                     {
@@ -72,6 +79,12 @@ namespace DarkCloudEnhancedMod
             {
                 lock (_linuxLock)
                 {
+                    if (_disposed)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
                     int pid = processH.ToInt32();
                     if (_linuxMemStream == null || _linuxPid != pid)
                     {
@@ -105,6 +118,15 @@ namespace DarkCloudEnhancedMod
         {
             if (Platform.IsLinux)
             {
+                lock (_linuxLock)
+                {
+                    if (_disposed)
+                    {
+                        oldProtect = 0;
+                        return false;
+                    }
+                }
+
                 // /proc/<pid>/mem reads and writes do not require explicit protection changes.
                 oldProtect = 0;
                 return true;
@@ -135,6 +157,18 @@ namespace DarkCloudEnhancedMod
             _linuxMemStream?.Dispose();
             _linuxMemStream = null;
             _linuxPid = -1;
+        }
+
+        public void Dispose()
+        {
+            lock (_linuxLock)
+            {
+                if (_disposed)
+                    return;
+
+                _disposed = true;
+                CloseLinuxMemoryStream();
+            }
         }
     }
 }

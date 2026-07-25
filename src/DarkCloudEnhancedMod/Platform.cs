@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace DarkCloudEnhancedMod
 {
@@ -13,7 +14,31 @@ namespace DarkCloudEnhancedMod
                                                  Environment.OSVersion.Platform == PlatformID.MacOSX ||
                                                  File.Exists("/proc/self/maps");
 
-        internal static IMemoryBackend Backend { get; set; } = new ProcessMemoryBackend();
+        private static IMemoryBackend _backend = new ProcessMemoryBackend();
+        private static readonly ReaderWriterLockSlim _backendLock = new ReaderWriterLockSlim();
+
+        internal static IMemoryBackend Backend
+        {
+            set
+            {
+                _backendLock.EnterWriteLock();
+                IMemoryBackend old;
+                try
+                {
+                    old = _backend;
+                    if (ReferenceEquals(old, value))
+                        return;
+
+                    _backend = value ?? new ProcessMemoryBackend();
+                }
+                finally
+                {
+                    _backendLock.ExitWriteLock();
+                }
+
+                old?.Dispose();
+            }
+        }
 
         // ----- Windows native imports -----
 
@@ -47,7 +72,7 @@ namespace DarkCloudEnhancedMod
                 return 0;
 
             byte[] buffer = new byte[8];
-            if (Backend.ReadMemory(processH, variableAddress, buffer, 8, out ulong _))
+            if (ReadMemory(processH, variableAddress, buffer, 8, out ulong _))
                 return BitConverter.ToInt64(buffer, 0);
 
             return 0;
@@ -300,7 +325,7 @@ namespace DarkCloudEnhancedMod
         private static long ReadInt64FromProcMem(int pid, long address)
         {
             byte[] buffer = new byte[8];
-            if (!Backend.ReadMemory(new IntPtr(pid), address, buffer, 8, out ulong _))
+            if (!ReadMemory(new IntPtr(pid), address, buffer, 8, out ulong _))
                 return 0;
 
             return BitConverter.ToInt64(buffer, 0);
@@ -357,13 +382,43 @@ namespace DarkCloudEnhancedMod
         }
 
         internal static bool ReadMemory(IntPtr processH, long address, byte[] buffer, long size, out ulong bytesRead)
-            => Backend.ReadMemory(processH, address, buffer, size, out bytesRead);
+        {
+            _backendLock.EnterReadLock();
+            try
+            {
+                return _backend.ReadMemory(processH, address, buffer, size, out bytesRead);
+            }
+            finally
+            {
+                _backendLock.ExitReadLock();
+            }
+        }
 
         internal static bool WriteMemory(IntPtr processH, long address, byte[] buffer, long size, out ulong bytesWritten)
-            => Backend.WriteMemory(processH, address, buffer, size, out bytesWritten);
+        {
+            _backendLock.EnterReadLock();
+            try
+            {
+                return _backend.WriteMemory(processH, address, buffer, size, out bytesWritten);
+            }
+            finally
+            {
+                _backendLock.ExitReadLock();
+            }
+        }
 
         internal static bool ProtectMemory(IntPtr processH, long address, long size, uint newProtect, out uint oldProtect)
-            => Backend.ProtectMemory(processH, address, size, newProtect, out oldProtect);
+        {
+            _backendLock.EnterReadLock();
+            try
+            {
+                return _backend.ProtectMemory(processH, address, size, newProtect, out oldProtect);
+            }
+            finally
+            {
+                _backendLock.ExitReadLock();
+            }
+        }
 
         internal static bool SuspendProcess(int pid)
         {

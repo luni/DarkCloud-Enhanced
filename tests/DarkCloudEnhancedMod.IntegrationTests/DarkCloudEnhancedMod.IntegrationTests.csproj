@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" />
+    <ProjectReference Include="../DarkCloud.Memory.ContractTests/DarkCloud.Memory.ContractTests.csproj" />
   </ItemGroup>
 
 </Project>

@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace DarkCloudEnhancedMod.IntegrationTests
@@ -11,7 +12,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
     public class LinuxSyntheticMemoryTests
     {
         [Fact]
-        public void Platform_GetEEMem_FakePcsx2_ResolvesEEmem()
+        public async Task Platform_GetEEMem_FakePcsx2_ResolvesEEmem()
         {
             if (!Platform.IsLinux)
                 return;
@@ -29,9 +30,18 @@ namespace DarkCloudEnhancedMod.IntegrationTests
 
             try
             {
-                // Wait for the fake process to emit its pid/EEmem line.
-                string line = fake.StandardOutput.ReadLine();
-                Assert.False(string.IsNullOrEmpty(line), "Fake PCSX2 did not emit expected output.");
+                // Wait for the fake process to emit its pid/EEmem line with a timeout.
+                Task<string> readLineTask = Task.Run(() => fake.StandardOutput.ReadLine());
+                Task completed = await Task.WhenAny(readLineTask, Task.Delay(TimeSpan.FromSeconds(5)));
+                if (completed != readLineTask)
+                {
+                    try { fake.Kill(); } catch { }
+                    Assert.Fail("Fake PCSX2 did not emit expected output within the timeout.");
+                    return;
+                }
+
+                string line = await readLineTask;
+                Assert.False(string.IsNullOrEmpty(line), "Fake PCSX2 emitted an empty line.");
 
                 long expectedEEmem = 0;
                 int pid = fake.Id;
@@ -100,7 +110,8 @@ namespace DarkCloudEnhancedMod.IntegrationTests
                     RedirectStandardError = true
                 });
                 gcc.WaitForExit();
-                Assert.Equal(0, gcc.ExitCode);
+                string gccErrors = gcc.StandardError.ReadToEnd();
+                Assert.True(gcc.ExitCode == 0, $"Failed to build fake_pcsx2. GCC output: {gccErrors}");
             }
 
             return fakeExe;

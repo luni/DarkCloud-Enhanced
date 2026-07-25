@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 7: Windows integration tests
+Phase 8: Extract session state machine
 
 ## Completed
 
@@ -24,14 +24,14 @@ Phase 7: Windows integration tests
 - [x] Phase 4.2 — Create `AddressGenerator` and `GameAddresses.g.cs`
 - [x] Phase 5 — Add shared `DarkCloud.Memory.ContractTests`
 - [x] Phase 6 — Add `IMemoryBackend` abstraction, `SnapshotMemoryBackend`, and `DarkCloudEnhancedMod.IntegrationTests` covering Linux synthetic and snapshot-based scenarios
+- [x] Phase 7 — Add Windows synthetic process target and `DarkCloud.Memory.Windows.IntegrationTests`
 
 ## In progress
 
-- [ ] Phase 7 — Windows integration tests
+- [ ] Phase 8 — Extract session state machine
 
 ## Next
 
-- Phase 8: Extract session state machine
 - Phase 9: Decouple UI notifications
 
 ## Known blockers

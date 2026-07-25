@@ -215,6 +215,13 @@ namespace DarkCloudEnhancedMod
             return dataBuffer;
         }
 
+        internal static byte[] ReadByteArrayRaw(long address, long numBytes)  //Read byte array from address + EEMem_Offset without region translation
+        {
+            byte[] dataBuffer = new byte[numBytes];
+            Platform.ReadMemory(ProcessHandle, address + EEMemOffset, dataBuffer, dataBuffer.LongLength, out ulong _);
+            return dataBuffer;
+        }
+
         internal static bool TryReadByteArray(long address, long numBytes, out byte[] data)
         {
             address = RegionAddresses.Translate(address);
@@ -227,6 +234,12 @@ namespace DarkCloudEnhancedMod
         internal static byte ReadByte(long address)  //Read byte from address + EEMem_Offset
         {
             var dataBuffer = ReadByteArray(address, 1);
+            return dataBuffer[0];
+        }
+
+        internal static byte ReadByteRaw(long address)  //Read byte from address + EEMem_Offset without region translation
+        {
+            var dataBuffer = ReadByteArrayRaw(address, 1);
             return dataBuffer[0];
         }
 
@@ -251,6 +264,12 @@ namespace DarkCloudEnhancedMod
         internal static int ReadInt(long address)
         {
             var dataBuffer = ReadByteArray(address, 4);
+            return BitConverter.ToInt32(dataBuffer, 0);
+        }
+
+        internal static int ReadIntRaw(long address)
+        {
+            var dataBuffer = ReadByteArrayRaw(address, 4);
             return BitConverter.ToInt32(dataBuffer, 0);
         }
 

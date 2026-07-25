@@ -19,6 +19,7 @@ using System.Runtime.InteropServices;
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
 [assembly: InternalsVisibleTo("DarkCloudEnhancedMod.IntegrationTests")]
+[assembly: InternalsVisibleTo("DarkCloud.Memory.Windows.IntegrationTests")]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("5dc59cc2-de0d-4b2f-b383-3de33ed4d3b7")]

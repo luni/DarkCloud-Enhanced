@@ -1,6 +1,7 @@
 using DarkCloud.Memory.Abstractions;
+using DarkCloud.Memory.ContractTests;
 
-namespace DarkCloud.Memory.ContractTests
+namespace DarkCloud.Memory.Abstractions.Tests
 {
     public sealed class InMemoryGameMemoryContractTests : GameMemoryContractTests
     {

@@ -11,15 +11,8 @@
       "name": "Game.NtscRegionFlag",
       "dataType": "UInt8",
       "ntsc": "0x21F10020",
-      "pal": "0x21F10020",
-      "description": "NTSC region flag."
-    },
-    {
-      "name": "Game.PalRegionFlag",
-      "dataType": "UInt8",
-      "ntsc": "0x21F22EA0",
       "pal": "0x21F22EA0",
-      "description": "PAL region flag."
+      "description": "Console region flag (NTSC address; translates to 0x21F22EA0 for PAL)."
     }
   ]
 }

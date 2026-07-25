@@ -9,11 +9,12 @@ namespace DarkCloud.Memory.Abstractions.Tests
         [Fact]
         public void Constructor_SetsProperties()
         {
-            var address = new GameAddress("Game.BootMarker", 0x20299540L, "UInt32");
+            var address = new GameAddress("Game.BootMarker", 0x20299540L, "UInt32", 0x2029BCA0L);
 
             Assert.Equal("Game.BootMarker", address.Name);
             Assert.Equal(0x20299540L, address.NtscAddress);
             Assert.Equal("UInt32", address.DataType);
+            Assert.Equal(0x2029BCA0L, address.PalAddress);
         }
 
         [Fact]

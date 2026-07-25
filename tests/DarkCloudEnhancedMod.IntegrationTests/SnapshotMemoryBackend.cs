@@ -65,5 +65,10 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             oldProtect = 0;
             return true;
         }
+
+        public void Dispose()
+        {
+            // The backend does not own the supplied RAM array.
+        }
     }
 }

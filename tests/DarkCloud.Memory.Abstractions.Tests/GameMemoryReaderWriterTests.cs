@@ -31,8 +31,13 @@ namespace DarkCloud.Memory.Abstractions.Tests
             writer.WriteUInt16(BaseAddress, 0x1234);
 
             Assert.Equal(0x1234, reader.ReadUInt16(BaseAddress));
-            Assert.Equal(0x34, memory.TryRead(BaseAddress, new byte[1], 0, 1) ? 0x34 : throw new InvalidOperationException());
-            Assert.Equal(0x12, memory.TryRead(BaseAddress + 1, new byte[1], 0, 1) ? 0x12 : throw new InvalidOperationException());
+
+            byte[] first = new byte[1];
+            byte[] second = new byte[1];
+            Assert.True(memory.TryRead(BaseAddress, first, 0, 1));
+            Assert.True(memory.TryRead(BaseAddress + 1, second, 0, 1));
+            Assert.Equal(0x34, first[0]);
+            Assert.Equal(0x12, second[0]);
         }
 
         [Fact]
