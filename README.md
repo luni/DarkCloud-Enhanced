@@ -82,3 +82,12 @@ DCEX=/path/to/dc_extract python3 verify_pal.py
 cd tests/linux_smoke
 ./run.sh
 ```
+
+## Continuous Integration
+
+The Mono/Linux GitHub Actions job (`build-mono`) runs:
+
+- `xbuild` Release build
+- `mono --aot` verification
+- `python3 tests/pal/test_pal.py` — repository-only PAL checks
+- `tests/linux_smoke/run.sh` — live `EEmem` discovery and memory read smoke test
