@@ -3,15 +3,12 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.IO;
 using System.Threading;
-using Microsoft.VisualBasic.ApplicationServices;
-using System.Windows;
 using Application = System.Windows.Forms.Application;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 using System.Collections;
 using System.Collections.Generic;
-using System.Windows.Controls;
 
 namespace Dark_Cloud_Improved_Version
 {

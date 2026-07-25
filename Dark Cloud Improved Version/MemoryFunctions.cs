@@ -132,6 +132,14 @@ namespace Dark_Cloud_Improved_Version
             return OpenProcess((uint) WinAPIFlags.ProcessModes.All, false, processId);
         }
 
+        internal const uint PAGE_EXECUTE_READWRITE = (uint) WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite;
+
+        public static bool VirtualProtect(IntPtr processH, long address, long size, uint newProtect, out uint oldProtect)
+            => Platform.ProtectMemory(processH, address, size, newProtect, out oldProtect);
+
+        public static bool VirtualProtectEx(IntPtr processH, long address, long size, uint newProtect, out uint oldProtect)
+            => Platform.ProtectMemory(processH, address, size, newProtect, out oldProtect);
+
 
         internal static byte[] ReadByteArray(long address, long numBytes)  //Read byte array from address + EEMem_Offset
         {
