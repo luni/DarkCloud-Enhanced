@@ -18,9 +18,10 @@ namespace DarkCloud.Core.Tests.Players
         public void GetCurrentCharacter_MapsMemoryValueToCharacterType(byte value, CharacterType expected)
         {
             var memory = new InMemoryGameMemory();
-            memory.Load(new byte[] { value }, (int)(0x21CD9550L - InMemoryGameMemory.DefaultBaseAddress));
+            var layout = new TestPlayerPresenceLayout();
+            memory.Load(new byte[] { value }, (int)(layout.CurrentCharacterAddress - InMemoryGameMemory.DefaultBaseAddress));
 
-            var service = new PlayerPresenceService(memory);
+            var service = new PlayerPresenceService(memory, layout);
 
             Assert.Equal(expected, service.GetCurrentCharacter());
         }
@@ -33,9 +34,10 @@ namespace DarkCloud.Core.Tests.Players
         public void IsInDungeonFloor_ReturnsTrueForAnyValueExcept255(byte value, bool expected)
         {
             var memory = new InMemoryGameMemory();
-            memory.Load(new byte[] { value }, (int)(0x21CD954FL - InMemoryGameMemory.DefaultBaseAddress));
+            var layout = new TestPlayerPresenceLayout();
+            memory.Load(new byte[] { value }, (int)(layout.InDungeonFloorAddress - InMemoryGameMemory.DefaultBaseAddress));
 
-            var service = new PlayerPresenceService(memory);
+            var service = new PlayerPresenceService(memory, layout);
 
             Assert.Equal(expected, service.IsInDungeonFloor());
         }
@@ -45,7 +47,8 @@ namespace DarkCloud.Core.Tests.Players
         {
             // A tiny memory buffer forces the address read to fail.
             var memory = new InMemoryGameMemory(InMemoryGameMemory.DefaultBaseAddress, 1024);
-            var service = new PlayerPresenceService(memory);
+            var layout = new TestPlayerPresenceLayout();
+            var service = new PlayerPresenceService(memory, layout);
 
             Assert.Equal(CharacterType.Unknown, service.GetCurrentCharacter());
         }
@@ -54,7 +57,8 @@ namespace DarkCloud.Core.Tests.Players
         public void IsInDungeonFloor_WhenReadFails_ReturnsFalse()
         {
             var memory = new InMemoryGameMemory(InMemoryGameMemory.DefaultBaseAddress, 1024);
-            var service = new PlayerPresenceService(memory);
+            var layout = new TestPlayerPresenceLayout();
+            var service = new PlayerPresenceService(memory, layout);
 
             Assert.False(service.IsInDungeonFloor());
         }
@@ -76,6 +80,15 @@ namespace DarkCloud.Core.Tests.Players
         public void GetName_ForUnrecognizedCastValue_ReturnsNull()
         {
             Assert.Null(((CharacterType)42).GetName());
+        }
+
+        private sealed class TestPlayerPresenceLayout : IPlayerPresenceMemoryLayout
+        {
+            private const long Base = 0x20003000L;
+
+            public long CurrentCharacterAddress => Base;
+
+            public long InDungeonFloorAddress => Base + 1;
         }
     }
 }

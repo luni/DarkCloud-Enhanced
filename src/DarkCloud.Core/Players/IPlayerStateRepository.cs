@@ -7,20 +7,6 @@ namespace DarkCloud.Core.Players
     public interface IPlayerStateRepository
     {
         /// <summary>
-        /// Attempts to read the currently selected character.
-        /// </summary>
-        /// <param name="character">The character read from memory, or <see cref="CharacterType.Unknown"/> on failure.</param>
-        /// <returns><c>true</c> if the read succeeded; otherwise, <c>false</c>.</returns>
-        bool TryReadCurrentCharacter(out CharacterType character);
-
-        /// <summary>
-        /// Attempts to read whether the player is currently inside a dungeon floor.
-        /// </summary>
-        /// <param name="inDungeonFloor"><c>true</c> when inside a dungeon floor; <c>false</c> on failure or when not in a dungeon floor.</param>
-        /// <returns><c>true</c> if the read succeeded; otherwise, <c>false</c>.</returns>
-        bool TryIsInDungeonFloor(out bool inDungeonFloor);
-
-        /// <summary>
         /// Attempts to read a 16-bit unsigned value for the specified character and field.
         /// </summary>
         bool TryReadUInt16(CharacterType character, PlayerCharacterField field, out ushort value);

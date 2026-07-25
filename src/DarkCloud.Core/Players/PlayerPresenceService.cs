@@ -5,19 +5,19 @@ namespace DarkCloud.Core.Players
 {
     /// <summary>
     /// Default implementation of <see cref="IPlayerPresenceService"/>. It uses
-    /// an <see cref="IPlayerStateRepository"/> to read memory and applies the
+    /// an <see cref="IPlayerPresenceRepository"/> to read memory and applies the
     /// small amount of domain logic needed to interpret the values.
     /// </summary>
     public sealed class PlayerPresenceService : IPlayerPresenceService
     {
-        private readonly IPlayerStateRepository _repository;
+        private readonly IPlayerPresenceRepository _repository;
 
-        public PlayerPresenceService(IGameMemory memory)
-            : this(new PlayerStateRepository(memory))
+        public PlayerPresenceService(IGameMemory memory, IPlayerPresenceMemoryLayout layout)
+            : this(new PlayerPresenceRepository(memory, layout))
         {
         }
 
-        public PlayerPresenceService(IPlayerStateRepository repository)
+        public PlayerPresenceService(IPlayerPresenceRepository repository)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }

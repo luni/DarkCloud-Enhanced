@@ -991,7 +991,12 @@ Create a memory-backed repository:
 public interface IInventoryRepository
 {
     InventorySnapshot Read();
-    void Write(InventorySnapshot inventory);
+    IReadOnlyList<InventoryItem> ReadBagItems();
+    IReadOnlyList<InventoryItem> ReadBagWeapons(int character = -1);
+    IReadOnlyList<InventoryItem> ReadBagAttachments();
+    bool TryWriteActiveItem(int slot, InventoryItem item);
+    bool TryWriteBagItem(int slot, InventoryItem item);
+    bool TryCopyAttachment(int slot, int attachmentId);
 }
 ```
 
@@ -1049,15 +1054,15 @@ public interface IModFeature
 {
     string Id { get; }
 
-    ValueTask InitializeAsync(
-        GameContext context,
+    Task InitializeAsync(
+        GameFeatureContext context,
         CancellationToken cancellationToken);
 
-    ValueTask OnGameTickAsync(
+    Task OnGameTickAsync(
         GameSnapshot snapshot,
         CancellationToken cancellationToken);
 
-    ValueTask ShutdownAsync(
+    Task ShutdownAsync(
         CancellationToken cancellationToken);
 }
 ```

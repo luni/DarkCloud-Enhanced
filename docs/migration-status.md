@@ -29,15 +29,23 @@ Phase 10: Extract domain logic (in progress)
 - [x] Phase 9.1 — Introduce `IModStatusSink` and `WinFormsModStatusSink` adapter
 - [x] Phase 9.2 — Remove `ModWindow.NightlyVersionCheck` from `Memory.Initialize` and route all UI updates through `IModStatusSink`
 - [x] Phase 10.1 — Extract player presence/identity and character state (HP/MaxHP/defense/thirst/max thirst/status) into `DarkCloud.Core/Players` repository and service
+- [x] Phase 10.1 review fixes — `PlayerStateRepository` requires layout, `PlayerPresenceService` reads directly, `SetMaxHp` validates range, `GetStatus` validates status flags
+- [x] Phase 10.2 pilot — Extract active item and bag capacity logic into `DarkCloud.Core/Inventory` (`InventoryItem`, `InventorySnapshot`, `IInventoryRepository`, `InventoryRepository`, `IInventoryService`, `InventoryService`) with tests and thin `Player.Inventory` facades
+- [x] Phase 10.2 completion — Extract bag items, bag weapons, and attachments into `DarkCloud.Core/Inventory` (`IInventoryMemoryLayout`, `InventoryRepository`, `InventoryService`) and update `Player.Inventory` facades
+- [x] Phase 10.2 review fixes — `PlayerPresenceService` uses `IPlayerPresenceRepository`/`IPlayerPresenceMemoryLayout`, `ModFeatureRunner` isolates feature faults and shuts down cleanly, `InventoryItem.IsEmpty` handles zero IDs, `InventoryRepository` validates ranges before casting
+- [x] Phase 11 pilot — Add `DarkCloud.Core/Features` abstractions (`IModFeature`, `GameFeatureContext`, `GameSnapshot`, `ModFeatureRunner`) with tests
+- [x] Phase 11 first feature — Convert `ApplyNewChanges` to `ApplyChangesFeature` `IModFeature` and wire `ModFeatureRunner` into `ModWindowGameSessionObserver`
 
 ## In progress
 
-- None
+- Phase 10.3 — Weapons (stat calculations, upgrade rules, attachment rules, validation, serialization)
+- Phase 10.4 — Dungeon behavior (progression rules, floor-state rules, enemy or event state, reward logic)
+- Phase 11 completion — Migrate remaining feature threads to `IModFeature` modules
 
 ## Next
 
-- Phase 10.2 — Continue extracting domain logic (weapons, items, dungeons, etc.)
-- Phase 11: Replace feature threads with modules
+- Phase 12 — Add logging and diagnostics
+- Phase 13 — Add configuration and feature toggles
 
 ## Known blockers
 

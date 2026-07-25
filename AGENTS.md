@@ -23,3 +23,5 @@ dotnet test "DarkCloud-Enhanced.sln" --no-build
 - Place new domain abstractions in `src/DarkCloud.Core` and keep legacy WinForms/process-specific code in `src/DarkCloudEnhancedMod`.
 - `DarkCloud.Core` targets .NET Standard 2.0 with `LangVersion` 7.3; avoid capturing `ref`/`out` parameters in lambdas.
 - The legacy `Player` static methods are being preserved as thin facades that delegate to `DarkCloud.Core.Players` services and repositories.
+- New inventory abstractions live in `DarkCloud.Core/Inventory`; memory layouts remain in `DarkCloudEnhancedMod`.
+- New mod-feature abstractions live in `DarkCloud.Core/Features`; legacy feature threads in `DarkCloudEnhancedMod` should be migrated to `IModFeature` implementations and driven by `ModFeatureRunner`.

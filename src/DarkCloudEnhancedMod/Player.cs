@@ -1,4 +1,5 @@
 ﻿using System;
+using DarkCloud.Core.Inventory;
 using DarkCloud.Core.Players;
 
 namespace DarkCloudEnhancedMod
@@ -52,7 +53,8 @@ namespace DarkCloudEnhancedMod
         public static int CurrentCharacterNum()
         {
             var memory = new LegacyProcessGameMemory();
-            var service = new PlayerPresenceService(memory);
+            var layout = new PlayerPresenceMemoryLayout();
+            var service = new PlayerPresenceService(memory, layout);
             return (int)service.GetCurrentCharacter();
         }
 
@@ -85,7 +87,8 @@ namespace DarkCloudEnhancedMod
         public static bool InDungeonFloor()
         {
             var memory = new LegacyProcessGameMemory();
-            var service = new PlayerPresenceService(memory);
+            var layout = new PlayerPresenceMemoryLayout();
+            var service = new PlayerPresenceService(memory, layout);
             return service.IsInDungeonFloor();
         }
 
@@ -95,6 +98,14 @@ namespace DarkCloudEnhancedMod
             var layout = new PlayerCharacterMemoryLayout();
             var repository = new PlayerStateRepository(memory, layout);
             return new PlayerStateService(repository);
+        }
+
+        private static IInventoryService GetInventoryService()
+        {
+            var memory = new LegacyProcessGameMemory();
+            var layout = new InventoryMemoryLayout();
+            var repository = new InventoryRepository(memory, layout);
+            return new InventoryService(repository);
         }
 
         /// <summary>
@@ -255,12 +266,15 @@ namespace DarkCloudEnhancedMod
 
         internal class Inventory
         {
+            // Legacy upper bound used when reading attachment bag slots.
+            private const int MaxAttachmentId = 1000;
+
             /// <summary>
             /// Returns the current bag size.
             /// </summary>
             public static int GetBagCurrentCount()
             {
-                return Memory.ReadByte(inventoryCurrentSize);
+                return GetInventoryService().ReadSnapshot().Count;
             }
 
             /// <summary>
@@ -268,11 +282,7 @@ namespace DarkCloudEnhancedMod
             /// </summary>
             public static bool CheckBagItemsFull()
             {
-                int currentCount = GetBagCurrentCount();
-                int maxCount = Memory.ReadByte(inventoryTotalSize);
-
-                if (currentCount >= maxCount) return true;
-                else return false;
+                return GetInventoryService().IsBagFull();
             }
 
             /// <summary>
@@ -281,39 +291,39 @@ namespace DarkCloudEnhancedMod
             /// <returns>[ItemId] if there is an item on the slot;<br>[-1] if slot is empty;</br></returns>
             public static int[] GetActiveItems()
             {
-                const byte itemOffset = 0x2;
+                var snapshot = GetInventoryService().ReadSnapshot();
                 int[] activeItems = new int[3];
 
                 for (int slot = 0; slot < 3; slot++)
                 {
-                    int itemId = Memory.ReadUShort(Addresses.activeItem1 + (itemOffset * slot));
+                    int itemId = snapshot.ActiveItems[slot].IsEmpty ? -1 : snapshot.ActiveItems[slot].Id;
 
-                    //Check if the item is an inventory item
+                    // Preserve legacy behavior: only IDs inside the inventory range count as equipped.
                     if (itemId >= Items.dummy129 && itemId <= Items.dummy256)
-                    {
                         activeItems[slot] = itemId;
-                    }
-                    else activeItems[slot] = -1;
+                    else
+                        activeItems[slot] = -1;
                 }
 
                 return activeItems;
             }
+
             /// <summary>
             /// Returns the total sum quantity of all 3 items currently on the active item slots.
             /// </summary>
             public static int GetActiveItemsQuantity()
             {
-                const byte itemOffset = 0x2;
+                var snapshot = GetInventoryService().ReadSnapshot();
                 int quantityTotal = 0;
-                
+
                 for (int slot = 0; slot < 3; slot++)
                 {
-                    int itemQuantity = Memory.ReadUShort(Addresses.activeItem1Quantity + (itemOffset * slot));
-                    quantityTotal += itemQuantity;
+                    quantityTotal += snapshot.ActiveItems[slot].Quantity;
                 }
 
                 return quantityTotal;
             }
+
             /// <summary>
             /// Set an item on the given active slot.
             /// </summary>
@@ -322,35 +332,10 @@ namespace DarkCloudEnhancedMod
             /// <param name="quantity">The quantity for the chosen item.</param>
             public static void SetActiveItem(byte activeItemSlot, int itemId, int quantity)
             {
-
-                int inventorySize = Memory.ReadByte(inventoryTotalSize);
-
-                if (GetBagCurrentCount() < inventorySize)
+                if (!GetInventoryService().TrySetActiveItem(activeItemSlot, itemId, quantity))
                 {
-                    try
-                    {
-                        switch (activeItemSlot)
-                        {
-                            case 0:
-                                Memory.WriteUShort(Addresses.activeItem1, (ushort)itemId);
-                                Memory.WriteUShort(Addresses.activeItem1Quantity, (ushort)quantity);
-                                break;
-                            case 1:
-                                Memory.WriteUShort(Addresses.activeItem2, (ushort)itemId);
-                                Memory.WriteUShort(Addresses.activeItem2Quantity, (ushort)quantity);
-                                break;
-                            case 2:
-                                Memory.WriteUShort(Addresses.activeItem3, (ushort)itemId);
-                                Memory.WriteUShort(Addresses.activeItem3Quantity, (ushort)quantity);
-                                break;
-                            default:
-                                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "\nSetActiveItems: Arguments out of range!");
-                                break;
-                        }
-                    }
-                    catch { Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "\nInvalid inputs for SetActiveItem!"); };
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "\nSetActiveItem failed: invalid slot, out-of-range values, or bag inventory is full!");
                 }
-                else Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "\nBag inventory is full!");
             }
 
             /// <summary>
@@ -358,23 +343,21 @@ namespace DarkCloudEnhancedMod
             /// </summary>
             /// <returns>[ItemId] if there is an item on the slot;<br>[-1] if slot is empty;</br></returns>
             public static int[] GetBagItems()
-            
             {
-                const byte itemOffset = 0x2;
-                byte inventorySize = Memory.ReadByte(inventoryTotalSize);
-                int[] inventoryItems = new int[inventorySize + 2]; //The 2 is to account for 2 extra yellow item slots
+                var snapshot = GetInventoryService().ReadBagItems();
+                int[] inventoryItems = new int[snapshot.Count];
 
-                //Run through the inventory bag (+ 2 is to reserve 2 yellow slots)
-                for (int slot = 0; slot < inventorySize + 2; slot++)
+                for (int slot = 0; slot < snapshot.Count; slot++)
                 {
-                    //Read the current item ID
-                    int itemId = Memory.ReadUShort(Addresses.firstBagItem + (itemOffset * slot));
+                    int itemId = snapshot[slot].Id;
 
-                    //Check if the item is an inventory item, store the ID if it is; -1 if it isn't (aka empty)
-                    if (itemId >= Items.dummy129  && itemId <= Items.dummy256) {
+                    // Check if the item is an inventory item, store the ID if it is; -1 if it isn't (aka empty)
+                    if (itemId >= Items.dummy129 && itemId <= Items.dummy256)
                         inventoryItems[slot] = itemId;
-                    } else inventoryItems[slot] = -1;
+                    else
+                        inventoryItems[slot] = -1;
                 }
+
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "\nFinished GetBagItems process!");
                 return inventoryItems;
             }
@@ -391,18 +374,19 @@ namespace DarkCloudEnhancedMod
 
                 foreach (int item in inventoryBag)
                 {
-                    //Run until it find an empty slot and return the slot number if found
+                    // Run until it find an empty slot and return the slot number if found
                     if (item == -1)
                     {
-                        if(counter == 0) return slot;
+                        if (counter == 0) return slot;
                         counter--;
                     }
                     slot++;
                 }
 
-                //Return -1 if no empty slot was found
+                // Return -1 if no empty slot was found
                 return -1;
             }
+
             /// <summary>
             /// Set an item on the given inventory slot.
             /// </summary>
@@ -410,19 +394,27 @@ namespace DarkCloudEnhancedMod
             /// <param name="itemId">The item ID.</param>
             public static void SetBagItems(int slot, int itemId)
             {
-                const byte itemOffset = 0x2;
+                if (itemId < Items.dummy129 || itemId > Items.dummy256)
+                {
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "\nInvalid inputs for SetBagItems");
+                    return;
+                }
 
-                try
+                var service = GetInventoryService();
+                if (service.TrySetBagItem(slot, itemId))
                 {
-                    if(GetBagItems()[slot] != -1) 
-                        Memory.WriteUShort(Addresses.firstBagItem + (slot * itemOffset), (ushort)itemId);
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "\nFinished SetBagItems process!");
+                    return;
                 }
-                catch
+
+                int firstAvailable = GetBagItemsFirstAvailableSlot();
+                if (firstAvailable != -1 && service.TrySetBagItem(firstAvailable, itemId))
                 {
-                    if (slot > inventoryTotalSize && itemId >= Items.dummy129 || itemId <= Items.dummy256) SetBagItems(GetBagItemsFirstAvailableSlot(), itemId);
-                    else Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "\nInvalid inputs for SetBagItems");
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "\nFinished SetBagItems process!");
+                    return;
                 }
-                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "\nFinished SetBagItems process!");
+
+                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "\nInvalid inputs for SetBagItems");
             }
 
             /// <summary>
@@ -431,39 +423,18 @@ namespace DarkCloudEnhancedMod
             /// <param name="character">The character ID.</param>
             /// <returns></returns>
             public static int[] GetBagWeapons(int character = -1)
-            
             {
-                int slot;
-                int maxslot;
-                int inventorySize;
-                const int weaponOffset = 0xF8;
-                const int characterWeaponOffset = 0xAA8;
-
-                //Define the correct slot ranges to search in
-                if (character >= ToanId && character <= OsmondId)
-                {
-                    slot = 0;
-                    maxslot = 9;
-                    inventorySize = 10;
-                }
-                else
-                {
-                    slot = 0;
-                    maxslot = 64;
-                    inventorySize = inventorySizeWeapons;
-                }
-
-                //Initialize the array
-                int[] inventoryWeapons = new int[inventorySize];
+                var snapshot = GetInventoryService().ReadBagWeapons(character);
+                int[] inventoryWeapons = new int[snapshot.Count];
 
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "GetBagWeapons for character " + GetCharacterName(character) + " process started!");
 
-                //Run through the weapons bag
-                while (slot <= maxslot)
+                int slot = 0;
+                while (slot < snapshot.Count)
                 {
                     if (character == -1)
                     {
-                        //Print the slots and skip the empty gaps between characters while printing their respecting name
+                        // Print the slots and skip the empty gaps between characters while printing their respecting name
                         switch (slot)
                         {
                             case 10: Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Xiao:"); slot++; continue;
@@ -473,19 +444,19 @@ namespace DarkCloudEnhancedMod
                             case 54: Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Osmond:"); slot++; continue;
                         }
                     }
-                    else if (character != -1 && slot == 0) Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + GetCharacterName(character) + ":");
+                    else if (slot == 0)
+                    {
+                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + GetCharacterName(character) + ":");
+                    }
 
-                    //Store the weapon ID
-                    int weaponId = Memory.ReadUShort(Addresses.firstBagWeapon + (weaponOffset * slot) + (characterWeaponOffset * character));
+                    int weaponId = snapshot[slot].Id;
 
-                    //Check if there is a weapon in the slot and store its ID or store -1 if no weapon is found
+                    // Check if there is a weapon in the slot and store its ID or store -1 if no weapon is found
                     if (weaponId >= Items.brokendagger && weaponId <= Items.swallow)
                     {
-                        //Store the weapon ID
                         inventoryWeapons[slot] = weaponId;
                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Slot: " + slot + " WeaponID: " + weaponId);
                     }
-                    //Store "empty" if no weapon is found
                     else
                     {
                         inventoryWeapons[slot] = -1;
@@ -497,9 +468,6 @@ namespace DarkCloudEnhancedMod
 
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "GetBagWeapons for character " + GetCharacterName(character) + " process finished!\n");
 
-                //When returning the full weapons inventory (no character specified)
-                //there will be a 0 value inbetween every character weapon set due to
-                //having an empty range of addresses there, just ignore
                 return inventoryWeapons;
             }
 
@@ -517,7 +485,7 @@ namespace DarkCloudEnhancedMod
 
                 foreach (int item in weaponsBag)
                 {
-                    //Run until you find an empty slot and return the slot number if found
+                    // Run until you find an empty slot and return the slot number if found
                     if (item == -1)
                     {
                         Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Finished GetBagWeaponsFirstAvailableSlot process:\n" + slot + "\n");
@@ -528,7 +496,7 @@ namespace DarkCloudEnhancedMod
 
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Finished GetBagWeaponsFirstAvailableSlot process: No slot available.");
 
-                //Return -1 if no empty slot was found
+                // Return -1 if no empty slot was found
                 return -1;
             }
 
@@ -537,27 +505,19 @@ namespace DarkCloudEnhancedMod
             /// </summary>
             /// <returns></returns>
             public static int[] GetBagAttachments()
-            
             {
-                const byte itemOffset = 0x20;
-                byte inventorySize = inventorySizeAttachments;
-                int[] inventoryAttachments = new int[inventorySize + 2];
+                var snapshot = GetInventoryService().ReadBagAttachments();
+                int[] inventoryAttachments = new int[snapshot.Count];
 
-                //Run through the attachment bag
-                for (int slot = 0; slot < inventorySize + 2; slot++)
+                for (int slot = 0; slot < snapshot.Count; slot++)
                 {
-                    //Store the attachment ID
-                    int itemId = Memory.ReadUShort(Addresses.firstBagAttachment + (itemOffset * slot));
+                    int itemId = snapshot[slot].Id;
 
-                    //Check if there is an attachment in the slot and store its ID or store -1 if no attachment is found
-                    if (itemId >= Items.fire && itemId <= 1000)
-                    {
+                    // Check if there is an attachment in the slot and store its ID or store -1 if no attachment is found
+                    if (itemId >= Items.fire && itemId <= MaxAttachmentId)
                         inventoryAttachments[slot] = itemId;
-                    }
                     else
-                    {
                         inventoryAttachments[slot] = -1;
-                    }
                 }
 
                 return inventoryAttachments;
@@ -572,7 +532,7 @@ namespace DarkCloudEnhancedMod
                 int slot = 0;
                 int[] attachmentBag = GetBagAttachments();
 
-                //Run until you find an empty slot and return the slot number if found
+                // Run until you find an empty slot and return the slot number if found
                 foreach (int item in attachmentBag)
                 {
                     if (item == -1)
@@ -592,37 +552,33 @@ namespace DarkCloudEnhancedMod
             /// <param name="slot">The slot in the attachment inventory.</param>
             public static void SetBagAttachments(int attachmentId, int slot = -1)
             {
-                const int attachmentOffset = 0x20;
-                const int attachmentValuesRange = 0x1F;
-                const int tableAttachmentFirstAddress = 0x2027CA60;
-
-                if (slot >= 0)
+                if (attachmentId < Items.fire || attachmentId > Items.mageslayer)
                 {
-                    if (GetBagAttachments()[slot] == -1)
-                    {
-                        try
-                        {
-                            //Fetch the values from the original values database
-                            byte[] attachmentValues = Memory.ReadByteArray(tableAttachmentFirstAddress + (attachmentOffset * (attachmentId - Items.fire)), attachmentValuesRange);
-
-                            //Write the values on the specified location
-                            Memory.WriteByteArray(Addresses.firstBagAttachment + (attachmentOffset * slot), attachmentValues);
-                        }
-                        catch
-                        {
-                            if (slot > inventoryTotalSize && (attachmentId >= Items.fire && attachmentId <= Items.mageslayer)) SetBagAttachments(attachmentId, GetBagAttachmentsFirstAvailableSlot());
-                            else Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Invalid inputs for SetBagAttachments\n");
-                        }
-                    }
-                    else Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Attachment bag is full!\n");
-                }
-                else
-                {
-                    SetBagAttachments(attachmentId, GetBagAttachmentsFirstAvailableSlot());
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Invalid inputs for SetBagAttachments\n");
                     return;
                 }
 
-                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Finished SetBagAttachments process!\n");
+                if (slot < 0)
+                {
+                    slot = GetBagAttachmentsFirstAvailableSlot();
+                    if (slot == -1)
+                    {
+                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Attachment bag is full!\n");
+                        return;
+                    }
+                }
+
+                int[] attachmentBag = GetBagAttachments();
+                if (slot >= attachmentBag.Length || attachmentBag[slot] != -1)
+                {
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Attachment bag is full!\n");
+                    return;
+                }
+
+                if (GetInventoryService().TrySetBagAttachment(slot, attachmentId))
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Finished SetBagAttachments process!\n");
+                else
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Invalid inputs for SetBagAttachments\n");
             }
         }
 

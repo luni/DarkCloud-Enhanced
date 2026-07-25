@@ -9,6 +9,14 @@ namespace DarkCloud.Core.Players
     /// </summary>
     public sealed class PlayerStateService : IPlayerStateService
     {
+        private const PlayerStatus AllStatusFlags =
+            PlayerStatus.NearDeath |
+            PlayerStatus.Freeze |
+            PlayerStatus.Stamina |
+            PlayerStatus.Poison |
+            PlayerStatus.Curse |
+            PlayerStatus.Goo;
+
         private readonly IPlayerStateRepository _repository;
 
         public PlayerStateService(IPlayerStateRepository repository)
@@ -52,6 +60,9 @@ namespace DarkCloud.Core.Players
             }
             else
             {
+                if (maxHp < ushort.MinValue || maxHp > ushort.MaxValue)
+                    throw new ArgumentOutOfRangeException(nameof(maxHp), "Max HP must fit in a 16-bit unsigned value for this character.");
+
                 _repository.TryWriteUInt16(character, PlayerCharacterField.MaxHp, (ushort)maxHp);
             }
         }
@@ -100,7 +111,13 @@ namespace DarkCloud.Core.Players
             if (!_repository.TryReadUInt16(character, PlayerCharacterField.Status, out ushort raw))
                 return PlayerStatus.None;
 
-            return (PlayerStatus)raw;
+            PlayerStatus status = (PlayerStatus)raw;
+
+            // Treat any value containing undefined status bits as the absence of status.
+            if ((status | AllStatusFlags) != AllStatusFlags)
+                return PlayerStatus.None;
+
+            return status;
         }
 
         public void SetStatus(CharacterType character, string type, ushort timer)

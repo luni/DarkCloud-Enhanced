@@ -11,43 +11,13 @@ namespace DarkCloud.Core.Players
     /// </summary>
     public sealed class PlayerStateRepository : IPlayerStateRepository
     {
-        // NTSC addresses for the current character and dungeon-floor flag.
-        // Region translation is applied by the underlying IGameMemory implementation.
-        private const long CurrentCharacterAddress = 0x21CD9550L;
-        private const long InDungeonFloorAddress = 0x21CD954FL;
-
         private readonly IGameMemory _memory;
         private readonly IPlayerCharacterMemoryLayout _layout;
 
-        public PlayerStateRepository(IGameMemory memory, IPlayerCharacterMemoryLayout layout = null)
+        public PlayerStateRepository(IGameMemory memory, IPlayerCharacterMemoryLayout layout)
         {
             _memory = memory ?? throw new ArgumentNullException(nameof(memory));
-            _layout = layout;
-        }
-
-        public bool TryReadCurrentCharacter(out CharacterType character)
-        {
-            character = CharacterType.Unknown;
-
-            byte[] buffer = new byte[1];
-            if (!_memory.TryRead(CurrentCharacterAddress, buffer, 0, 1))
-                return false;
-
-            character = MapByteToCharacterType(buffer[0]);
-            return true;
-        }
-
-        public bool TryIsInDungeonFloor(out bool inDungeonFloor)
-        {
-            inDungeonFloor = false;
-
-            byte[] buffer = new byte[1];
-            if (!_memory.TryRead(InDungeonFloorAddress, buffer, 0, 1))
-                return false;
-
-            // 255 indicates the player is not inside a dungeon floor.
-            inDungeonFloor = buffer[0] != 255;
-            return true;
+            _layout = layout ?? throw new ArgumentNullException(nameof(layout));
         }
 
         public bool TryReadUInt16(CharacterType character, PlayerCharacterField field, out ushort value)
@@ -127,20 +97,6 @@ namespace DarkCloud.Core.Players
         {
             long address = _layout.GetAddress(character, field, true);
             return _memory.TryWrite(address, new byte[] { value }, 0, 1);
-        }
-
-        private static CharacterType MapByteToCharacterType(byte value)
-        {
-            switch (value)
-            {
-                case 0: return CharacterType.Toan;
-                case 1: return CharacterType.Xiao;
-                case 2: return CharacterType.Goro;
-                case 3: return CharacterType.Ruby;
-                case 4: return CharacterType.Ungaga;
-                case 5: return CharacterType.Osmond;
-                default: return CharacterType.Unknown;
-            }
         }
     }
 }
