@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -112,17 +113,80 @@ namespace Dark_Cloud_Improved_Version
         /// <returns></returns>
         public static Process GetProcess(string processToFind = "pcsx2")
         {
-            var found = Process.GetProcesses()
-                .Where(p => p.ProcessName
-                    .IndexOf(processToFind, StringComparison.OrdinalIgnoreCase) >= 0)
+            var candidates = Process.GetProcesses()
+                .Where(p => IsPcsx2Process(p, processToFind))
                 .ToList();
 
-            if (found.Count > 1) {
-                Console.WriteLine("Found {0} running instances of {1}. Using the last instance found...",
-                    found.Count, found[-1].ProcessName);
+            if (candidates.Count == 0)
+                return null;
+
+            // Prefer the main PCSX2 process (pcsx2-qt or the Flatpak app ID)
+            // over helper/wrapper processes.
+            var ordered = candidates
+                .OrderByDescending(p => Pcsx2ProcessScore(p))
+                .ThenBy(p => p.Id)
+                .ToList();
+
+            if (ordered.Count > 1)
+            {
+                Console.WriteLine("Found {0} PCSX2-like processes. Using pid {1} ({2})...",
+                    ordered.Count, ordered[0].Id, ordered[0].ProcessName);
             }
 
-            return found.LastOrDefault();
+            return ordered.FirstOrDefault();
+        }
+
+        private static bool IsPcsx2Process(Process p, string processToFind)
+        {
+            string name = p.ProcessName ?? string.Empty;
+            if (name.IndexOf(processToFind, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            // Flatpak/Snap wrappers such as flatpak or bwrap keep the original
+            // executable in their command line even when the process name changes.
+            if (Platform.IsLinux &&
+                !name.Equals("flatpak", StringComparison.OrdinalIgnoreCase) &&
+                !name.Equals("bwrap", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    string cmdline = File.ReadAllText($"/proc/{p.Id}/cmdline")
+                        .Replace('\0', ' ');
+                    if (cmdline.IndexOf(processToFind, StringComparison.OrdinalIgnoreCase) >= 0)
+                        return true;
+                }
+                catch
+                {
+                    // Ignore processes we can't inspect.
+                }
+            }
+
+            return false;
+        }
+
+        private static int Pcsx2ProcessScore(Process p)
+        {
+            string name = (p.ProcessName ?? string.Empty).ToLowerInvariant();
+            string cmdline = string.Empty;
+            if (Platform.IsLinux)
+            {
+                try
+                {
+                    cmdline = File.ReadAllText($"/proc/{p.Id}/cmdline")
+                        .Replace('\0', ' ')
+                        .ToLowerInvariant();
+                }
+                catch
+                {
+                    cmdline = string.Empty;
+                }
+            }
+            string all = name + " " + cmdline;
+            if (all.Contains("pcsx2-qt") || all.Contains("net.pcsx2.pcsx2"))
+                return 2;
+            if (all.Contains("pcsx2"))
+                return 1;
+            return 0;
         }
 
         public static IntPtr GetProcessHandle(int processId)
