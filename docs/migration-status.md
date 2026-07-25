@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 2.2: Add in-memory game memory implementation
+Phase 3: Extract address translation
 
 ## Completed
 
@@ -16,15 +16,17 @@ Phase 2.2: Add in-memory game memory implementation
 - [x] Phase 1.2 — Add `packages.lock.json`, locked restore, and test-result artifacts
 - [x] Phase 1.3 — Add CodeQL, dependency review, and Dependabot
 - [x] Phase 2.1 — Create `DarkCloud.Memory.Abstractions` with `IGameMemory` and typed reader/writer
+- [x] Phase 2.2 — Implement `InMemoryGameMemory` with boundary tests
+- [x] Phase 2.3 — Create `LegacyProcessGameMemory` adapter
 
 ## In progress
 
-- [ ] Phase 2.2 — Implement `InMemoryGameMemory` with boundary tests
+- [ ] Phase 3.1 — Extract `IAddressTranslator`
 
 ## Next
 
-- Phase 2.3 — Create `LegacyProcessGameMemory` adapter
-- Phase 3: Extract address translation
+- Phase 3.2 — Add symbolic `GameAddress` pilot
+- Phase 4: Structured address data and generators
 
 ## Known blockers
 
