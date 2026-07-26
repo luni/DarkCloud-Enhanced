@@ -134,19 +134,6 @@ namespace DarkCloudEnhancedMod.Windows.IntegrationTests
             Assert.Equal(0UL, bytesRead);
         }
 
-        [Fact]
-        public void RegionAddresses_Translate_PalRegion_MatchesExpected()
-        {
-            RegionAddresses.RegionDetected = true;
-            RegionAddresses.CurrentRegion = Region.PAL;
-
-            long translated = RegionAddresses.Translate(0x20299540L);
-            Assert.Equal(0x2029BCA0L, translated);
-
-            translated = RegionAddresses.Translate(0x21F10020L);
-            Assert.Equal(0x21F22EA0L, translated);
-        }
-
         private static string BuildFakeProcess()
         {
             string[] candidates =

@@ -6,7 +6,7 @@ namespace DarkCloudEnhancedMod
 {
     internal class Resources
     {
-        static string resourcesFolder = "DarkCloudEnhancedMod.Resources.";
+        static string resourcesFolder = "DarkCloud.Memory.Windows.Resources.";
 
         static Stream rubyFire = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourcesFolder + "RubyMemeFix.Fire");
         static Stream rubyIce = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourcesFolder + "RubyMemeFix.Ice");

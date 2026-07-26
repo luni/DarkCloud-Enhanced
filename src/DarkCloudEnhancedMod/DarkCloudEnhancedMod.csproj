@@ -56,11 +56,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\RubyMemeFix\Fire" />
-    <EmbeddedResource Include="Resources\RubyMemeFix\Holy" />
-    <EmbeddedResource Include="Resources\RubyMemeFix\Ice" />
-    <EmbeddedResource Include="Resources\RubyMemeFix\Thunder" />
-    <EmbeddedResource Include="Resources\RubyMemeFix\Wind" />
   </ItemGroup>
 
   <ItemGroup>

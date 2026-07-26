@@ -1,20 +1,20 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DarkCloud.Core.Features;
+using DarkCloudEnhancedMod;
 
-namespace DarkCloudEnhancedMod
+namespace DarkCloud.Memory.Windows
 {
     /// <summary>
-    /// Lifecycle-managed module that runs the legacy dungeon script on a
-    /// background task. This is a migration wrapper around
-    /// <see cref="Dungeon.InsideDungeonThread(CancellationToken)"/>; the domain
-    /// logic will be extracted into <see cref="DarkCloud.Core"/> in Phase 10.4.
+    /// Lifecycle-managed module that runs the legacy town/overworld script on a
+    /// background task. The domain logic lives in <see cref="TownCharacter"/> and is
+    /// reused by both the legacy and modern hosts.
     /// </summary>
-    internal sealed class DungeonFeature : IModFeature
+    internal sealed class TownCharacterFeature : IModFeature
     {
         private Task _task;
 
-        public string Id => "dungeon";
+        public string Id => "town-character";
 
         public Task InitializeAsync(GameFeatureContext context, CancellationToken cancellationToken)
         {
@@ -25,7 +25,7 @@ namespace DarkCloudEnhancedMod
                 return Task.CompletedTask;
 
             _task = Task.Factory.StartNew(
-                () => Dungeon.InsideDungeonThread(cancellationToken),
+                () => TownCharacter.MainScript(cancellationToken),
                 cancellationToken,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);

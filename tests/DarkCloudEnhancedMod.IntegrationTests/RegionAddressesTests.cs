@@ -4,6 +4,7 @@ using Xunit;
 
 namespace DarkCloudEnhancedMod.IntegrationTests
 {
+    [Collection("RegionAddresses")]
     public class RegionAddressesTests
     {
         [Fact]
@@ -95,6 +96,19 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             long translated = RegionAddresses.Translate(ntscAddress);
 
             Assert.Equal(expectedPal, translated);
+        }
+
+        [Fact]
+        public void Translate_PalRegion_MatchesExpected()
+        {
+            RegionAddresses.RegionDetected = true;
+            RegionAddresses.CurrentRegion = Region.PAL;
+
+            long translated = RegionAddresses.Translate(0x20299540L);
+            Assert.Equal(0x2029BCA0L, translated);
+
+            translated = RegionAddresses.Translate(0x21F10020L);
+            Assert.Equal(0x21F22EA0L, translated);
         }
     }
 }

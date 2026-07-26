@@ -15,4 +15,8 @@
     <ProjectReference Include="..\DarkCloud.Core\DarkCloud.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\RubyMemeFix\*" />
+  </ItemGroup>
+
 </Project>

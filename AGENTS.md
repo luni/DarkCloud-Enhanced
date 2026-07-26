@@ -38,4 +38,5 @@ dotnet test "DarkCloud-Enhanced.sln" --no-build
 - `ApplyChangesFeature` lives in `DarkCloud.Core.Features`; its implementation (`ApplyChangesService`) lives in `DarkCloud.Memory.Windows` and is shared by both hosts.
 - `WeaponsFeature` lives in `DarkCloud.Memory.Windows` and uses `WeaponRerollService`; the legacy `Weapons.RerollWeaponSpecialAttributes` method has been removed.
 - Shared utilities moved to support feature migration: `ThreadingHelper` in `DarkCloud.Core.Threading`, `MainMenuThread` and `Items` in `DarkCloud.Memory.Windows`.
-- Phase 14.3 is closed with `ApplyChanges` and `Weapon Reroll` migrated to the modern host. `TownCharacter` and `Dungeon` remain blocked on the legacy static script graph (Player, Dialogues, Dayuppy, CustomEffects, Enemies, MiniBoss, SideQuestManager, Resources, etc.) and are deferred.
+- Phase 14.3 is closed: `ApplyChanges`, `Weapon Reroll`, `TownCharacter`, and `Dungeon` are shared in `DarkCloud.Memory.Windows` and wired into both hosts. Phase 14.4 (retire legacy host) is pending release validation.
+- The legacy non-UI script graph (`Player`, `Dialogues`, `Dayuppy`, `CustomEffects`, `Enemies`, `MiniBoss`, `SideQuestManager`, `Resources`, etc.) now lives in `DarkCloud.Memory.Windows`.
