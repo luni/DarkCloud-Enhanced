@@ -32,7 +32,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: csharp
           build-mode: manual
@@ -44,7 +44,7 @@ jobs:
           dotnet build "src/DarkCloud.App.WinForms/DarkCloud.App.WinForms.csproj" -c Release --no-restore
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
 
   analyze-cpp:
     name: Analyze C/C++
@@ -57,14 +57,14 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: cpp
           build-mode: manual
           queries: security-extended,security-and-quality
 
       - name: Build native helper
-        run: msbuild -restore "native/pcsx2_offsetreader/pcsx2_offsetreader.vcxproj" /t:Rebuild /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+        run: msbuild -restore "native/pcsx2_offsetreader/pcsx2_offsetreader.vcxproj" /t:Rebuild /p:Configuration=Release /p:Platform=x64 /p:UseSharedCompilation=false /verbosity:minimal
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
