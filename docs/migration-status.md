@@ -40,11 +40,11 @@ Phase 10: Extract domain logic (in progress)
 - [x] Phase 13 — Add `ModConfiguration`, `IModConfigurationStore`, `JsonModConfigurationStore` with versioning/unknown-key preservation, and wire configuration into `ModWindow`/`GameSessionRunner`/`ModWindowGameSessionObserver`
 - [x] Phase 10.4 pilot — Extract dungeon gate-key, back-floor key, event-floor, enemy key-drop, and bone-door services into `DarkCloud.Core/Dungeon`
 - [x] Phase 10.3 — Extract weapons domain logic (special-attribute rolls, synth-sphere upgrade rules, balance table) into `DarkCloud.Core/Weapons`
-- [~] Phase 10.4 — Partial extraction: added Ungaga door/swap, clown, escape powder, miniboss stamina, Sword of Zeus, side-quest state, and floor-selection services in `DarkCloud.Core/Dungeon`
+- [x] Phase 10.4 — Extract remaining dungeon domain behavior into `DarkCloud.Core/Dungeon`: Ungaga door/swap, clown, escape powder, miniboss stamina, Sword of Zeus, side-quest state, floor selection, spawn detection, mini-boss message, active item usage, weapon level-up, monster-kill quests, and Samba/Mayor side-quest challenges.
 
 ## In progress
 
-- Phase 10.4 completion — Remaining dungeon behavior (`InsideDungeonThread`, `CheckEnemyKill`, `CheckSpawns`/`DoMinibossSpawn`/`MiniBossMessage`, `CheckCurrentSidequests`/`SambaChallengeQuest`/`MayorQuest`, `CheckActiveItems`, `CheckWepLvlUp`, `CheckDungeonLeaving`)
+- None
 
 ## Next
 
@@ -63,5 +63,9 @@ Phase 10: Extract domain logic (in progress)
 - Address-data generator and PNACH generation
 
 ---
+
+## Notes
+
+- `Dungeon.cs` still contains `InsideDungeonThread`, which is the legacy feature-thread orchestrator that wires the newly extracted Core dungeon services together with the remaining `CustomEffects` weapon-specific feature threads. This orchestrator is intentionally left in the legacy host layer; migrating it will happen as part of the broader feature-thread/host modernization rather than as additional Phase 10.4 domain extraction.
 
 *Last updated: 2026-07-26*
