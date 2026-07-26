@@ -6,7 +6,7 @@ namespace DarkCloudEnhancedMod
     /// Provides the memory addresses used by dungeon domain services for the
     /// Dark Cloud Enhanced mod.
     /// </summary>
-    internal sealed class DungeonMemoryLayout : IDungeonMemoryLayout, IUngagaDoorMemoryLayout, IUngagaSwapMemoryLayout, IEscapePowderMemoryLayout, IMiniBossStaminaMemoryLayout, ISwordOfZeusMemoryLayout, ISideQuestStateMemoryLayout
+    internal sealed class DungeonMemoryLayout : IDungeonMemoryLayout, IUngagaDoorMemoryLayout, IUngagaSwapMemoryLayout, IEscapePowderMemoryLayout, IMiniBossStaminaMemoryLayout, ISwordOfZeusMemoryLayout, ISideQuestStateMemoryLayout, IFloorSelectionMemoryLayout
     {
         public long BoneDoorOpenTypeAddress => Addresses.BoneDoorOpenType;
 
@@ -127,5 +127,13 @@ namespace DarkCloudEnhancedMod
         public long MayorQuestFlagAddress => 0x21CE4468;
 
         public long MayorQuestFloorAddress => 0x21CE4469;
+
+        public long ButtonInputsAddress => Addresses.buttonInputs;
+
+        public long GildaAddress => Addresses.gilda;
+
+        public long DungeonDebugMenuAddress => Addresses.dungeonDebugMenu;
+
+        public long DungeonModeAddress => Addresses.dungeonMode;
     }
 }

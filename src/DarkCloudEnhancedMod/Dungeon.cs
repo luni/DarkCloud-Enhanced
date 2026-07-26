@@ -895,23 +895,8 @@ namespace DarkCloudEnhancedMod
 
         public static void FloorSelectionScreen()
         {
-            if (circlePressed == false)
-            {
-                if (Memory.ReadUShort(Addresses.buttonInputs) == (ushort)CheatCodes.InputBuffer.Button.Circle)
-                {
-                    circlePressed = true;                 
-                }
-            }
-            else
-            {
-                if (Memory.ReadUShort(Addresses.buttonInputs) != (ushort)CheatCodes.InputBuffer.Button.Circle)
-                {
-                    currentGilda = Memory.ReadUShort(Addresses.gilda);
-                    Memory.WriteUShort(Addresses.dungeonDebugMenu, 170);
-                    Memory.WriteByte(Addresses.dungeonMode, 1);
-                    circlePressed = false;
-                }
-            }
+            var service = new FloorSelectionService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            service.Update(ref circlePressed, out currentGilda);
         }
 
         public static void CheckActiveItems(CancellationToken cancellationToken)
