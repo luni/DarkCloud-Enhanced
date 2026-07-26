@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Collections.Generic;
 using DarkCloud.Core.Dungeon;
+using DarkCloudEnhancedMod.Logging;
 using static DarkCloud.Core.Dungeon.DungeonProgression;
 
 namespace DarkCloudEnhancedMod
@@ -26,11 +27,9 @@ namespace DarkCloudEnhancedMod
         static bool dunEscapeConfirmSpamCheck = false;
         static bool dunUsedActiveEscape = false;
         static bool dunUsedEscapeCheck = false;
-        static bool wepMenuOpen = false;
-        static bool PPowdermenuOpen = false;
+        static WeaponLevelUpService _weaponLevelUpService;
         static bool circlePressed = false;
         static bool hasClearMessageShown = false;
-        static byte[] wepLevelArray = new byte[10];
         public static bool monsterQuestMachoActive = false;
         public static bool monsterQuestGobActive = false;
         public static bool monsterQuestJakeActive = false;
@@ -51,7 +50,7 @@ namespace DarkCloudEnhancedMod
         public static Thread spawnsCheck;
         public static Thread minibossProcess;
         public static Thread miniBossMessage;
-        
+
         //Weapon threads, only 1 should run at a time
         public static Thread boneDoorThread = new Thread(() => CustomEffects.BoneDoorTrigger(CancellationToken.None)) { IsBackground = true };
         public static Thread seventhHeavenThread = new Thread(() => CustomEffects.SeventhHeaven(CancellationToken.None)) { IsBackground = true };
@@ -100,7 +99,7 @@ namespace DarkCloudEnhancedMod
                         {
                             //Toan
                             case Player.ToanId:
-                                if(magicCircleChanged) CustomEffects.SecretArmletDisable(); magicCircleChanged = false;
+                                if (magicCircleChanged) CustomEffects.SecretArmletDisable(); magicCircleChanged = false;
 
                                 switch (Player.Weapon.GetCurrentWeaponId())
                                 {
@@ -181,7 +180,7 @@ namespace DarkCloudEnhancedMod
                                         break;
                                 }
                                 break;
-                             
+
                             //Ruby
                             case Player.RubyId:
                                 CustomEffects.BoneRapierEffect(false);
@@ -198,9 +197,10 @@ namespace DarkCloudEnhancedMod
                                         }
                                         break;
                                     case Items.secretarmlet:
-                                        if (!magicCircleChanged) { 
+                                        if (!magicCircleChanged)
+                                        {
                                             bool executed = CustomEffects.SecretArmletEnable();
-                                            if(executed) magicCircleChanged = true;
+                                            if (executed) magicCircleChanged = true;
                                         }
                                         break;
                                     default:
@@ -264,7 +264,7 @@ namespace DarkCloudEnhancedMod
                                 }
                                 break;
                         }
-                        
+
 
                         CheckActiveItems(cancellationToken);
                     }
@@ -287,10 +287,10 @@ namespace DarkCloudEnhancedMod
                     //Get current Dungeon
                     currentDungeon = Memory.ReadByte(Addresses.checkDungeon);
 
-                   
+
                     //Get current Floor
                     currentFloor = Memory.ReadByte(Addresses.checkFloor);
-                    
+
 
                     //Check if the player has entered a new floor
                     if (currentFloor != prevFloor)
@@ -390,7 +390,7 @@ namespace DarkCloudEnhancedMod
         }
 
         public static byte GetDungeonBackFloorKey(byte dungeon)
-        { 
+        {
             return GetBackFloorKeyItem(dungeon);
         }
 
@@ -401,85 +401,40 @@ namespace DarkCloudEnhancedMod
 
         public static void CheckEnemyKill(int currentEnemyAddress, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Checking quest...");
-            if (monsterQuestMachoActive)
-            {
-                //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Macho quest active");
-                int currentEnemyAddress2 = currentEnemyAddress + 0x0000001E;
-                if (Memory.ReadByte(currentEnemyAddress2) == Memory.ReadByte(0x21CE4406))
-                {
-                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest progress +1!");
-                    byte killsleft = Memory.ReadByte(0x21CE4405);
-                    killsleft--;
-                    Memory.WriteByte(0x21CE4405, killsleft);
 
-                    if (killsleft == 0)
-                    {
-                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
-                        Dayuppy.DisplayMessage("You completed Macho's quest!\nWell done!", 2, 30, 4000, cancellationToken: cancellationToken);
-                        Memory.WriteByte(0x21CE4402, 2);
-                        monsterQuestMachoActive = false;
-                    }
-                }
+            var quests = new MonsterQuestDefinition[]
+            {
+                new MonsterQuestDefinition("Macho", 0x21CE4406, 0x21CE4405, 0x21CE4402, 2, "You completed Macho's quest!\nWell done!"),
+                new MonsterQuestDefinition("Gob", 0x21CE440B, 0x21CE440A, 0x21CE4407, 2, "You completed Gob's quest!\nWell done!"),
+                new MonsterQuestDefinition("Jake", 0x21CE4410, 0x21CE440F, 0x21CE440C, 2, "You completed Jake's quest!\nWell done!"),
+                new MonsterQuestDefinition("Chief Bonka", 0x21CE4415, 0x21CE4414, 0x21CE4411, 2, "You completed Chief Bonka´s quest!\nWell done!", 35),
+            };
+
+            var service = new MonsterQuestService(new LegacyProcessGameMemory(), quests);
+            var active = new[] { monsterQuestMachoActive, monsterQuestGobActive, monsterQuestJakeActive, monsterQuestChiefActive };
+            MonsterQuestResult result = service.Process(currentEnemyAddress, active);
+
+            foreach (int index in result.ProgressedQuestIndices)
+            {
+                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest progress +1!");
             }
-            if (monsterQuestGobActive)
-            {
-                //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Gob quest active");
-                int currentEnemyAddress2 = currentEnemyAddress + 0x0000001E;
-                if (Memory.ReadByte(currentEnemyAddress2) == Memory.ReadByte(0x21CE440B))
-                {
-                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest progress +1!");
-                    byte killsleft = Memory.ReadByte(0x21CE440A);
-                    killsleft--;
-                    Memory.WriteByte(0x21CE440A, killsleft);
 
-                    if (killsleft == 0)
-                    {
-                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
-                        Dayuppy.DisplayMessage("You completed Gob's quest!\nWell done!", 2, 30, 4000, cancellationToken: cancellationToken);
-                        Memory.WriteByte(0x21CE4407, 2);
-                        monsterQuestGobActive = false;
-                    }
-                }
-            }
-            if (monsterQuestJakeActive)
+            foreach (int index in result.CompletedQuestIndices)
             {
-                //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Jake quest active");
-                int currentEnemyAddress2 = currentEnemyAddress + 0x0000001E;
-                if (Memory.ReadByte(currentEnemyAddress2) == Memory.ReadByte(0x21CE4410))
-                {
-                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest progress +1!");
-                    byte killsleft = Memory.ReadByte(0x21CE440F);
-                    killsleft--;
-                    Memory.WriteByte(0x21CE440F, killsleft);
+                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
+                MonsterQuestDefinition quest = quests[index];
+                Dayuppy.DisplayMessage(quest.CompletionMessage, 2, quest.DisplayHeight, 4000, cancellationToken: cancellationToken);
 
-                    if (killsleft == 0)
-                    {
-                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
-                        Dayuppy.DisplayMessage("You completed Jake's quest!\nWell done!", 2, 30, 4000, cancellationToken: cancellationToken);
-                        Memory.WriteByte(0x21CE440C, 2);
-                        monsterQuestJakeActive = false;
-                    }
-                }
-            }
-            if (monsterQuestChiefActive)
-            {
-                //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Chief quest active");
-                int currentEnemyAddress2 = currentEnemyAddress + 0x0000001E;
-                if (Memory.ReadByte(currentEnemyAddress2) == Memory.ReadByte(0x21CE4415))
+                switch (index)
                 {
-                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest progress +1!");
-                    byte killsleft = Memory.ReadByte(0x21CE4414);
-                    killsleft--;
-                    Memory.WriteByte(0x21CE4414, killsleft);
-
-                    if (killsleft == 0)
-                    {
-                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest complete!!");
-                        Dayuppy.DisplayMessage("You completed Chief Bonka´s quest!\nWell done!", 2, 35, 4000, cancellationToken: cancellationToken);
-                        Memory.WriteByte(0x21CE4411, 2);
-                        monsterQuestChiefActive = false;
-                    }
+                    case 0: monsterQuestMachoActive = false; break;
+                    case 1: monsterQuestGobActive = false; break;
+                    case 2: monsterQuestJakeActive = false; break;
+                    case 3: monsterQuestChiefActive = false; break;
                 }
             }
         }
@@ -499,45 +454,14 @@ namespace DarkCloudEnhancedMod
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Checking spawns...");
 
-            int ms = 0;
-            byte numNormalEnemies = 0;
-
-            if(prevFloor == 200)
-            {
-                //Listens for the enemy render address value to change, from 0 or 10 seconds have passed
-                //We use the enemy render value here because enemies spawn after chests
-                while (Memory.ReadByte(Enemies.Enemy14.renderStatus) == 255 && ms < 10000)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
-
-                    ThreadingHelper.Sleep(100, cancellationToken);
-                    ms += 100;
-                    continue;
-                }
-            }
-            else
-            {
-                //Listens for the enemy hp address value to change, from 0 or 10 seconds have passed
-                //We use the enemy render value here because enemies spawn after chests
-                while (Memory.ReadByte(Enemies.Enemy14.hp) == 1 && ms < 10000)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
-
-                    ThreadingHelper.Sleep(100, cancellationToken);
-                    ms += 100;
-                    continue;
-                }
-            }
-
-            //Set the flag to true
-            if(Memory.ReadByte(Enemies.Enemy0.renderStatus) > 0) enemiesSpawn = true;
+            var spawnService = new SpawnDetectionService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            enemiesSpawn = spawnService.WaitForSpawn(prevFloor, cancellationToken);
 
             //Get all the current floor enemy ids
             List<ushort> enemyFloorIds = Enemies.GetFloorEnemiesIds();
 
             //Calculate the amount of non-flying enemies in the floor
+            byte numNormalEnemies = 0;
             foreach (ushort enemy in enemyFloorIds)
             {
                 if (Enemies.GetNormalEnemies().ContainsKey(enemy)) numNormalEnemies++;
@@ -592,11 +516,12 @@ namespace DarkCloudEnhancedMod
         public static void DoMinibossSpawn(byte currentDungeon, CancellationToken cancellationToken)
         {
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Processing mini boss...");
-           
-            hasMiniBoss = MiniBoss.MiniBossSpawn(false, currentDungeon, currentFloor, cancellationToken); 
+
+            hasMiniBoss = MiniBoss.MiniBossSpawn(false, currentDungeon, currentFloor, cancellationToken);
 
             //If the mini boss spawned, start its warning message thread
-            if (hasMiniBoss) { 
+            if (hasMiniBoss)
+            {
                 miniBossMessage = new Thread(() => MiniBossMessage(cancellationToken)) { IsBackground = true };
                 miniBossMessage.Start();
             }
@@ -612,22 +537,9 @@ namespace DarkCloudEnhancedMod
         {
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Working on the message...");
 
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            int ms = 0;
-
-            //Wait until we get control, we use the HUD display as a flag
-            while (Memory.ReadByte(Addresses.hideHud) == 1 && ms < 8000)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
-                ThreadingHelper.Sleep(100, cancellationToken);
-                ms += 100;
-            }
-
-            Dayuppy.DisplayMessage("A mysterious enemy lurks\naround. Be careful!", 2, 24, 4000, cancellationToken: cancellationToken);
+            var service = new MiniBossMessageService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            service.WaitAndDisplay(cancellationToken, (message, token) =>
+                Dayuppy.DisplayMessage(message, 2, 24, 4000, cancellationToken: token));
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Finished message process!");
         }
@@ -758,138 +670,42 @@ namespace DarkCloudEnhancedMod
 
         public static void SambaChallengeQuest(CancellationToken cancellationToken = default)
         {
-            ushort currentweaponID = Memory.ReadUShort(0x21EA7590);
-            if (sambaChallengeQuestCheck == false && Memory.ReadByte(0x202A34CC) == 1)
-            {
-                if (Memory.ReadByte(Addresses.hideHud) == 0)
-                {
-                    if (Memory.ReadByte(0x202A3570) == 0 && (currentweaponID == 258 || currentweaponID == 257))
-                    {
-                        Memory.WriteInt(0x21CE205C, 0);
-                        Dayuppy.DisplayMessage("Samba's quest started!\nClear all enemies using only Dagger!\nUsing a throwable also\ncancels the mission.", 4, 40, 8000, cancellationToken: cancellationToken);
-                        sambaChallengeQuestActive = true;
+            var service = new SambaChallengeService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            SideQuestChallengeResult result = service.Process(sambaChallengeQuestCheck, sambaChallengeQuestActive, sambaChallengeQuest, monstersDead, cancellationToken);
 
-                        for (int i = 0; i < 8; i++)
-                        {
-                            monstersDead[i] = false;
-                        }
-                    }
-                    else if (Memory.ReadByte(0x202A3570) == 0 && currentweaponID != 258 && currentweaponID != 257)
-                    {
-                        Dayuppy.DisplayMessage("Samba's quest did not start.\nRe-enter with Dagger equipped.", 2, 30, 4000, cancellationToken: cancellationToken);
-                        sambaChallengeQuestActive = false;
-                    }
-                    sambaChallengeQuestCheck = true;
-                }
-            }
-            else if (sambaChallengeQuestCheck == true && Memory.ReadByte(0x202A34CC) == 0)
-            {
-                sambaChallengeQuestCheck = false;
-                sambaChallengeQuestActive = false;
-            }
+            sambaChallengeQuestCheck = result.QuestCheck;
+            sambaChallengeQuestActive = result.QuestActive;
+            sambaChallengeQuest = result.Quest;
 
-            if (sambaChallengeQuestActive)
-            {
-                if ((currentweaponID != 258 && currentweaponID != 257) || Memory.ReadByte(0x21DC4484) == 26 || Memory.ReadByte(0x21DC4484) == 27)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
-
-                    ThreadingHelper.Sleep(500, cancellationToken);
-                    Dayuppy.DisplayMessage("Samba's quest has been cancelled.\nRe-enter in order to activate it.", 2, 40, 4000, cancellationToken: cancellationToken);
-                    sambaChallengeQuestActive = false;
-                }
-                byte enemieskilled = 0;
-                for (int i = 0; i < 8; i++)
-                {
-                    currentAddress = 0x21E16BC4 + (i * 0x190);
-
-                    if (Memory.ReadUShort(currentAddress) > 0)
-                    {
-                        monstersDead[i] = false;
-                    }
-                    else
-                    {
-                        monstersDead[i] = true;
-                        enemieskilled++;
-                    }
-                }
-
-                if (enemieskilled == 8)
-                {
-                    Dayuppy.DisplayMessage("Samba's quest completed!\nWell done!", 2, 28, 4000, cancellationToken: cancellationToken);
-                    Memory.WriteByte(0x21CE4462, 1);
-                    sambaChallengeQuest = false;
-                }
-            }
+            DisplaySideQuestMessages(result, cancellationToken);
         }
 
         public static void MayorQuest(CancellationToken cancellationToken = default)
         {
-            if (mayorQuestCheck == false && Memory.ReadByte(0x202A34CC) == 1)
+            var service = new MayorQuestService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            SideQuestChallengeResult result = service.Process(mayorQuestCheck, mayorQuestActive, mayorQuest, monstersDead, cancellationToken);
+
+            mayorQuestCheck = result.QuestCheck;
+            mayorQuestActive = result.QuestActive;
+            mayorQuest = result.Quest;
+
+            DisplaySideQuestMessages(result, cancellationToken);
+        }
+
+        private static void DisplaySideQuestMessages(SideQuestChallengeResult result, CancellationToken cancellationToken)
+        {
+            for (int i = 0; i < result.Messages.Count; i++)
             {
-                if (Memory.ReadByte(Addresses.hideHud) == 0)
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                if (i == 0 && result.ShouldDelayFirstMessage)
                 {
-                    if (Memory.ReadByte(0x202A3570) == Memory.ReadByte(0x21CE446A)) //check if correct ally for quest
-                    {
-                        Memory.WriteInt(0x21CE205C, 0);
-                        Dayuppy.DisplayMessage("Mayor's quest started!\nClear all enemies.\nCannot change character.\nThrowables are not allowed.", 4, 26, 5000, cancellationToken: cancellationToken);
-
-                        mayorQuestActive = true;
-
-                        for (int i = 0; i < 8; i++)
-                        {
-                            monstersDead[i] = false;
-                        }
-                    }
-                    else
-                    {
-                        Dayuppy.DisplayMessage("Mayor's quest did not start.\nRe-enter with correct ally.", 2, 30, 4000, cancellationToken: cancellationToken);
-                        mayorQuestActive = false;
-                    }
-                    mayorQuestCheck = true;
-                }
-            }
-            else if (mayorQuestCheck == true && Memory.ReadByte(0x202A34CC) == 0)
-            {
-                mayorQuestCheck = false;
-                mayorQuestActive = false;
-            }
-
-            if (mayorQuestActive)
-            {
-                if (Memory.ReadByte(0x21DC4484) == 26 || Memory.ReadByte(0x21DC4484) == 27)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
-
                     ThreadingHelper.Sleep(500, cancellationToken);
-                    Dayuppy.DisplayMessage("Mayor's quest has been cancelled.\nRe-enter in order to re-attempt it.", 2, 40, 4000, cancellationToken: cancellationToken);
-                    mayorQuestActive = false;
                 }
 
-                byte enemieskilled = 0;
-                for (int i = 0; i < 8; i++)
-                {
-                    currentAddress = 0x21E16BC4 + (i * 0x190);
-
-                    if (Memory.ReadUShort(currentAddress) > 0)
-                    {
-                        monstersDead[i] = false;
-                    }
-                    else
-                    {
-                        monstersDead[i] = true;
-                        enemieskilled++;
-                    }
-                }
-
-                if (enemieskilled == 8)
-                {
-                    Dayuppy.DisplayMessage("Mayor's quest completed!\nWell done!", 2, 28, 4000, cancellationToken: cancellationToken);
-                    Memory.WriteByte(0x21CE4468, 2);
-                    mayorQuest = false;
-                }
+                SideQuestMessage message = result.Messages[i];
+                Dayuppy.DisplayMessage(message.Text, message.Height, message.Width, message.DisplayTime, cancellationToken: cancellationToken);
             }
         }
 
@@ -901,109 +717,28 @@ namespace DarkCloudEnhancedMod
 
         public static void CheckActiveItems(CancellationToken cancellationToken)
         {
-            if (Memory.ReadUShort(Addresses.buttonInputs) == (ushort)CheatCodes.InputBuffer.Button.Square && (Memory.ReadByte(0x21D5676D) > 0 && Memory.ReadInt(0x21D56770) == -1) )
+            var service = new ActiveItemService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var result = service.Process(squareActive, dunEscapeConfirm, dunEscapeConfirmSpamCheck);
+
+            squareActive = result.SquareActive;
+
+            if (result.EscapeConfirmRequested)
             {
-                int currentSlot = Memory.ReadInt(0x202A3598);
-                int currentActiveItem = 0x21CDD8AC + (0x2 * currentSlot);
-
-                if (Memory.ReadShort(currentActiveItem) == 175)
-                {
-                    byte animationID = Memory.ReadByte(0x21DC4484);
-                    if (animationID == 0 || animationID == 1 || animationID == 2 || animationID == 18)
-                    {
-                        if (squareActive == false)
-                        {
-                            if (dunEscapeConfirm == false)
-                            {
-                                squareActive = true;
-                                Dayuppy.DisplayMessage("^RAre you sure you want to leave?\n^WPress square to use Escape Powder.", 2, 36, 3000, cancellationToken: cancellationToken);
-                                dunEscapeConfirmThread = new Thread(() => DunEscapeConfirmTimer(cancellationToken)) { IsBackground = true };
-                                dunEscapeConfirmThread.Start();
-                                dunEscapeConfirm = true;
-                                dunEscapeConfirmSpamCheck = false;
-                            }
-                            else if (dunEscapeConfirm)
-                            {
-                                if (dunEscapeConfirmSpamCheck == true)
-                                {
-                                    if (Memory.ReadByte(0x202A35EC) == 0)
-                                    {
-                                        squareActive = true;
-                                        dunUsedActiveEscape = true;
-                                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Activated escape powder!");
-                                        Memory.WriteByte(0x202A35EC, 170);
-                                        byte currentPowders = Memory.ReadByte(0x21CDD8B2 + (0x2 * currentSlot));
-                                        currentPowders--;
-                                        Memory.WriteByte(0x21CDD8B2 + (0x2 * currentSlot), currentPowders);
-                                        if (currentPowders == 0)
-                                        {
-                                            Memory.WriteUShort(currentActiveItem, 65535);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                else if (Memory.ReadShort(currentActiveItem) == 177)
-                {
-                    byte animationID = Memory.ReadByte(0x21DC4484);
-                    if (animationID == 0 || animationID == 1 || animationID == 2 || animationID == 18)
-                    {
-                        if (squareActive == false)
-                        {
-                            ushort currentmaxWHP = Player.Weapon.GetCurrentWeaponMaxWhp();
-
-                            int currentChar = Memory.ReadByte(0x21CD9550);
-                            int currentWepNum = Memory.ReadByte(0x21CDD88C + (0x1 * currentChar));
-                            int whp;
-
-                            if (currentChar == 0)
-                            {
-                                whp = Player.Toan.WeaponSlot0.whp + (0xF8 * currentWepNum);
-                            }
-                            else if (currentChar == 1)
-                            {
-                                whp = Player.Xiao.WeaponSlot0.whp + (0xF8 * currentWepNum);
-                            }
-                            else if (currentChar == 2)
-                            {
-                                whp = Player.Goro.WeaponSlot0.whp + (0xF8 * currentWepNum);
-                            }
-                            else if (currentChar == 3)
-                            {
-                                whp = Player.Ruby.WeaponSlot0.whp + (0xF8 * currentWepNum);
-                            }
-                            else if (currentChar == 4)
-                            {
-                                whp = Player.Ungaga.WeaponSlot0.whp + (0xF8 * currentWepNum);
-                            }
-                            else
-                            {
-                                whp = Player.Osmond.WeaponSlot0.whp + (0xF8 * currentWepNum);
-                            }
-                            float currentWHP = Memory.ReadFloat(whp);
-                            if (currentWHP < currentmaxWHP)
-                            {                         
-                                Memory.WriteFloat(whp, currentmaxWHP);
-                                Dayuppy.DisplayMessage("Used Repair Powder!", 1, 20, 2000, cancellationToken: cancellationToken);
-                                byte currentPowders = Memory.ReadByte(0x21CDD8B2 + (0x2 * currentSlot));
-                                currentPowders--;
-                                Memory.WriteByte(0x21CDD8B2 + (0x2 * currentSlot), currentPowders);
-                                squareActive = true;
-                                if (currentPowders == 0)
-                                {
-                                    Memory.WriteUShort(currentActiveItem, 65535);
-                                }
-                            }
-                        }
-                    }
-                }
+                Dayuppy.DisplayMessage(result.DisplayMessage, 2, 36, 3000, cancellationToken: cancellationToken);
+                dunEscapeConfirmThread = new Thread(() => DunEscapeConfirmTimer(cancellationToken)) { IsBackground = true };
+                dunEscapeConfirmThread.Start();
+                dunEscapeConfirm = true;
+                dunEscapeConfirmSpamCheck = false;
             }
-            else
+            else if (result.EscapeActivated)
             {
-                squareActive = false;
-            }          
+                dunUsedActiveEscape = true;
+                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Activated escape powder!");
+            }
+            else if (result.RepairPowderUsed)
+            {
+                Dayuppy.DisplayMessage(result.DisplayMessage, 1, 20, 2000, cancellationToken: cancellationToken);
+            }
         }
 
         public static void DunEscapeConfirmTimer(CancellationToken cancellationToken)
@@ -1058,64 +793,15 @@ namespace DarkCloudEnhancedMod
 
         public static void CheckWepLvlUp()
         {
-            byte menuMode = Memory.ReadByte(0x202A2010);
-            if (menuMode == 2 || menuMode == 1)
+            if (_weaponLevelUpService == null)
             {
+                var memory = new LegacyProcessGameMemory();
+                var layout = new DungeonMemoryLayout();
+                var sozService = new SwordOfZeusService(memory, layout);
+                _weaponLevelUpService = new WeaponLevelUpService(memory, layout, sozService, new ConsoleModLogger());
+            }
 
-                if (wepMenuOpen == false)
-                {
-                    for (int i = 0; i < wepLevelArray.Length; i++)
-                    {
-                        wepLevelArray[i] = Memory.ReadByte(0x21CDDA5A + (i * 0xF8));
-                    }
-                    wepMenuOpen = true;
-                }
-                else
-                {
-                    if (menuMode == 1) 
-                    {
-                        if (Memory.ReadByte(0x21D9EC08) == 6)
-                        {
-                            for (int i = 0; i < wepLevelArray.Length; i++)
-                            {
-                                wepLevelArray[i] = Memory.ReadByte(0x21CDDA5A + (i * 0xF8));
-                            }
-                            PPowdermenuOpen = true;
-                        }
-                        else
-                        {
-                            if (PPowdermenuOpen == true)
-                            {
-                                for (int i = 0; i < wepLevelArray.Length; i++)
-                                {
-                                    if (Memory.ReadByte(0x21CDDA5A + (i * 0xF8)) > wepLevelArray[i])
-                                    {
-                                        CheckSoZEffect(i);
-                                        wepLevelArray[i] = Memory.ReadByte(0x21CDDA5A + (i * 0xF8));
-                                    }
-                                }
-                            }
-                            PPowdermenuOpen = false;
-                        }                                            
-                    }
-                    else if (menuMode == 2)
-                    {
-                        for (int i = 0; i < wepLevelArray.Length; i++)
-                        {
-                            if (Memory.ReadByte(0x21CDDA5A + (i * 0xF8)) > wepLevelArray[i])
-                            {
-                                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Weapon(sword) leveled up!");
-                                CheckSoZEffect(i);
-                                wepLevelArray[i] = Memory.ReadByte(0x21CDDA5A + (i * 0xF8));
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                wepMenuOpen = false;
-            }
+            _weaponLevelUpService.Update();
         }
 
         public static void CheckSoZEffect(int wepOffset)

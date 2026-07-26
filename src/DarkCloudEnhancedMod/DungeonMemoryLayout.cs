@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DarkCloud.Core.Dungeon;
 
 namespace DarkCloudEnhancedMod
@@ -6,7 +7,7 @@ namespace DarkCloudEnhancedMod
     /// Provides the memory addresses used by dungeon domain services for the
     /// Dark Cloud Enhanced mod.
     /// </summary>
-    internal sealed class DungeonMemoryLayout : IDungeonMemoryLayout, IUngagaDoorMemoryLayout, IUngagaSwapMemoryLayout, IEscapePowderMemoryLayout, IMiniBossStaminaMemoryLayout, ISwordOfZeusMemoryLayout, ISideQuestStateMemoryLayout, IFloorSelectionMemoryLayout
+    internal sealed class DungeonMemoryLayout : IDungeonMemoryLayout, IUngagaDoorMemoryLayout, IUngagaSwapMemoryLayout, IEscapePowderMemoryLayout, IMiniBossStaminaMemoryLayout, ISwordOfZeusMemoryLayout, ISideQuestStateMemoryLayout, IFloorSelectionMemoryLayout, IWeaponLevelUpMemoryLayout, IActiveItemMemoryLayout, ISpawnDetectionMemoryLayout, IMiniBossMessageMemoryLayout, ISambaChallengeMemoryLayout, IMayorQuestMemoryLayout
     {
         public long BoneDoorOpenTypeAddress => Addresses.BoneDoorOpenType;
 
@@ -135,5 +136,93 @@ namespace DarkCloudEnhancedMod
         public long DungeonDebugMenuAddress => Addresses.dungeonDebugMenu;
 
         public long DungeonModeAddress => Addresses.dungeonMode;
+
+        public long MenuModeAddress => 0x202A2010;
+
+        public long PowerPowderMenuAddress => 0x21D9EC08;
+
+        public long GetWeaponLevelAddress(int index)
+        {
+            return 0x21CDDA5A + (index * WeaponSlotSize);
+        }
+
+        public int WeaponSlotSize => 0xF8;
+
+        public long ActiveItemUsableFlagAddress => 0x21D5676D;
+
+        public long ActiveItemUsableIntAddress => 0x21D56770;
+
+        public long CurrentSlotAddress => 0x202A3598;
+
+        public long ActiveItemBaseAddress => 0x21CDD8AC;
+
+        public int ActiveItemSlotSize => 2;
+
+        public long AnimationIdAddress => 0x21DC4484;
+
+        public long EscapeFlagAddress => 0x202A35EC;
+
+        public long CurrentCharacterAddress => 0x21CD9550;
+
+        public long CurrentWeaponSlotAddress => 0x21CDD88C;
+
+        public long CurrentWeaponMaxWhpAddress => 0x21EA759C;
+
+        public long GetPowderCountAddress(int slot)
+        {
+            return 0x21CDD8B2 + (2 * slot);
+        }
+
+        public long GetCharacterWeaponWhpAddress(int character, int weaponSlot)
+        {
+            long baseAddress;
+            if (character == 0)
+                baseAddress = Player.Toan.WeaponSlot0.whp;
+            else if (character == 1)
+                baseAddress = Player.Xiao.WeaponSlot0.whp;
+            else if (character == 2)
+                baseAddress = Player.Goro.WeaponSlot0.whp;
+            else if (character == 3)
+                baseAddress = Player.Ruby.WeaponSlot0.whp;
+            else if (character == 4)
+                baseAddress = Player.Ungaga.WeaponSlot0.whp;
+            else
+                baseAddress = Player.Osmond.WeaponSlot0.whp;
+
+            return baseAddress + (WeaponSlotSize * weaponSlot);
+        }
+
+        public long Enemy14RenderStatusAddress => Enemies.Enemy14.renderStatus;
+
+        public long Enemy14HpAddress => Enemies.Enemy14.hp;
+
+        public long Enemy0RenderStatusAddress => Enemies.Enemy0.renderStatus;
+
+        public long HideHudAddress => Addresses.hideHud;
+
+        public long CurrentWeaponIdAddress => 0x21EA7590;
+
+        public long InDungeonFlagAddress => 0x202A34CC;
+
+        public long CurrentAllyAddress => 0x202A3570;
+
+        public long QuestTimerAddress => 0x21CE205C;
+
+        public long CompletionAddress => 0x21CE4462;
+
+        long IMayorQuestMemoryLayout.CompletionAddress => 0x21CE4468;
+
+        public long ExpectedAllyAddress => 0x21CE446A;
+
+        public IReadOnlyList<ushort> AllowedWeaponIds => new ushort[] { 257, 258 };
+
+        public long GetEnemyHpAddress(int index)
+        {
+            return Enemies.Enemy0.hp + (index * EnemyHpSlotSize);
+        }
+
+        public int EnemyHpSlotSize => 0x190;
+
+        public int EnemyCount => 8;
     }
 }
