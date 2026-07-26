@@ -39,10 +39,11 @@ Phase 10: Extract domain logic (in progress)
 - [x] Phase 12 — Add `IModLogger` abstraction, `NullModLogger`/`ConsoleModLogger`, and log session transitions, feature init/shutdown, process attach, and errors
 - [x] Phase 13 — Add `ModConfiguration`, `IModConfigurationStore`, `JsonModConfigurationStore` with versioning/unknown-key preservation, and wire configuration into `ModWindow`/`GameSessionRunner`/`ModWindowGameSessionObserver`
 - [x] Phase 10.4 pilot — Extract dungeon gate-key, back-floor key, event-floor, enemy key-drop, and bone-door services into `DarkCloud.Core/Dungeon`
+- [x] Phase 10.3 pilot — Extract weapon special-attribute roll rules into `DarkCloud.Core/Weapons`
 
 ## In progress
 
-- Phase 10.3 — Weapons (stat calculations, upgrade rules, attachment rules, validation, serialization)
+- Phase 10.3 completion — Remaining weapons domain logic (stat calculations, upgrade rules, attachment rules, validation, serialization, memory layout)
 - Phase 10.4 completion — Remaining dungeon behavior (floor-state rules, enemy/event state calculations, reward logic)
 
 ## Next
