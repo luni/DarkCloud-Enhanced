@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
     <Nullable>disable</Nullable>
     <LangVersion>7.2</LangVersion>
     <IsPackable>false</IsPackable>

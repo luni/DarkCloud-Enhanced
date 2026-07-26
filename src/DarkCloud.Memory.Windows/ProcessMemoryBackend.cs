@@ -12,13 +12,13 @@ namespace DarkCloudEnhancedMod
     internal sealed class ProcessMemoryBackend : IMemoryBackend
     {
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool ReadProcessMemory(IntPtr hProcess, long lpBaseAddress, byte[] lpBuffer, long dwSize, out ulong lpNumberOfBytesRead);
+        private static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, IntPtr nSize, out IntPtr lpNumberOfBytesRead);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool WriteProcessMemory(IntPtr hProcess, long lpBaseAddress, byte[] lpBuffer, long dwSize, out ulong lpNumberOfBytesWritten);
+        private static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, IntPtr nSize, out IntPtr lpNumberOfBytesWritten);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool VirtualProtectEx(IntPtr hProcess, long lpAddress, long dwSize, uint flNewProtect, out uint lpflOldProtect);
+        private static extern bool VirtualProtectEx(IntPtr hProcess, IntPtr lpAddress, IntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
 
         private FileStream _linuxMemStream;
         private int _linuxPid = -1;
@@ -70,7 +70,14 @@ namespace DarkCloudEnhancedMod
                 }
             }
 
-            return ReadProcessMemory(processH, address, buffer, size, out bytesRead);
+            if (!ReadProcessMemory(processH, new IntPtr(address), buffer, new IntPtr(size), out IntPtr bytesReadPtr))
+            {
+                bytesRead = 0;
+                return false;
+            }
+
+            bytesRead = (ulong)bytesReadPtr.ToInt64();
+            return true;
         }
 
         public bool WriteMemory(IntPtr processH, long address, byte[] buffer, long size, out ulong bytesWritten)
@@ -111,7 +118,14 @@ namespace DarkCloudEnhancedMod
                 }
             }
 
-            return WriteProcessMemory(processH, address, buffer, size, out bytesWritten);
+            if (!WriteProcessMemory(processH, new IntPtr(address), buffer, new IntPtr(size), out IntPtr bytesWrittenPtr))
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            bytesWritten = (ulong)bytesWrittenPtr.ToInt64();
+            return true;
         }
 
         public bool ProtectMemory(IntPtr processH, long address, long size, uint newProtect, out uint oldProtect)
@@ -132,7 +146,7 @@ namespace DarkCloudEnhancedMod
                 return true;
             }
 
-            return VirtualProtectEx(processH, address, size, newProtect, out oldProtect);
+            return VirtualProtectEx(processH, new IntPtr(address), new IntPtr(size), newProtect, out oldProtect);
         }
 
         private bool OpenLinuxMemoryStream(int pid)
