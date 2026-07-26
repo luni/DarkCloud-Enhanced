@@ -35,4 +35,7 @@ dotnet test "DarkCloud-Enhanced.sln" --no-build
 - Supported environments, build profiles, and CI artifacts for both hosts are documented in `docs/supported-environments.md`.
 - The shared memory contract tests run for both the legacy host (`DarkCloudEnhancedMod.IntegrationTests`) and the modern host's memory layer (`DarkCloud.Memory.Windows.IntegrationTests`).
 - Feature parity between hosts is tracked in `docs/modern-host-parity.md`.
-- `ApplyChangesFeature` lives in `DarkCloud.Core.Features`; its implementation (`ApplyChangesService`) lives in `DarkCloud.Memory.Windows` and is shared by both hosts. Remaining features (`TownCharacter`, `Dungeon`, `WeaponsReroll`) are blocked on extracting their legacy domain scripts.
+- `ApplyChangesFeature` lives in `DarkCloud.Core.Features`; its implementation (`ApplyChangesService`) lives in `DarkCloud.Memory.Windows` and is shared by both hosts.
+- `WeaponsFeature` lives in `DarkCloud.Memory.Windows` and uses `WeaponRerollService`; the legacy `Weapons.RerollWeaponSpecialAttributes` method has been removed.
+- Shared utilities moved to support feature migration: `ThreadingHelper` in `DarkCloud.Core.Threading`, `MainMenuThread` and `Items` in `DarkCloud.Memory.Windows`.
+- Remaining features (`TownCharacter`, `Dungeon`) are blocked on extracting their legacy domain scripts.

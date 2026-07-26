@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using DarkCloud.Core.Threading;
 using static DarkCloud.Core.Dungeon.DungeonProgression;
 
 namespace DarkCloudEnhancedMod

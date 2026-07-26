@@ -2,17 +2,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using DarkCloud.Core.Features;
 
-namespace DarkCloudEnhancedMod
+namespace DarkCloud.Memory.Windows
 {
     /// <summary>
-    /// Lifecycle-managed module that runs the legacy weapon reroll script on a
-    /// background task. This is a migration wrapper around
-    /// <see cref="Weapons.RerollWeaponSpecialAttributes(CancellationToken)"/>;
-    /// the domain logic will be extracted into <see cref="DarkCloud.Core"/> in
-    /// Phase 10.3.
+    /// Lifecycle-managed module that runs the shared weapon reroll service on a
+    /// background task. The domain logic lives in <see cref="WeaponRerollService"/>
+    /// and is reused by both the legacy and modern hosts.
     /// </summary>
     internal sealed class WeaponsFeature : IModFeature
     {
+        private readonly WeaponRerollService _rerollService = new WeaponRerollService();
         private Task _task;
 
         public string Id => "weapons-reroll";
@@ -26,7 +25,7 @@ namespace DarkCloudEnhancedMod
                 return Task.CompletedTask;
 
             _task = Task.Factory.StartNew(
-                () => Weapons.RerollWeaponSpecialAttributes(cancellationToken),
+                () => _rerollService.Run(cancellationToken),
                 cancellationToken,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);

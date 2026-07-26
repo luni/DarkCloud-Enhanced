@@ -1,20 +1,18 @@
 using System;
 using System.Threading;
 
-namespace DarkCloudEnhancedMod
+namespace DarkCloud.Core.Threading
 {
     /// <summary>
-    /// Helpers for managing the legacy background threads used by the mod.
-    /// These utilities make threads cancellable and prevent stale threads
-    /// from blocking the creation of new ones when a session restarts.
+    /// Helpers for managing cancellable background work. These utilities keep
+    /// background threads responsive to shutdown while avoiding uninterruptible
+    /// <see cref="Thread.Sleep"/> calls.
     /// </summary>
-    internal static class ThreadingHelper
+    public static class ThreadingHelper
     {
         /// <summary>
         /// Sleeps up to the specified timeout, returning immediately if the
-        /// cancellation token is cancelled. This keeps background threads
-        /// responsive to shutdown while avoiding uninterruptible
-        /// <see cref="Thread.Sleep"/> calls.
+        /// cancellation token is cancelled.
         /// </summary>
         public static void Sleep(int millisecondsTimeout, CancellationToken cancellationToken)
         {

@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Threading;
+using DarkCloud.Core.Threading;
 using DarkCloud.Core.Weapons;
 using DarkCloud.Memory.Windows;
 
@@ -8,14 +9,6 @@ namespace DarkCloudEnhancedMod
 {
     public class Weapons
     {
-        //Default Weapons ID
-        public const int daggerid = Items.dagger;
-        public const int woodenid = Items.woodenslingshot;
-        public const int malletid = Items.mallet;
-        public const int goldringid = Items.goldring;
-        public const int stickid = Items.fightingstick;
-        public const int machinegunid = Items.machinegun;
-
         //Base database table Dagger addresses
         public const int synth1 = 0x2027A717;       //Synth slot 1 (0 = None, 1 = Regular gray slot, 2 = Synth blue slot); (ALSO RUNTIME)
         public const int synth2 = 0x2027A718;       //Synth slot 2 (0 = None, 1 = Regular gray slot, 2 = Synth blue slot); (ALSO RUNTIME)
@@ -67,8 +60,6 @@ namespace DarkCloudEnhancedMod
         public const int lambStatsThreshold = 0x202A188C;
 
         public static Thread weaponsMenuListener = null;
-
-        static Random rnd = new Random();
 
         private static void HandleSynthSphere(WeaponSynthSphereService service, int level, int attack, int endurance, int speed, int magic, int slot1ItemId, int slot1SynthesisedItemId, int hasChangedBySynth, int weaponFormerStatsValue)
         {
@@ -432,145 +423,6 @@ namespace DarkCloudEnhancedMod
                     return;
 
                 ThreadingHelper.Sleep(64, cancellationToken);
-            }
-        }
-
-        /// <summary>
-        /// Process to roll the new weapon special attributes on weapons that now may have them
-        /// </summary>
-        public static void RerollWeaponSpecialAttributes()
-        {
-            RerollWeaponSpecialAttributes(CancellationToken.None);
-        }
-
-        public static void RerollWeaponSpecialAttributes(CancellationToken cancellationToken)
-        {
-            while (true)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                    break;
-
-                if (MainMenuThread.userMode == true)
-                {
-                    if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1)
-                    {
-                        if (cancellationToken.IsCancellationRequested)
-                            break;
-
-                        ThreadingHelper.Sleep(100, cancellationToken);
-
-                        if (Memory.ReadByte(Addresses.mode) == 0 || Memory.ReadByte(Addresses.mode) == 1)
-                        {
-                            Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Not ingame anymore! Exited from WeaponRerollEffectsThread!");
-                            break;
-                        }
-                    }
-                }
-
-                //Base weapon special effects (Set 1); (ALSO RUNTIME) - 2=Big bucks, 4=poor, 8=quench, 16=thirst, 32=poison, 64=stop, 128=steal
-                //Base weapon special effects (Set 2); (ALSO RUNTIME) - 1=fragile, 2=durable, 4=drain, 8=heal, 16=critical, 32=absup
-
-                var statService = new WeaponStatService(new LegacyProcessGameMemory(), new WeaponMemoryLayout());
-                var roller = new WeaponSpecialAttributeRoller(() => rnd.Next(100));
-
-                /*********************
-                 *   Heavens Cloud   *
-                 *********************/
-
-                {
-                    WeaponEffectValues values = roller.RollHeavensCloud();
-                    statService.TryWriteByte(Items.heavenscloud, WeaponCharacter.Toan, daggerid, WeaponStat.Effect, values.Effect);
-                    statService.TryWriteByte(Items.heavenscloud, WeaponCharacter.Toan, daggerid, WeaponStat.Effect2, values.Effect2);
-                }
-
-
-                /**********************
-                 *     Dark Cloud     *
-                 **********************/
-
-                {
-                    WeaponEffectValues values = roller.RollDarkCloud();
-                    statService.TryWriteByte(Items.darkcloud, WeaponCharacter.Toan, daggerid, WeaponStat.Effect, values.Effect);
-                }
-
-                /*********************
-                 *      Big Bang     *
-                 *********************/
-
-                {
-                    WeaponEffectValues values = roller.RollBigBang();
-                    statService.TryWriteByte(Items.bigbang, WeaponCharacter.Toan, daggerid, WeaponStat.Effect, values.Effect);
-                    statService.TryWriteByte(Items.bigbang, WeaponCharacter.Toan, daggerid, WeaponStat.Effect2, values.Effect2);
-                }
-
-                /************************
-                 *   Atlamillia Sword   *
-                 ************************/
-
-                {
-                    WeaponEffectValues values = roller.RollAtlamilliaSword();
-                    statService.TryWriteByte(Items.atlamilliasword, WeaponCharacter.Toan, daggerid, WeaponStat.Effect, values.Effect);
-                    statService.TryWriteByte(Items.atlamilliasword, WeaponCharacter.Toan, daggerid, WeaponStat.Effect2, values.Effect2);
-                }
-
-                /*********************
-                 *       Dagger      *
-                 *********************/
-
-                {
-                    WeaponEffectValues values = roller.RollDusack();
-                    statService.TryWriteByte(Items.dusack, WeaponCharacter.Toan, daggerid, WeaponStat.Effect, values.Effect);
-                }
-
-                /**********************
-                 *    Goddess Ring    *
-                 **********************/
-
-                {
-                    WeaponEffectValues values = roller.RollGoddessRing();
-                    statService.TryWriteByte(Items.goddessring, WeaponCharacter.Ruby, goldringid, WeaponStat.Effect2, values.Effect2);
-                }
-
-                /************************
-                 *   Destruction Ring   *
-                 ************************/
-
-                {
-                    WeaponEffectValues values = roller.RollDestructionRing();
-                    statService.TryWriteByte(Items.destructionring, WeaponCharacter.Ruby, goldringid, WeaponStat.Effect2, values.Effect2);
-                }
-
-                /*********************
-                 *    Satans Ring    *
-                 *********************/
-
-                {
-                    WeaponEffectValues values = roller.RollSatansRing();
-                    statService.TryWriteByte(Items.satansring, WeaponCharacter.Ruby, goldringid, WeaponStat.Effect2, values.Effect2);
-                }
-
-                /*********************
-                 *       Skunk       *
-                 *********************/
-
-                {
-                    WeaponEffectValues values = roller.RollSkunk();
-                    statService.TryWriteByte(Items.skunk, WeaponCharacter.Osmond, machinegunid, WeaponStat.Effect, values.Effect);
-                }
-
-                /*********************
-                 *      Swallow      *
-                 *********************/
-
-                {
-                    WeaponEffectValues values = roller.RollSwallow();
-                    statService.TryWriteByte(Items.swallow, WeaponCharacter.Osmond, machinegunid, WeaponStat.Effect, values.Effect);
-                }
-
-                if (cancellationToken.IsCancellationRequested)
-                    break;
-
-                ThreadingHelper.Sleep(1000, cancellationToken);
             }
         }
 

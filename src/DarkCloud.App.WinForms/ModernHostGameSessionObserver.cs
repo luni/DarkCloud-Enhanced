@@ -228,6 +228,9 @@ namespace DarkCloud.App.WinForms
                         new ApplyChangesFeature(new ApplyChangesService()),
                         new ModFeatureDescriptor("apply-changes", "Apply Changes", true)),
                     new ModFeature(
+                        new WeaponsFeature(),
+                        new ModFeatureDescriptor("weapons-reroll", "Weapon Reroll", true)),
+                    new ModFeature(
                         new StatusLogFeature(_logger),
                         new ModFeatureDescriptor("status-log", "Status Log", true)),
                 },
