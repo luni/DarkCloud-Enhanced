@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 10: Extract domain logic (in progress)
+Phase 14: Introduce the modern Windows host (in progress)
 
 ## Completed
 
@@ -41,6 +41,7 @@ Phase 10: Extract domain logic (in progress)
 - [x] Phase 10.4 pilot — Extract dungeon gate-key, back-floor key, event-floor, enemy key-drop, and bone-door services into `DarkCloud.Core/Dungeon`
 - [x] Phase 10.3 — Extract weapons domain logic (special-attribute rolls, synth-sphere upgrade rules, balance table) into `DarkCloud.Core/Weapons`
 - [x] Phase 10.4 — Extract remaining dungeon domain behavior into `DarkCloud.Core/Dungeon`: Ungaga door/swap, clown, escape powder, miniboss stamina, Sword of Zeus, side-quest state, floor selection, spawn detection, mini-boss message, active item usage, weapon level-up, monster-kill quests, and Samba/Mayor side-quest challenges.
+- [x] Phase 14.1 — Create `DarkCloud.App.WinForms` modern host skeleton, extract shared `DarkCloud.Memory.Windows` process-memory library, and wire pilot session runner, status display, and `StatusLogFeature`.
 
 ## In progress
 
@@ -48,7 +49,7 @@ Phase 10: Extract domain logic (in progress)
 
 ## Next
 
-- Phase 14 — Introduce the modern Windows host
+- Phase 14.2 — Run legacy and modern hosts in parallel
 - Phase 15 — Add optional emulator-level system tests
 
 ## Known blockers
