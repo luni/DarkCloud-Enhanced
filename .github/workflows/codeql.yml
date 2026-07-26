@@ -60,10 +60,11 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: cpp
+          build-mode: manual
           queries: security-extended,security-and-quality
 
       - name: Build native helper
-        run: msbuild -restore "native/pcsx2_offsetreader/pcsx2_offsetreader.vcxproj" /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+        run: msbuild -restore "native/pcsx2_offsetreader/pcsx2_offsetreader.vcxproj" /t:Rebuild /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
