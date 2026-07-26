@@ -198,10 +198,7 @@ Add a new test project or extend the existing `tests/linux_smoke/run.sh` path:
 
 ```bash
 # after build
-mcs /out:IntegrationTests.exe \
-    /r:../../src/DarkCloudEnhancedMod/bin/Debug/net481/DarkCloudEnhancedMod.exe \
-    IntegrationTests.cs
-mono IntegrationTests.exe
+dotnet test IntegrationTests.csproj
 ```
 
 Or add a proper `xunit`/`nunit` test project and run `dotnet test` on the .NET SDK:
@@ -212,7 +209,8 @@ Or add a proper `xunit`/`nunit` test project and run `dotnet test` on the .NET S
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" />
+    <ProjectReference Include="../../src/DarkCloud.Memory.Windows/DarkCloud.Memory.Windows.csproj" />
+    <ProjectReference Include="../../src/DarkCloud.Core/DarkCloud.Core.csproj" />
     <PackageReference Include="xunit" Version="2.9.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.0" />
   </ItemGroup>
