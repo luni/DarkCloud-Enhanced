@@ -34,3 +34,5 @@ dotnet test "DarkCloud-Enhanced.sln" --no-build
 - The legacy `DarkCloudEnhancedMod` still targets .NET Framework and builds on Linux; both hosts share `DarkCloud.Memory.Windows` and `DarkCloud.Core`.
 - Supported environments, build profiles, and CI artifacts for both hosts are documented in `docs/supported-environments.md`.
 - The shared memory contract tests run for both the legacy host (`DarkCloudEnhancedMod.IntegrationTests`) and the modern host's memory layer (`DarkCloud.Memory.Windows.IntegrationTests`).
+- Feature parity between hosts is tracked in `docs/modern-host-parity.md`.
+- `ApplyChangesFeature` lives in `DarkCloud.Core.Features`; its implementation (`ApplyChangesService`) lives in `DarkCloud.Memory.Windows` and is shared by both hosts. Remaining features (`TownCharacter`, `Dungeon`, `WeaponsReroll`) are blocked on extracting their legacy domain scripts.

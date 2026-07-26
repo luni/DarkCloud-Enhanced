@@ -225,6 +225,9 @@ namespace DarkCloud.App.WinForms
                 new List<ModFeature>
                 {
                     new ModFeature(
+                        new ApplyChangesFeature(new ApplyChangesService()),
+                        new ModFeatureDescriptor("apply-changes", "Apply Changes", true)),
+                    new ModFeature(
                         new StatusLogFeature(_logger),
                         new ModFeatureDescriptor("status-log", "Status Log", true)),
                 },

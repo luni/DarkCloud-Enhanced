@@ -46,7 +46,7 @@ Phase 14: Introduce the modern Windows host (in progress)
 
 ## In progress
 
-- Phase 14.3 — Reach feature parity
+- Phase 14.3 — Reach feature parity; first batch migrated `ApplyChangesFeature` to `DarkCloud.Core.Features` and `ApplyChangesService` to `DarkCloud.Memory.Windows`. Remaining features blocked on legacy domain extraction.
 
 ## Next
 

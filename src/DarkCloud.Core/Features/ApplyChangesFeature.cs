@@ -1,15 +1,14 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using DarkCloud.Core.Features;
 
-namespace DarkCloudEnhancedMod
+namespace DarkCloud.Core.Features
 {
     /// <summary>
     /// Lifecycle-managed feature that applies weapon balance changes and shop
     /// price updates once when the mod enters the in-game state.
     /// </summary>
-    internal sealed class ApplyChangesFeature : IModFeature
+    public sealed class ApplyChangesFeature : IModFeature
     {
         private readonly IApplyChangesService _service;
         private bool _initialized;

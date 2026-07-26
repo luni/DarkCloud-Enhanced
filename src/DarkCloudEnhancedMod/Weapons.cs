@@ -1,8 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using System.Threading;
-using System.Windows.Forms;
-using System.Runtime.InteropServices;
 using DarkCloud.Core.Weapons;
 using DarkCloud.Memory.Windows;
 
@@ -435,27 +433,6 @@ namespace DarkCloudEnhancedMod
 
                 ThreadingHelper.Sleep(64, cancellationToken);
             }
-        }
-
-        /// <summary>
-        /// Applies all the weapon changes to their base values (This runs once when starting the mod)
-        /// </summary>
-        public static void WeaponsBalanceChanges()
-        {
-            var statService = new WeaponStatService(new LegacyProcessGameMemory(), new WeaponMemoryLayout());
-            if (statService.TryReadUShort(Items.baselard, WeaponCharacter.Toan, daggerid, WeaponStat.Endurance, out ushort currentEndurance)
-                && currentEndurance == 30)
-            {
-                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "New weapon changes have already been applied!");
-                return;
-            }
-
-            Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Applying the new weapon changes...");
-
-            var balanceService = new WeaponBalanceService(statService, WeaponBalanceTable.AllChanges);
-            balanceService.ApplyAll();
-
-            Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Finished applying new weapon changes!");
         }
 
         /// <summary>
