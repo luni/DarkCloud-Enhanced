@@ -2,7 +2,11 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DarkCloud.Core.Configuration;
+using DarkCloud.Core.Logging;
 using DarkCloud.Core.Session;
+using DarkCloudEnhancedMod.Configuration;
+using DarkCloudEnhancedMod.Logging;
 
 namespace DarkCloudEnhancedMod
 {
@@ -10,12 +14,22 @@ namespace DarkCloudEnhancedMod
     {
         private static ModWindow instance;
         private delegate void EnableDelegate(bool enable);
-        public ModWindow()
+        public ModWindow(IModInstanceProvider modInstanceProvider = null, IModLogger logger = null)
         {
             InitializeComponent();
             instance = this;
+            _modInstanceProvider = modInstanceProvider;
+            _logger = logger ?? new ConsoleModLogger();
+            _configuration = LoadConfiguration();
             _statusSink = new WinFormsModStatusSink();
             NightlyVersionCheck();
+
+            // Town and Dungeon features are now lifecycle-managed by ModFeatureRunner;
+            // the dev buttons that used to start raw threads are disabled.
+            Btn_TownThread.Enabled = false;
+            Btn_TownThread.Text = "Town (auto)";
+            Btn_DungeonThread.Enabled = false;
+            Btn_DungeonThread.Text = "Dungeon (auto)";
 
             //User mode on launch!!!
             UserModeLaunch();
@@ -24,16 +38,18 @@ namespace DarkCloudEnhancedMod
 
         //public static Thread dayThread = new Thread(new ThreadStart(Dayuppy.Testing)); //Create a new thread to run Testing() from within Dayuppy.cs
         //public static Thread chestThread = new Thread(new ThreadStart(CustomChests.ChestRandomizer));
-        public static Thread townThread = new Thread(new ThreadStart(TownCharacter.MainScript));
         public static Thread TASSThread = new Thread(new ThreadStart(TASThread.RunTAS));
         public static Thread TASSThread2 = new Thread(new ThreadStart(TASThread.RecordTAS));
-        public static Thread dungeonthread = new Thread(new ThreadStart(Dungeon.InsideDungeonThread));
         public static Thread debugThread = new Thread(new ThreadStart(CheatCodes.DebugOptions));
 
         private readonly object _runnerLock = new object();
         private CancellationTokenSource _runnerCts;
         private Task _runnerTask;
+        private Task _applyChangesTask;
         private readonly IModStatusSink _statusSink;
+        private readonly IModInstanceProvider _modInstanceProvider;
+        private readonly IModLogger _logger;
+        private readonly ModConfiguration _configuration;
 
         public int[] attackSoundAddresses = { 0x20265DBC, 0x20265DC2, 0x20265DC8, 0x20265DCE, 0x20265F0C, 0x20265F12, 0x2026605C, 0x20266062, 0x202661AC, 0x202661B8, 0x202662FC, 0x20266302, 0x20266308, 0x2026644C };
         public byte[] attackSoundValues = { 68, 69, 70, 71, 83, 84, 98, 99, 113, 115, 128, 129, 130, 156 };
@@ -99,16 +115,9 @@ namespace DarkCloudEnhancedMod
             instance.BeginInvoke(new Action(() => instance.FormSaveStateDetected(true)));
         }
 
-        public static void FirstLaunchGameMode(bool validGameMode)
+        public static void FirstLaunchGameMode()
         {
-            if (validGameMode == false)
-            {
-                instance.InvalidFirstLaunchGameMode(true);
-            }
-            else
-            {
-                instance.ValidFirstLaunchGameMode(true);
-            }
+            instance.ValidFirstLaunchGameMode(true);
         }
 
         public static void NotEnhancedModSaveFile()
@@ -193,25 +202,6 @@ namespace DarkCloudEnhancedMod
             Label_UserMode_PlaceholderText.Text = "Please boot Dark Cloud (USA) to continue.";
         }
 
-        void InvalidFirstLaunchGameMode(bool enable)
-        {
-            if (InvokeRequired)
-            {
-                this.Invoke(new EnableDelegate(InvalidFirstLaunchGameMode), new object[] { enable });
-                return;
-            }
-            MainMenuThread.saveFileMessageBox = true;
-
-            if (PromptForGameResetInternal())
-            {
-                if (Player.InDungeonFloor() == true)
-                    Memory.WriteInt(Addresses.dungeonDebugMenu, 151); //If we are in a dungeon, this will take us to the main menu
-                else
-                    Memory.WriteByte(Addresses.townSoftReset, 1);
-                //MainMenuThread.saveFileMessageBox = false;
-            }
-        }
-
         private bool PromptForGameResetInternal()
         {
             this.TopMost = true;
@@ -278,7 +268,6 @@ namespace DarkCloudEnhancedMod
                 return;
             }
             this.TopMost = true;
-            MainMenuThread.saveStateUsed = true;
             string message = "The mod has detected a possible save state load!\n\nUsing save states is NOT ALLOWED while using the Enhanced Mod, since it can cause major issues.\n\nThe game has been reset, and this mod will be closed.";
             string title = "Save state detected!";
             MessageBoxButtons buttons = MessageBoxButtons.OK;
@@ -429,14 +418,37 @@ namespace DarkCloudEnhancedMod
             {
                 _runnerCts = new CancellationTokenSource();
 
-                var provider = new ModWindowGameMemoryProvider();
-                var detector = new GameSessionDetector();
+                var provider = new ModWindowGameMemoryProvider(_logger);
+                var detector = new GameSessionDetector(_modInstanceProvider);
                 var clock = new SystemClock();
-                var observer = new ModWindowGameSessionObserver(_statusSink, clock);
-                var runner = new GameSessionRunner(provider, detector, observer, clock);
+                var observer = new ModWindowGameSessionObserver(_statusSink, clock, _logger, _configuration);
+
+                Func<GameSessionState, TimeSpan> delaySelector = state =>
+                {
+                    switch (state)
+                    {
+                        case GameSessionState.NoEmulator:
+                        case GameSessionState.EmulatorExited:
+                        case GameSessionState.EmulatorWithoutGame:
+                            return TimeSpan.FromSeconds(1);
+                        default:
+                            return _configuration.PollInterval;
+                    }
+                };
+
+                var runner = new GameSessionRunner(provider, detector, observer, clock, delaySelector: delaySelector, logger: _logger);
 
                 _runnerTask = Task.Run(() => runner.RunAsync(_runnerCts.Token));
             }
+        }
+
+        private ModConfiguration LoadConfiguration()
+        {
+            var store = new JsonModConfigurationStore(_logger);
+            if (store.TryLoad(out ModConfiguration configuration))
+                return configuration;
+
+            return ModConfigurationDefaults.Create();
         }
 
         private void StopSessionRunner()
@@ -463,7 +475,7 @@ namespace DarkCloudEnhancedMod
                 {
                     if (!task.Wait(TimeSpan.FromSeconds(5)))
                     {
-                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Session runner did not shut down within 5 seconds.");
+                        _logger.Warning("Session runner did not shut down within 5 seconds.");
                     }
                 }
                 catch (AggregateException ex) when (ex.InnerExceptions.Count == 1 && ex.InnerExceptions[0] is OperationCanceledException)
@@ -654,16 +666,29 @@ namespace DarkCloudEnhancedMod
 
         private void DEV_Page1_Btn_Mike(object sender, EventArgs e) //Mike
         {
-            //Start the changes Thread
-            if (MainMenuThread.changesThread.ThreadState == ThreadState.Unstarted)
-            {
-                MainMenuThread.changesThread.Start();
-            }
+            // Apply balance changes and shop prices on a background task.
+            // In dev mode the lifecycle-managed Town/Dungeon features are not running,
+            // so start the synthsphere listener manually if it is not already alive.
+            if (_applyChangesTask != null && !_applyChangesTask.IsCompleted)
+                return;
 
-            //The Synthsphere Listener thread
-            if (Weapons.weaponsMenuListener.ThreadState == ThreadState.Unstarted)
+            _applyChangesTask = Task.Run(async () =>
             {
-                Weapons.weaponsMenuListener.Start();//Start thread
+                try
+                {
+                    var service = new ApplyChangesService();
+                    await service.ApplyChangesAsync(CancellationToken.None).ConfigureAwait(false);
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + $" DEV apply changes error: {exception}");
+                }
+            });
+
+            if (Weapons.weaponsMenuListener == null || !Weapons.weaponsMenuListener.IsAlive)
+            {
+                Weapons.weaponsMenuListener = new Thread(() => Weapons.WeaponListenForSynthSphere(CancellationToken.None)) { IsBackground = true };
+                Weapons.weaponsMenuListener.Start();
             }
         }
 
@@ -686,22 +711,6 @@ namespace DarkCloudEnhancedMod
             //if (!TASSThread2.IsAlive) TASSThread2.Start();
 
 
-        }
-
-        private void DEV_Page1_Btn_DungeonThread(object sender, EventArgs e)  //Dungeon
-        {
-            if (dungeonthread.ThreadState == ThreadState.Unstarted)
-            {
-                dungeonthread.Start();//Start thread
-            }
-        }
-
-        private void DEV_Page1_Btn_TownThread(object sender, EventArgs e)  //townThread
-        {
-            if (townThread.ThreadState == ThreadState.Unstarted)
-            {
-                townThread.Start();//Start thread
-            }
         }
 
         private void DEV_Page1_CBox_DebugThread(object sender, EventArgs e)

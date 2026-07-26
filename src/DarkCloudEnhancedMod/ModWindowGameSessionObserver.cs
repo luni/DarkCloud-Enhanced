@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DarkCloud.Core.Configuration;
 using DarkCloud.Core.Features;
+using DarkCloud.Core.Logging;
 using DarkCloud.Core.Players;
 using DarkCloud.Core.Session;
 using DarkCloud.Memory.Abstractions;
@@ -10,32 +12,32 @@ using DarkCloud.Memory.Abstractions;
 namespace DarkCloudEnhancedMod
 {
     /// <summary>
-    /// Adapts the new session state machine to the legacy feature threads and
-    /// WinForms UI. It starts/stops feature threads with a shared cancellation
-    /// token and reports progress through <see cref="IModStatusSink"/>.
+    /// Adapts the new session state machine to the lifecycle-managed feature
+    /// modules and WinForms UI. It starts/stops the feature runner with a shared
+    /// cancellation token and reports progress through <see cref="IModStatusSink"/>.
     /// </summary>
     internal sealed class ModWindowGameSessionObserver : IGameSessionObserver
     {
         private readonly IModStatusSink _sink;
         private readonly IClock _clock;
+        private readonly IModLogger _logger;
+        private readonly ModConfiguration _configuration;
         private CancellationTokenSource _featureCts;
 
         private bool _bootedAndInitialized;
         private bool _sawMenuSinceLastInGame;
         private bool _waitingForGameReset;
 
-        private Thread _townThread;
-        private Thread _dungeonThread;
-        private Thread _weaponsThread;
-
         private ModFeatureRunner _featureRunner;
         private Task _featureRunnerTask;
         private PlayerPresenceService _playerPresence;
 
-        public ModWindowGameSessionObserver(IModStatusSink sink, IClock clock)
+        public ModWindowGameSessionObserver(IModStatusSink sink, IClock clock, IModLogger logger = null, ModConfiguration configuration = null)
         {
             _sink = sink ?? throw new ArgumentNullException(nameof(sink));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+            _logger = logger ?? NullModLogger.Instance;
+            _configuration = configuration ?? ModConfigurationDefaults.Create();
             _featureCts = new CancellationTokenSource();
         }
 
@@ -48,21 +50,22 @@ namespace DarkCloudEnhancedMod
             {
                 case GameSessionState.NoEmulator:
                     _sink.ReportNoEmulators();
-                    ResetForNewSession();
+                    await ResetForNewSession();
                     break;
 
                 case GameSessionState.EmulatorWithoutGame:
                     _sink.ReportGameNotActive();
-                    ResetForNewSession();
+                    await ResetForNewSession();
                     break;
 
                 case GameSessionState.EmulatorExited:
                     _sink.ReportGameNotActive();
+                    await StopFeatureRunner();
                     break;
 
                 case GameSessionState.PnachDisabled:
                     _sink.ReportPnachNotActive();
-                    ResetForNewSession();
+                    await ResetForNewSession();
                     break;
 
                 case GameSessionState.ModAlreadyOpen:
@@ -71,14 +74,14 @@ namespace DarkCloudEnhancedMod
 
                 case GameSessionState.MainMenu:
                     MainMenuThread.userMode = true;
-                    StopFeatureThreads();
+                    await StopFeatureRunner();
                     HandleMainMenuOrTitle();
                     _sink.ReportMainMenu();
                     break;
 
                 case GameSessionState.TitleScreen:
                     MainMenuThread.userMode = true;
-                    StopFeatureThreads();
+                    await StopFeatureRunner();
                     HandleMainMenuOrTitle();
                     _sink.ReportTitleScreen();
                     break;
@@ -103,26 +106,7 @@ namespace DarkCloudEnhancedMod
 
         public async Task OnShutdown(CancellationToken cancellationToken = default)
         {
-            var cts = _featureCts;
-            if (cts == null)
-                return;
-
-            _featureCts = null;
-            cts.Cancel();
-
-            if (_featureRunnerTask != null)
-            {
-                try
-                {
-                    await _featureRunnerTask.ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    // Expected when the feature runner is stopped.
-                }
-            }
-
-            cts.Dispose();
+            await ShutdownFeatureRunnerAsync(null).ConfigureAwait(false);
         }
 
         private void HandleMainMenuOrTitle()
@@ -235,7 +219,7 @@ namespace DarkCloudEnhancedMod
 
             _playerPresence = new PlayerPresenceService(memory, new PlayerPresenceMemoryLayout());
 
-            StartGameThreads();
+            StartFeatureRunner(memory);
             _sink.ReportInGame(mode == 5);
         }
 
@@ -258,56 +242,87 @@ namespace DarkCloudEnhancedMod
             }
         }
 
-        private void StartGameThreads()
+        private void StartFeatureRunner(IGameMemory memory)
         {
             var token = _featureCts.Token;
 
-            if (_featureRunner == null)
-            {
-                _featureRunner = new ModFeatureRunner(
-                    new List<IModFeature> { new ApplyChangesFeature() },
-                    _clock);
-
-                _featureRunnerTask = Task.Run(() => _featureRunner.RunAsync(
-                    new GameFeatureContext(new LegacyProcessGameMemory()),
-                    CreateGameSnapshot,
-                    TimeSpan.FromMilliseconds(100),
-                    token), token);
-            }
-
-            EnsureThreadStarted(ref _townThread, () => TownCharacter.MainScript(token));
-            EnsureThreadStarted(ref _dungeonThread, () => Dungeon.InsideDungeonThread(token));
-            EnsureThreadStarted(ref _weaponsThread, () => Weapons.RerollWeaponSpecialAttributes(token));
-        }
-
-        private static void EnsureThreadStarted(ref Thread thread, ThreadStart start)
-        {
-            if (thread?.IsAlive == true)
+            if (_featureRunner != null)
                 return;
 
-            thread = new Thread(start) { IsBackground = true };
-            thread.Start();
+            _featureRunner = new ModFeatureRunner(
+                new List<ModFeature>
+                {
+                    new ModFeature(
+                        new ApplyChangesFeature(new ApplyChangesService()),
+                        new ModFeatureDescriptor("apply-changes", "Apply Changes", IsFeatureEnabled("apply-changes"))),
+                    new ModFeature(
+                        new TownCharacterFeature(),
+                        new ModFeatureDescriptor("town-character", "Town Character", IsFeatureEnabled("town-character"))),
+                    new ModFeature(
+                        new DungeonFeature(),
+                        new ModFeatureDescriptor("dungeon", "Dungeon", IsFeatureEnabled("dungeon"))),
+                    new ModFeature(
+                        new WeaponsFeature(),
+                        new ModFeatureDescriptor("weapons-reroll", "Weapon Reroll", IsFeatureEnabled("weapons-reroll"))),
+                },
+                _clock,
+                new ModLoggerExceptionHandler(_logger),
+                _logger);
+
+            _featureRunnerTask = Task.Run(() => _featureRunner.RunAsync(
+                new GameFeatureContext(memory),
+                CreateGameSnapshot,
+                _configuration.PollInterval,
+                token), token);
         }
 
-        private void StopFeatureThreads()
+        private bool IsFeatureEnabled(string featureId)
+        {
+            return _configuration.Features.TryGetValue(featureId, out bool enabled) ? enabled : true;
+        }
+
+        private async Task ShutdownFeatureRunnerAsync(CancellationTokenSource nextFeatureCts)
         {
             var previousCts = _featureCts;
-            _featureCts = new CancellationTokenSource();
-            previousCts.Cancel();
-            previousCts.Dispose();
+            var previousTask = _featureRunnerTask;
 
-            _townThread = null;
-            _dungeonThread = null;
-            _weaponsThread = null;
+            if (previousCts != null)
+                previousCts.Cancel();
+
+            if (previousTask != null)
+            {
+                try
+                {
+                    await previousTask.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected when the feature runner is stopped.
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + $" Feature runner shutdown error: {exception}");
+                }
+            }
 
             _featureRunner = null;
             _featureRunnerTask = null;
             _playerPresence = null;
+
+            _featureCts = nextFeatureCts;
+
+            if (previousCts != null)
+                previousCts.Dispose();
         }
 
-        private void ResetForNewSession()
+        private async Task StopFeatureRunner()
         {
-            StopFeatureThreads();
+            await ShutdownFeatureRunnerAsync(new CancellationTokenSource()).ConfigureAwait(false);
+        }
+
+        private async Task ResetForNewSession()
+        {
+            await StopFeatureRunner();
 
             _bootedAndInitialized = false;
             _sawMenuSinceLastInGame = false;
@@ -316,13 +331,14 @@ namespace DarkCloudEnhancedMod
 
         private GameSnapshot CreateGameSnapshot()
         {
-            if (_playerPresence == null)
+            var presence = _playerPresence;
+            if (presence == null)
                 return new GameSnapshot(GameSessionState.InGame, CharacterType.Unknown, false);
 
             return new GameSnapshot(
                 GameSessionState.InGame,
-                _playerPresence.GetCurrentCharacter(),
-                _playerPresence.IsInDungeonFloor());
+                presence.GetCurrentCharacter(),
+                presence.IsInDungeonFloor());
         }
 
         private static bool TryReadByte(IGameMemory memory, long address, out byte value)
@@ -356,5 +372,7 @@ namespace DarkCloudEnhancedMod
             byte[] buffer = BitConverter.GetBytes(value);
             return memory.TryWrite(address, buffer, 0, 4);
         }
+
+
     }
 }

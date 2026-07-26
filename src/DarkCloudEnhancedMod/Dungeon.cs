@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Collections.Generic;
+using static DarkCloud.Core.Dungeon.DungeonProgression;
 
 namespace DarkCloudEnhancedMod
 {
@@ -388,98 +389,17 @@ namespace DarkCloudEnhancedMod
         /// <returns></returns>
         public static List<byte> GetDungeonGateKey(byte dungeon)
         {
-            List<byte> key = new List<byte>();
-
-            switch (dungeon)
-            {
-                //DBC
-                case 0:
-                    key.Add(Items.dranscrest); break;
-                //Wise Owl
-                case 1:
-                    key.Add(Items.shinystone); key.Add(Items.redberry); key.Add(Items.pointychestnut); break; 
-                //Shipwreck
-                case 2:
-                    key.Add(Items.hook); break;
-                //Sun&Moon
-                case 3:
-                    key.Add(Items.kingsslate); break;
-                //Moon Sea
-                case 4:
-                    key.Add(Items.gunpowder); break;
-                //Gallery
-                case 5:
-                    key.Add(Items.clockhands); break;
-                //Demon Shaft
-                case 6:
-                    key.Add(Items.blackknightcrest); break;
-                default:
-                    break;
-            }
-            return key;
+            return new List<byte>(GetGateKeyItems(dungeon));
         }
 
         public static byte GetDungeonBackFloorKey(byte dungeon)
         { 
-            switch (dungeon)
-            {
-                //DBC
-                case 0:
-                    return Items.tramoil;
-                //Wise Owl
-                case 1:
-                    return Items.sundew;
-                //Shipwreck
-                case 2:
-                    return Items.flappingfish;
-                //Sun&Moon
-                case 3:
-                    return Items.secretpathkey;
-                //Moon Sea
-                case 4:
-                    return Items.braverylaunch;
-                //Gallery
-                case 5:
-                    return Items.flappingduster;
-                //Demon Shaft
-                case 6:
-                    return Items.crystaleyeball;
-                default:
-                    return byte.MaxValue;
-            }
+            return GetBackFloorKeyItem(dungeon);
         }
 
         public static List<byte> GetDungeonEventFloors(byte dungeon)
         {
-            List<byte> floors = new List<byte>();
-
-            switch (dungeon)
-            {
-                //DBC
-                case 0:
-                    floors.Add(3); floors.Add(7); floors.Add(14); break;
-                //Wise Owl
-                case 1:
-                    floors.Add(8); floors.Add(16); break;
-                //Shipwreck
-                case 2:
-                    floors.Add(8); floors.Add(17); break;
-                //Sun&Moon
-                case 3:
-                    floors.Add(8); floors.Add(17); break;
-                //Moon Sea
-                case 4:
-                    floors.Add(7); floors.Add(14); break;
-                //Gallery
-                case 5:
-                    floors.Add(24); break;
-                //Demon Shaft
-                case 6:
-                    floors.Add(99); break;
-                default:
-                    break;
-            }
-            return floors;
+            return new List<byte>(GetEventFloors(dungeon));
         }
 
         public static void CheckEnemyKill(int currentEnemyAddress, CancellationToken cancellationToken = default)

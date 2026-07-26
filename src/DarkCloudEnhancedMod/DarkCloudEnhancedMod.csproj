@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Resources.Extensions" Version="4.6.0" />
   </ItemGroup>
 
@@ -71,9 +72,7 @@
   </ItemGroup>
 
   <Target Name="CopyFreshPcsx2OffsetReader" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
-    <Copy SourceFiles="$(MSBuildProjectDirectory)/../../native/pcsx2_offsetreader/x64/Release/pcsx2_offsetreader.dll"
-          DestinationFiles="$(TargetDir)Resources/pcsx2_offsetreader.dll"
-          Condition="Exists('$(MSBuildProjectDirectory)/../../native/pcsx2_offsetreader/x64/Release/pcsx2_offsetreader.dll')" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)/../../native/pcsx2_offsetreader/x64/Release/pcsx2_offsetreader.dll" DestinationFiles="$(TargetDir)Resources/pcsx2_offsetreader.dll" Condition="Exists('$(MSBuildProjectDirectory)/../../native/pcsx2_offsetreader/x64/Release/pcsx2_offsetreader.dll')" />
   </Target>
 
 </Project>

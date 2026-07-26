@@ -52,6 +52,9 @@ namespace DarkCloud.Core.Players
 
         public void SetMaxHp(CharacterType character, int maxHp)
         {
+            if (maxHp < 0)
+                throw new ArgumentOutOfRangeException(nameof(maxHp), "Max HP must be non-negative.");
+
             // Toan's setter historically wrote four bytes; the others wrote two.
             // Preserve that quirk by character.
             if (character == CharacterType.Toan)
@@ -60,7 +63,7 @@ namespace DarkCloud.Core.Players
             }
             else
             {
-                if (maxHp < ushort.MinValue || maxHp > ushort.MaxValue)
+                if (maxHp > ushort.MaxValue)
                     throw new ArgumentOutOfRangeException(nameof(maxHp), "Max HP must fit in a 16-bit unsigned value for this character.");
 
                 _repository.TryWriteUInt16(character, PlayerCharacterField.MaxHp, (ushort)maxHp);

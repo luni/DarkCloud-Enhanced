@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using DarkCloud.Core.Logging;
 using DarkCloud.Memory.Abstractions;
 
 namespace DarkCloud.Core.Session
@@ -18,6 +19,7 @@ namespace DarkCloud.Core.Session
         private readonly IClock _clock;
         private readonly IAddressTranslator _translator;
         private readonly Func<GameSessionState, TimeSpan> _delaySelector;
+        private readonly IModLogger _logger;
 
         public GameSessionRunner(
             IGameMemoryProvider memoryProvider,
@@ -25,7 +27,8 @@ namespace DarkCloud.Core.Session
             IGameSessionObserver observer,
             IClock clock,
             IAddressTranslator translator = null,
-            Func<GameSessionState, TimeSpan> delaySelector = null)
+            Func<GameSessionState, TimeSpan> delaySelector = null,
+            IModLogger logger = null)
         {
             _memoryProvider = memoryProvider ?? throw new ArgumentNullException(nameof(memoryProvider));
             _detector = detector ?? throw new ArgumentNullException(nameof(detector));
@@ -33,6 +36,7 @@ namespace DarkCloud.Core.Session
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             _translator = translator ?? new PassthroughAddressTranslator();
             _delaySelector = delaySelector ?? DefaultDelaySelector;
+            _logger = logger ?? NullModLogger.Instance;
         }
 
         public async Task RunAsync(CancellationToken cancellationToken = default)
@@ -55,6 +59,7 @@ namespace DarkCloud.Core.Session
                     }
                     catch (Exception exception)
                     {
+                        _logger.Error(exception, "Session runner tick error.");
                         _observer.OnError(exception, state);
                         newState = state;
                     }
@@ -64,6 +69,8 @@ namespace DarkCloud.Core.Session
 
                     if (newState != state)
                     {
+                        _logger.Information($"Session state changed from {state} to {newState}.");
+
                         var context = new GameSessionContext(memory, _translator, cancellationToken);
                         try
                         {
@@ -91,6 +98,8 @@ namespace DarkCloud.Core.Session
             }
             finally
             {
+                _logger.Information("Session runner shutting down.");
+
                 try
                 {
                     await _observer.OnShutdown(cancellationToken);

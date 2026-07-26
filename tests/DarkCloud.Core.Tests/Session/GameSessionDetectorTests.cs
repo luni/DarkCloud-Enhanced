@@ -197,6 +197,36 @@ namespace DarkCloud.Core.Tests.Session
             Assert.Equal(GameSessionState.MainMenu, detector.Detect(memory, GameSessionState.EmulatorExited));
         }
 
+        [Theory]
+        [InlineData(true, GameSessionState.MainMenu)]
+        [InlineData(false, GameSessionState.ModAlreadyOpen)]
+        public void Detect_StaleModFlagWithProvider_HonorsInstanceOwnership(bool isOnlyInstance, GameSessionState expected)
+        {
+            var memory = CreateBootedMemory();
+            var writer = new GameMemoryWriter(memory);
+            writer.WriteByte(0x21F10024L, 1);
+
+            var provider = new FakeModInstanceProvider(isOnlyInstance);
+            var detector = new GameSessionDetector(provider);
+
+            Assert.Equal(expected, detector.Detect(memory, GameSessionState.EmulatorWithoutGame));
+        }
+
+        [Fact]
+        public void Detect_ProviderReportsOnlyInstanceAfterAnotherLeft_ClaimsStaleFlag()
+        {
+            var memory = CreateBootedMemory();
+            var writer = new GameMemoryWriter(memory);
+            writer.WriteByte(0x21F10024L, 1);
+
+            var provider = new FakeModInstanceProvider(true);
+            var detector = new GameSessionDetector(provider);
+
+            Assert.Equal(GameSessionState.MainMenu, detector.Detect(memory, GameSessionState.EmulatorWithoutGame));
+            // Subsequent ticks should continue normally because the flag is now claimed.
+            Assert.Equal(GameSessionState.MainMenu, detector.Detect(memory, GameSessionState.MainMenu));
+        }
+
         private static InMemoryGameMemory CreateBootedMemory()
         {
             var memory = new InMemoryGameMemory(BaseAddress, Capacity);
@@ -249,6 +279,18 @@ namespace DarkCloud.Core.Tests.Session
             {
                 return _inner.TryWrite(address, source, offset, count);
             }
+        }
+
+        private sealed class FakeModInstanceProvider : IModInstanceProvider
+        {
+            private readonly bool _isOnlyInstance;
+
+            public FakeModInstanceProvider(bool isOnlyInstance)
+            {
+                _isOnlyInstance = isOnlyInstance;
+            }
+
+            public bool IsOnlyInstance() => _isOnlyInstance;
         }
     }
 }

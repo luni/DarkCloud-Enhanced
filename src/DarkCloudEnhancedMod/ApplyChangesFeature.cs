@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using DarkCloud.Core.Features;
@@ -10,21 +11,23 @@ namespace DarkCloudEnhancedMod
     /// </summary>
     internal sealed class ApplyChangesFeature : IModFeature
     {
+        private readonly IApplyChangesService _service;
+        private bool _initialized;
+
+        public ApplyChangesFeature(IApplyChangesService service)
+        {
+            _service = service ?? throw new ArgumentNullException(nameof(service));
+        }
+
         public string Id => "apply-changes";
 
-        public Task InitializeAsync(GameFeatureContext context, CancellationToken cancellationToken)
+        public async Task InitializeAsync(GameFeatureContext context, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-                return Task.CompletedTask;
+            if (_initialized)
+                return;
 
-            Weapons.WeaponsBalanceChanges();
-
-            if (cancellationToken.IsCancellationRequested)
-                return Task.CompletedTask;
-
-            Shop.UpdateShopPrices();
-
-            return Task.CompletedTask;
+            await _service.ApplyChangesAsync(cancellationToken).ConfigureAwait(false);
+            _initialized = true;
         }
 
         public Task OnGameTickAsync(GameSnapshot snapshot, CancellationToken cancellationToken)

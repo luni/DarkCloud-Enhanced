@@ -10,6 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 using System.Collections;
 using System.Collections.Generic;
+using DarkCloudEnhancedMod.Logging;
 
 namespace DarkCloudEnhancedMod
 {
@@ -55,8 +56,10 @@ namespace DarkCloudEnhancedMod
             }
             Memory.WriteByte(0x21F10024, 0);
             */
-            
-            modWindowForm = new ModWindow();
+
+            var modInstanceProvider = new FileLockModInstanceProvider();
+            var logger = new ConsoleModLogger();
+            modWindowForm = new ModWindow(modInstanceProvider, logger);
             Application.Run(modWindowForm);
         }
 

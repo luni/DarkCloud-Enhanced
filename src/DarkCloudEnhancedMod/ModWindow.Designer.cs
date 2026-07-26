@@ -781,7 +781,6 @@
             this.Btn_TownThread.TabIndex = 5;
             this.Btn_TownThread.Text = "Town Thread";
             this.Btn_TownThread.UseVisualStyleBackColor = true;
-            this.Btn_TownThread.Click += new System.EventHandler(this.DEV_Page1_Btn_TownThread);
             // 
             // Btn_DungeonThread
             // 
@@ -793,7 +792,6 @@
             this.Btn_DungeonThread.TabIndex = 4;
             this.Btn_DungeonThread.Text = "Dungeon Thread";
             this.Btn_DungeonThread.UseVisualStyleBackColor = true;
-            this.Btn_DungeonThread.Click += new System.EventHandler(this.DEV_Page1_Btn_DungeonThread);
             // 
             // CBox_DebugThread
             // 

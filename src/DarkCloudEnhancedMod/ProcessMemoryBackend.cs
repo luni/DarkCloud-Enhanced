@@ -154,7 +154,15 @@ namespace DarkCloudEnhancedMod
 
         private void CloseLinuxMemoryStream()
         {
-            _linuxMemStream?.Dispose();
+            try
+            {
+                _linuxMemStream?.Dispose();
+            }
+            catch (IOException)
+            {
+                // The underlying process may have exited before the stream is closed.
+            }
+
             _linuxMemStream = null;
             _linuxPid = -1;
         }

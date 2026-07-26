@@ -18,7 +18,7 @@ namespace DarkCloudEnhancedMod
 
         public void ReportPnachNotActive() => ModWindow.PnachNotActive();
 
-        public void ReportBooted() => ModWindow.FirstLaunchGameMode(true);
+        public void ReportBooted() => ModWindow.FirstLaunchGameMode();
 
         public void ReportMainMenu() => ModWindow.CurrentlyInMainMenu();
 

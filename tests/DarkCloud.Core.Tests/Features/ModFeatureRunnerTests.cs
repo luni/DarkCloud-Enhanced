@@ -17,7 +17,7 @@ namespace DarkCloud.Core.Tests.Features
         {
             var feature = new RecordingFeature();
             var clock = new FakeClock();
-            var runner = new ModFeatureRunner(new IModFeature[] { feature }, clock);
+            var runner = new ModFeatureRunner(new ModFeature[] { new ModFeature(feature) }, clock);
 
             using (var cts = new CancellationTokenSource())
             {
@@ -50,7 +50,7 @@ namespace DarkCloud.Core.Tests.Features
             var recordingFeature = new RecordingFeature();
             var clock = new FakeClock();
             var handler = new CollectingExceptionHandler();
-            var runner = new ModFeatureRunner(new IModFeature[] { failingFeature, recordingFeature }, clock, handler);
+            var runner = new ModFeatureRunner(new ModFeature[] { new ModFeature(failingFeature), new ModFeature(recordingFeature) }, clock, handler);
 
             using (var cts = new CancellationTokenSource())
             {
@@ -82,7 +82,7 @@ namespace DarkCloud.Core.Tests.Features
             var recordingFeature = new RecordingFeature();
             var clock = new FakeClock();
             var handler = new CollectingExceptionHandler();
-            var runner = new ModFeatureRunner(new IModFeature[] { failingFeature, recordingFeature }, clock, handler);
+            var runner = new ModFeatureRunner(new ModFeature[] { new ModFeature(failingFeature), new ModFeature(recordingFeature) }, clock, handler);
 
             using (var cts = new CancellationTokenSource())
             {
@@ -114,7 +114,7 @@ namespace DarkCloud.Core.Tests.Features
             var initializedFeature = new RecordingFeature();
             var neverInitFeature = new BlockingFeature();
             var clock = new FakeClock();
-            var runner = new ModFeatureRunner(new IModFeature[] { initializedFeature, neverInitFeature }, clock);
+            var runner = new ModFeatureRunner(new ModFeature[] { new ModFeature(initializedFeature), new ModFeature(neverInitFeature) }, clock);
 
             using (var cts = new CancellationTokenSource())
             {
@@ -132,6 +132,63 @@ namespace DarkCloud.Core.Tests.Features
             Assert.True(initializedFeature.Initialized);
             Assert.True(initializedFeature.ShutDown);
             Assert.False(neverInitFeature.Initialized);
+        }
+
+        [Fact]
+        public async Task RunAsync_FailingFeatureOnShutdown_RoutesExceptionToHandler()
+        {
+            var failingFeature = new FailingShutdownFeature();
+            var recordingFeature = new RecordingFeature();
+            var clock = new FakeClock();
+            var handler = new CollectingExceptionHandler();
+            var runner = new ModFeatureRunner(new ModFeature[] { new ModFeature(failingFeature), new ModFeature(recordingFeature) }, clock, handler);
+
+            using (var cts = new CancellationTokenSource())
+            {
+                var context = new GameFeatureContext(new InMemoryGameMemory());
+                var snapshot = new GameSnapshot(GameSessionState.InGame, CharacterType.Toan, true);
+
+                Task runTask = runner.RunAsync(context, () => snapshot, TimeSpan.FromMilliseconds(1), cts.Token);
+
+                await Task.Delay(10);
+                cts.Cancel();
+                try { await runTask; }
+                catch (OperationCanceledException) { }
+            }
+
+            Assert.True(recordingFeature.ShutDown);
+            Assert.True(failingFeature.ShutDown);
+            Assert.Contains(handler.Errors, e => e.Feature.Id == "failing-shutdown" && e.Phase == "Shutdown");
+        }
+
+        [Fact]
+        public async Task RunAsync_FaultedTickTask_RoutesExceptionToHandler()
+        {
+            var faultyFeature = new FaultyTickTaskFeature();
+            var recordingFeature = new RecordingFeature();
+            var clock = new FakeClock();
+            var handler = new CollectingExceptionHandler();
+            var runner = new ModFeatureRunner(new ModFeature[] { new ModFeature(faultyFeature), new ModFeature(recordingFeature) }, clock, handler);
+
+            using (var cts = new CancellationTokenSource())
+            {
+                var context = new GameFeatureContext(new InMemoryGameMemory());
+                var snapshot = new GameSnapshot(GameSessionState.InGame, CharacterType.Toan, true);
+
+                Task runTask = runner.RunAsync(context, () => snapshot, TimeSpan.FromMilliseconds(1), cts.Token);
+
+                // Let it tick once so the faulted task is returned and observed.
+                clock.AdvanceBy(TimeSpan.FromMilliseconds(1));
+                await Task.Delay(10);
+
+                cts.Cancel();
+                try { await runTask; }
+                catch (OperationCanceledException) { }
+            }
+
+            Assert.True(faultyFeature.TickReturned);
+            Assert.True(recordingFeature.TickCount >= 1);
+            Assert.Contains(handler.Errors, e => e.Feature.Id == "faulty-tick-task" && e.Phase == "Tick");
         }
 
         private sealed class RecordingFeature : IModFeature
@@ -197,6 +254,57 @@ namespace DarkCloud.Core.Tests.Features
             public Task ShutdownAsync(CancellationToken cancellationToken)
             {
                 ShutDown = true;
+                return Task.CompletedTask;
+            }
+        }
+
+        private sealed class FailingShutdownFeature : IModFeature
+        {
+            public string Id => "failing-shutdown";
+            public bool ShutDown { get; private set; }
+
+            public Task InitializeAsync(GameFeatureContext context, CancellationToken cancellationToken)
+            {
+                return Task.CompletedTask;
+            }
+
+            public Task OnGameTickAsync(GameSnapshot snapshot, CancellationToken cancellationToken)
+            {
+                return Task.CompletedTask;
+            }
+
+            public Task ShutdownAsync(CancellationToken cancellationToken)
+            {
+                ShutDown = true;
+                throw new InvalidOperationException("Shutdown failure");
+            }
+        }
+
+        private sealed class FaultyTickTaskFeature : IModFeature
+        {
+            private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+
+            public FaultyTickTaskFeature()
+            {
+                _tcs.SetException(new InvalidOperationException("Tick task failure"));
+            }
+
+            public string Id => "faulty-tick-task";
+            public bool TickReturned { get; private set; }
+
+            public Task InitializeAsync(GameFeatureContext context, CancellationToken cancellationToken)
+            {
+                return Task.CompletedTask;
+            }
+
+            public Task OnGameTickAsync(GameSnapshot snapshot, CancellationToken cancellationToken)
+            {
+                TickReturned = true;
+                return _tcs.Task;
+            }
+
+            public Task ShutdownAsync(CancellationToken cancellationToken)
+            {
                 return Task.CompletedTask;
             }
         }

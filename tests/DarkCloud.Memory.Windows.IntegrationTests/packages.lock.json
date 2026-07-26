@@ -68,6 +68,11 @@
           "System.Reflection.Metadata": "1.6.0"
         }
       },
+      "Newtonsoft.Json": {
+        "type": "Transitive",
+        "resolved": "13.0.3",
+        "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
+      },
       "System.Buffers": {
         "type": "Transitive",
         "resolved": "4.4.0",
@@ -180,6 +185,7 @@
         "dependencies": {
           "DarkCloud.Core": "[1.0.0, )",
           "DarkCloud.Memory.Abstractions": "[1.0.0, )",
+          "Newtonsoft.Json": "[13.0.3, )",
           "System.Resources.Extensions": "[4.6.0, )"
         }
       }

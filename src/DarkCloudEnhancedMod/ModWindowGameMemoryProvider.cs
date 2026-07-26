@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using DarkCloud.Core.Logging;
 using DarkCloud.Core.Session;
 using DarkCloud.Memory.Abstractions;
 
@@ -14,6 +15,12 @@ namespace DarkCloudEnhancedMod
         private int _lastProcessId;
         private LegacyProcessGameMemory _cachedMemory;
         private bool _isConnected;
+        private readonly IModLogger _logger;
+
+        public ModWindowGameMemoryProvider(IModLogger logger = null)
+        {
+            _logger = logger ?? NullModLogger.Instance;
+        }
 
         public IGameMemory Current => _isConnected ? _cachedMemory : null;
 
@@ -53,6 +60,10 @@ namespace DarkCloudEnhancedMod
             {
                 _cachedMemory = new LegacyProcessGameMemory();
                 _lastProcessId = currentId;
+
+                _logger.Information(
+                    $"Attached to {Memory.emulatorName} process {currentId}; " +
+                    $"EEMem address = 0x{Memory.EEMemAddress:X}, offset = 0x{Memory.EEMemOffset:X}.");
             }
 
             if (processChanged)

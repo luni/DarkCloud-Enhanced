@@ -66,7 +66,7 @@ namespace DarkCloudEnhancedMod
         public const int lambTransformThreshold = 0x202A1818;
         public const int lambStatsThreshold = 0x202A188C;
 
-        public static Thread weaponsMenuListener = new Thread(new ThreadStart(WeaponListenForSynthSphere));
+        public static Thread weaponsMenuListener = null;
 
         static Random rnd = new Random();
 

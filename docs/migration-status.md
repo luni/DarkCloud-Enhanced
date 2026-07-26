@@ -35,17 +35,20 @@ Phase 10: Extract domain logic (in progress)
 - [x] Phase 10.2 review fixes — `PlayerPresenceService` uses `IPlayerPresenceRepository`/`IPlayerPresenceMemoryLayout`, `ModFeatureRunner` isolates feature faults and shuts down cleanly, `InventoryItem.IsEmpty` handles zero IDs, `InventoryRepository` validates ranges before casting
 - [x] Phase 11 pilot — Add `DarkCloud.Core/Features` abstractions (`IModFeature`, `GameFeatureContext`, `GameSnapshot`, `ModFeatureRunner`) with tests
 - [x] Phase 11 first feature — Convert `ApplyNewChanges` to `ApplyChangesFeature` `IModFeature` and wire `ModFeatureRunner` into `ModWindowGameSessionObserver`
+- [x] Phase 11 completion — Migrate remaining feature threads to `IModFeature` modules
+- [x] Phase 12 — Add `IModLogger` abstraction, `NullModLogger`/`ConsoleModLogger`, and log session transitions, feature init/shutdown, process attach, and errors
+- [x] Phase 13 — Add `ModConfiguration`, `IModConfigurationStore`, `JsonModConfigurationStore` with versioning/unknown-key preservation, and wire configuration into `ModWindow`/`GameSessionRunner`/`ModWindowGameSessionObserver`
+- [x] Phase 10.4 pilot — Extract dungeon gate-key, back-floor key, and event-floor lookups into `DarkCloud.Core/Dungeon`
 
 ## In progress
 
 - Phase 10.3 — Weapons (stat calculations, upgrade rules, attachment rules, validation, serialization)
-- Phase 10.4 — Dungeon behavior (progression rules, floor-state rules, enemy or event state, reward logic)
-- Phase 11 completion — Migrate remaining feature threads to `IModFeature` modules
+- Phase 10.4 completion — Remaining dungeon behavior (floor-state rules, enemy/event state calculations, reward logic)
 
 ## Next
 
-- Phase 12 — Add logging and diagnostics
-- Phase 13 — Add configuration and feature toggles
+- Phase 14 — Introduce the modern Windows host
+- Phase 15 — Add optional emulator-level system tests
 
 ## Known blockers
 

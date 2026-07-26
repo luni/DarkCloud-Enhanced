@@ -36,10 +36,17 @@ namespace DarkCloud.Core.Session
         // Frame-counter delta that indicates a save-state load.
         private const int SaveStateFrameDelta = 360;
 
+        private readonly IModInstanceProvider _modInstanceProvider;
+
         private bool _hasClaimedModFlag;
         private int _lastProcessId = -1;
         private int _previousFrameCounter;
         private bool _hasPreviousFrameCounter;
+
+        public GameSessionDetector(IModInstanceProvider modInstanceProvider = null)
+        {
+            _modInstanceProvider = modInstanceProvider;
+        }
 
         public GameSessionState Detect(IGameMemory memory, GameSessionState previousState)
         {
@@ -88,12 +95,27 @@ namespace DarkCloud.Core.Session
 
             if (modFlag == 1 && !_hasClaimedModFlag)
             {
-                // Another instance owns the flag; wait until it is released.
-                return GameSessionState.ModAlreadyOpen;
+                // The flag is set. If we can verify that no other mod instance
+                // is currently running, the flag is stale (left by a crash) and
+                // can be reclaimed. Otherwise another active instance owns it.
+                if (_modInstanceProvider != null && _modInstanceProvider.IsOnlyInstance())
+                {
+                    _hasClaimedModFlag = true;
+                }
+                else
+                {
+                    return GameSessionState.ModAlreadyOpen;
+                }
             }
-
-            if (modFlag != 1)
+            else if (modFlag != 1)
             {
+                // If an instance provider is available, refuse to claim a zero
+                // flag while another process is still active. This avoids a race
+                // where the other instance has acquired the lock but not yet
+                // written the in-memory flag.
+                if (_modInstanceProvider != null && !_modInstanceProvider.IsOnlyInstance())
+                    return GameSessionState.ModAlreadyOpen;
+
                 // Claim the flag so another instance cannot start.
                 if (!TryWriteByte(memory, ModFlagAddress, 1))
                 {
