@@ -24,7 +24,7 @@ namespace DarkCloud.Core.Tests.Dungeon
         {
             var memory = new InMemoryGameMemory(0x1000, 0x100);
             var layout = new FakeEscapePowderLayout();
-            WriteUShort(memory, 0x1020, 175);
+            WriteUShort(memory, 0x1020, ActiveItemConstants.EscapePowderItemId);
             WriteByte(memory, 0x1030, 3);
 
             var service = new EscapePowderService(memory, layout, () => false);
@@ -32,7 +32,7 @@ namespace DarkCloud.Core.Tests.Dungeon
 
             Assert.True(consumed);
             Assert.Equal(2, ReadByte(memory, 0x1030));
-            Assert.Equal(175, ReadUShort(memory, 0x1020));
+            Assert.Equal(ActiveItemConstants.EscapePowderItemId, ReadUShort(memory, 0x1020));
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace DarkCloud.Core.Tests.Dungeon
         {
             var memory = new InMemoryGameMemory(0x1000, 0x100);
             var layout = new FakeEscapePowderLayout();
-            WriteUShort(memory, 0x1020, 175);
+            WriteUShort(memory, 0x1020, ActiveItemConstants.EscapePowderItemId);
             WriteByte(memory, 0x1030, 1);
 
             var service = new EscapePowderService(memory, layout, () => false);
@@ -48,7 +48,7 @@ namespace DarkCloud.Core.Tests.Dungeon
 
             Assert.True(consumed);
             Assert.Equal(0, ReadByte(memory, 0x1030));
-            Assert.Equal(0, ReadUShort(memory, 0x1020));
+            Assert.Equal(ActiveItemConstants.EmptyItemValue, ReadUShort(memory, 0x1020));
         }
 
         [Fact]
@@ -56,7 +56,7 @@ namespace DarkCloud.Core.Tests.Dungeon
         {
             var memory = new InMemoryGameMemory(0x1000, 0x100);
             var layout = new FakeEscapePowderLayout();
-            WriteUShort(memory, 0x1022, 175);
+            WriteUShort(memory, 0x1022, ActiveItemConstants.EscapePowderItemId);
             WriteByte(memory, 0x1032, 4);
 
             var service = new EscapePowderService(memory, layout, () => false);

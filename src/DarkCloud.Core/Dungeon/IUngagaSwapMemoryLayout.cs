@@ -6,6 +6,7 @@ namespace DarkCloud.Core.Dungeon
     public interface IUngagaSwapMemoryLayout
     {
         long DungeonIndicatorAddress { get; }
+        long CurrentCharacterCursorAddress { get; }
         long ModelLoadedValueDungeon3Address { get; }
         long ModelLoadedValueOtherAddress { get; }
         long ModelWriteAddress1Dungeon3 { get; }

@@ -24,15 +24,16 @@ namespace DarkCloud.Core.Dungeon
 
         public MonsterQuestResult Process(long currentEnemyAddress, IReadOnlyList<bool> activeQuests)
         {
+            if (activeQuests == null)
+                throw new ArgumentNullException(nameof(activeQuests));
+
             var progressed = new List<int>();
             var completed = new List<int>();
 
             long enemyTypeAddress = currentEnemyAddress + EnemyTypeOffset;
-            if (!_memory.TryRead(enemyTypeAddress, new byte[1], 0, 1))
+            if (!TryReadByte(enemyTypeAddress, out byte enemyType))
                 return new MonsterQuestResult(progressed, completed);
 
-            // We re-read the byte for each quest because the layout addresses differ,
-            // and the in-memory byte may be mutated by other systems between reads.
             for (int i = 0; i < _quests.Count; i++)
             {
                 if (i >= activeQuests.Count || !activeQuests[i])
@@ -41,9 +42,6 @@ namespace DarkCloud.Core.Dungeon
                 MonsterQuestDefinition quest = _quests[i];
 
                 if (!TryReadByte(quest.TargetTypeAddress, out byte targetType))
-                    continue;
-
-                if (!TryReadByte(enemyTypeAddress, out byte enemyType))
                     continue;
 
                 if (enemyType != targetType)

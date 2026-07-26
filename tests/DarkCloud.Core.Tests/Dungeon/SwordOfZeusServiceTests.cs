@@ -39,6 +39,22 @@ namespace DarkCloud.Core.Tests.Dungeon
             Assert.Equal(0, ReadUShort(memory, 0x1050));
         }
 
+        [Fact]
+        public void ApplyIfSwordOfZeus_WhenStoredThunderNearUshortMax_CapsAtMaxStoredThunder()
+        {
+            var memory = new InMemoryGameMemory(0x1000, 0x100);
+            var layout = new FakeSwordOfZeusLayout(0x1020, 0x1030, 0x1040, 0x1050, 0x1060);
+            WriteUShort(memory, 0x1020, 296);
+            WriteByte(memory, 0x1030, 100);
+            WriteByte(memory, 0x1040, 2);
+            WriteUShort(memory, 0x1050, 65530);
+
+            var service = new SwordOfZeusService(memory, layout);
+            service.ApplyIfSwordOfZeus(0);
+
+            Assert.Equal(SwordOfZeusService.MaxStoredThunder, ReadUShort(memory, 0x1050));
+        }
+
         [Theory]
         [InlineData(0, 199)]
         [InlineData(100, 249)]

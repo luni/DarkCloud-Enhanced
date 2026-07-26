@@ -27,8 +27,8 @@ namespace DarkCloud.Core.Tests.Dungeon
             WriteUShort(memory, 0x1000, ActiveItemService.SquareButton);
             WriteByte(memory, 0x1004, 1);
             WriteInt(memory, 0x1008, -1);
-            WriteInt(memory, 0x100C, 0); // slot 0
-            WriteShort(memory, 0x1010, ActiveItemService.EscapePowderItemId);
+            WriteInt(memory, 0x100C, 1); // slot 1
+            WriteShort(memory, 0x1012, ActiveItemConstants.EscapePowderItemId);
             WriteByte(memory, 0x1014, 0);
 
             var service = new ActiveItemService(memory, layout);
@@ -44,14 +44,15 @@ namespace DarkCloud.Core.Tests.Dungeon
         {
             var memory = new InMemoryGameMemory(0x1000, 0x300);
             var layout = CreateLayout(0x1000, 0x1004, 0x1008, 0x100C, 0x1010, 0x1014, 0x1018, 0x101C, 0x1020, 0x1024, 0x1028);
+            long countAddress = layout.GetPowderCountAddress(1);
             WriteUShort(memory, 0x1000, ActiveItemService.SquareButton);
             WriteByte(memory, 0x1004, 1);
             WriteInt(memory, 0x1008, -1);
-            WriteInt(memory, 0x100C, 0);
-            WriteShort(memory, 0x1010, ActiveItemService.EscapePowderItemId);
+            WriteInt(memory, 0x100C, 1);
+            WriteShort(memory, 0x1012, ActiveItemConstants.EscapePowderItemId);
             WriteByte(memory, 0x1014, 0);
             WriteByte(memory, 0x1018, 0); // escape flag
-            WriteByte(memory, 0x101C, 3); // powder count
+            WriteByte(memory, countAddress, 3); // powder count
 
             var service = new ActiveItemService(memory, layout);
             var result = service.Process(false, true, true);
@@ -60,7 +61,7 @@ namespace DarkCloud.Core.Tests.Dungeon
             Assert.True(result.EscapeActivated);
             Assert.True(result.DunUsedActiveEscape);
             Assert.Equal(170, ReadByte(memory, 0x1018));
-            Assert.Equal(2, ReadByte(memory, 0x101C));
+            Assert.Equal(2, ReadByte(memory, countAddress));
         }
 
         [Fact]
@@ -68,17 +69,18 @@ namespace DarkCloud.Core.Tests.Dungeon
         {
             var memory = new InMemoryGameMemory(0x1000, 0x300);
             var layout = CreateLayout(0x1000, 0x1004, 0x1008, 0x100C, 0x1010, 0x1014, 0x1018, 0x101C, 0x1020, 0x1024, 0x1028);
+            long countAddress = layout.GetPowderCountAddress(1);
             WriteUShort(memory, 0x1000, ActiveItemService.SquareButton);
             WriteByte(memory, 0x1004, 1);
             WriteInt(memory, 0x1008, -1);
-            WriteInt(memory, 0x100C, 0);
-            WriteShort(memory, 0x1010, ActiveItemService.RepairPowderItemId);
+            WriteInt(memory, 0x100C, 1);
+            WriteShort(memory, 0x1012, ActiveItemConstants.RepairPowderItemId);
             WriteByte(memory, 0x1014, 0);
             WriteUShort(memory, 0x1020, 100); // max whp
             WriteByte(memory, 0x1024, 0); // current char
             WriteByte(memory, 0x1028, 0); // current weapon slot
             WriteFloat(memory, layout.GetCharacterWeaponWhpAddress(0, 0), 50f); // current whp
-            WriteByte(memory, 0x101C, 2); // powder count
+            WriteByte(memory, countAddress, 2); // powder count
 
             var service = new ActiveItemService(memory, layout);
             var result = service.Process(false, false, false);
@@ -86,7 +88,47 @@ namespace DarkCloud.Core.Tests.Dungeon
             Assert.True(result.SquareActive);
             Assert.True(result.RepairPowderUsed);
             Assert.Equal(100f, ReadFloat(memory, layout.GetCharacterWeaponWhpAddress(0, 0)));
-            Assert.Equal(1, ReadByte(memory, 0x101C));
+            Assert.Equal(1, ReadByte(memory, countAddress));
+        }
+
+        [Fact]
+        public void Process_WhenEscapePowderEmptiesSlot_WritesEmptyItemValue()
+        {
+            var memory = new InMemoryGameMemory(0x1000, 0x300);
+            var layout = CreateLayout(0x1000, 0x1004, 0x1008, 0x100C, 0x1010, 0x1014, 0x1018, 0x101C, 0x1020, 0x1024, 0x1028);
+            long countAddress = layout.GetPowderCountAddress(1);
+            WriteUShort(memory, 0x1000, ActiveItemService.SquareButton);
+            WriteByte(memory, 0x1004, 1);
+            WriteInt(memory, 0x1008, -1);
+            WriteInt(memory, 0x100C, 1);
+            WriteShort(memory, 0x1012, ActiveItemConstants.EscapePowderItemId);
+            WriteByte(memory, 0x1014, 0);
+            WriteByte(memory, 0x1018, 0);
+            WriteByte(memory, countAddress, 1);
+
+            var service = new ActiveItemService(memory, layout);
+            var result = service.Process(false, true, true);
+
+            Assert.True(result.EscapeActivated);
+            Assert.Equal(ActiveItemConstants.EmptyItemValue, ReadUShort(memory, 0x1012));
+        }
+
+        [Fact]
+        public void Process_WhenCurrentSlotOutOfRange_ReturnsSquareActiveFalse()
+        {
+            var memory = new InMemoryGameMemory(0x1000, 0x300);
+            var layout = CreateLayout(0x1000, 0x1004, 0x1008, 0x100C, 0x1010, 0x1014, 0x1018, 0x101C, 0x1020, 0x1024, 0x1028);
+            WriteUShort(memory, 0x1000, ActiveItemService.SquareButton);
+            WriteByte(memory, 0x1004, 1);
+            WriteInt(memory, 0x1008, -1);
+            WriteInt(memory, 0x100C, 5); // invalid slot
+            WriteShort(memory, 0x1012, ActiveItemConstants.EscapePowderItemId);
+            WriteByte(memory, 0x1014, 0);
+
+            var service = new ActiveItemService(memory, layout);
+            var result = service.Process(false, false, false);
+
+            Assert.False(result.SquareActive);
         }
 
         private static IActiveItemMemoryLayout CreateLayout(long buttons, long usableFlag, long usableInt, long slot, long itemBase, long anim, long escape, long powderCountBase, long maxWhp, long currentChar, long currentWepSlotBase)
@@ -106,6 +148,13 @@ namespace DarkCloud.Core.Tests.Dungeon
             var buffer = new byte[2];
             Assert.True(memory.TryRead(address, buffer, 0, 2));
             return BitConverter.ToInt16(buffer, 0);
+        }
+
+        private static ushort ReadUShort(InMemoryGameMemory memory, long address)
+        {
+            var buffer = new byte[2];
+            Assert.True(memory.TryRead(address, buffer, 0, 2));
+            return BitConverter.ToUInt16(buffer, 0);
         }
 
         private static float ReadFloat(InMemoryGameMemory memory, long address)
@@ -176,6 +225,7 @@ namespace DarkCloud.Core.Tests.Dungeon
             public long CurrentSlotAddress { get; }
             public long ActiveItemBaseAddress { get; }
             public int ActiveItemSlotSize { get; }
+            public int ActiveItemSlotCount => 3;
             public long AnimationIdAddress { get; }
             public long EscapeFlagAddress { get; }
             public long CurrentCharacterAddress { get; }
@@ -183,11 +233,11 @@ namespace DarkCloud.Core.Tests.Dungeon
             public long CurrentWeaponMaxWhpAddress { get; }
             private long PowderCountBase { get; }
 
-            public long GetPowderCountAddress(int slot) => PowderCountBase + (2 * slot);
+            public long GetPowderCountAddress(int slot) => PowderCountBase + (2L * slot);
 
             public long GetCharacterWeaponWhpAddress(int character, int weaponSlot)
             {
-                return 0x1100 + (character * 0x100) + (weaponSlot * 0x10);
+                return 0x1100 + (character * 0x100L) + (weaponSlot * 0x10L);
             }
         }
     }

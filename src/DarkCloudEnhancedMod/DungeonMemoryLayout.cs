@@ -26,7 +26,7 @@ namespace DarkCloudEnhancedMod
         {
             switch (dungeon)
             {
-                case 3: return 0x20985E0;
+                case 3: return 0x209285E0;
                 case 4: return 0x2092F978;
                 case 5: return 0x2092441C;
                 default: return 0;
@@ -79,6 +79,8 @@ namespace DarkCloudEnhancedMod
 
         public long DungeonIndicatorAddress => 0x202A2010;
 
+        public long CurrentCharacterCursorAddress => 0x202A2DE8;
+
         public long ModelLoadedValueDungeon3Address => 0x2193A013;
 
         public long ModelLoadedValueOtherAddress => 0x217E5453;
@@ -97,26 +99,34 @@ namespace DarkCloudEnhancedMod
 
         public System.Collections.Generic.IReadOnlyList<long> ActiveItemCountAddresses { get; } = new long[] { 0x21CDD8B4, 0x21CDD8B6, 0x21CDD8B8 };
 
+        public IReadOnlyList<MonsterQuestDefinition> MonsterQuestDefinitions { get; } = new MonsterQuestDefinition[]
+        {
+            new MonsterQuestDefinition("Macho", 0x21CE4406, 0x21CE4405, 0x21CE4402, 2, "You completed Macho's quest!\nWell done!"),
+            new MonsterQuestDefinition("Gob", 0x21CE440B, 0x21CE440A, 0x21CE4407, 2, "You completed Gob's quest!\nWell done!"),
+            new MonsterQuestDefinition("Jake", 0x21CE4410, 0x21CE440F, 0x21CE440C, 2, "You completed Jake's quest!\nWell done!"),
+            new MonsterQuestDefinition("Chief Bonka", 0x21CE4415, 0x21CE4414, 0x21CE4411, 2, "You completed Chief Bonka´s quest!\nWell done!", 35),
+        };
+
         public long GetStaminaTimerAddress(int enemyNumber)
         {
-            return Enemies.Enemy0.staminaTimer + (0x190 * enemyNumber);
+            return Enemies.Enemy0.staminaTimer + (0x190L * enemyNumber);
         }
 
         public long BackFloorFlagAddress => Addresses.dunBackFloorFlag;
 
         public long GetWeaponIdAddress(int weaponOffset)
         {
-            return Player.Toan.WeaponSlot0.id + (0xF8 * weaponOffset);
+            return Player.Toan.WeaponSlot0.id + (0xF8L * weaponOffset);
         }
 
         public long GetWeaponThunderAddress(int weaponOffset)
         {
-            return Player.Toan.WeaponSlot0.thunder + (0xF8 * weaponOffset);
+            return Player.Toan.WeaponSlot0.thunder + (0xF8L * weaponOffset);
         }
 
         public long GetWeaponElementHudAddress(int weaponOffset)
         {
-            return Player.Toan.WeaponSlot0.elementHUD + (0xF8 * weaponOffset);
+            return Player.Toan.WeaponSlot0.elementHUD + (0xF8L * weaponOffset);
         }
 
         public long StoredThunderAddress => 0x21CE446D;
@@ -143,7 +153,7 @@ namespace DarkCloudEnhancedMod
 
         public long GetWeaponLevelAddress(int index)
         {
-            return 0x21CDDA5A + (index * WeaponSlotSize);
+            return 0x21CDDA5A + ((long)index * WeaponSlotSize);
         }
 
         public int WeaponSlotSize => 0xF8;
@@ -158,6 +168,8 @@ namespace DarkCloudEnhancedMod
 
         public int ActiveItemSlotSize => 2;
 
+        public int ActiveItemSlotCount => 3;
+
         public long AnimationIdAddress => 0x21DC4484;
 
         public long EscapeFlagAddress => 0x202A35EC;
@@ -170,7 +182,7 @@ namespace DarkCloudEnhancedMod
 
         public long GetPowderCountAddress(int slot)
         {
-            return 0x21CDD8B2 + (2 * slot);
+            return 0x21CDD8B2 + (2L * slot);
         }
 
         public long GetCharacterWeaponWhpAddress(int character, int weaponSlot)
@@ -189,7 +201,7 @@ namespace DarkCloudEnhancedMod
             else
                 baseAddress = Player.Osmond.WeaponSlot0.whp;
 
-            return baseAddress + (WeaponSlotSize * weaponSlot);
+            return baseAddress + ((long)WeaponSlotSize * weaponSlot);
         }
 
         public long Enemy14RenderStatusAddress => Enemies.Enemy14.renderStatus;
@@ -218,7 +230,7 @@ namespace DarkCloudEnhancedMod
 
         public long GetEnemyHpAddress(int index)
         {
-            return Enemies.Enemy0.hp + (index * EnemyHpSlotSize);
+            return Enemies.Enemy0.hp + ((long)index * EnemyHpSlotSize);
         }
 
         public int EnemyHpSlotSize => 0x190;

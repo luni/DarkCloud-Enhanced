@@ -11,6 +11,7 @@ namespace DarkCloud.Core.Dungeon
         long CurrentSlotAddress { get; }
         long ActiveItemBaseAddress { get; }
         int ActiveItemSlotSize { get; }
+        int ActiveItemSlotCount { get; }
         long AnimationIdAddress { get; }
         long EscapeFlagAddress { get; }
         long CurrentCharacterAddress { get; }

@@ -11,14 +11,7 @@ namespace DarkCloudEnhancedMod
     /// </summary>
     internal sealed class LegacyProcessGameMemory : IProcessIdentifiableGameMemory
     {
-        private readonly int _processId;
-
-        internal LegacyProcessGameMemory()
-        {
-            _processId = GetCurrentProcessId();
-        }
-
-        public int ProcessId => _processId;
+        public int ProcessId => GetCurrentProcessId();
 
         private static int GetCurrentProcessId()
         {
@@ -40,24 +33,11 @@ namespace DarkCloudEnhancedMod
             }
         }
 
-        private bool IsCurrentProcess()
+        private static bool IsCurrentProcess()
         {
-            var process = Memory.emulatorProcess;
-            if (process == null)
-                return false;
-
-            try
-            {
-                return process.Id == _processId;
-            }
-            catch (InvalidOperationException)
-            {
-                return false;
-            }
-            catch (NotSupportedException)
-            {
-                return false;
-            }
+            // Verify the cached process object is still present and can report an Id.
+            // GetCurrentProcessId handles the null/exception cases and returns -1 when dead.
+            return GetCurrentProcessId() != -1;
         }
 
         public bool TryRead(long address, byte[] destination, int offset, int count)

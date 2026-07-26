@@ -12,7 +12,7 @@ namespace DarkCloudEnhancedMod
         static byte currentDungeon;
         static byte currentFloor;
         static ushort currentWeapon;
-        static int currentAddress;
+        static long currentAddress;
         static int prevFloor = 200;
         static int currentCharCursor = 0;
         static int prevCharCursor = 0;
@@ -28,6 +28,8 @@ namespace DarkCloudEnhancedMod
         static bool dunUsedActiveEscape = false;
         static bool dunUsedEscapeCheck = false;
         static WeaponLevelUpService _weaponLevelUpService;
+        private static readonly Lazy<LegacyProcessGameMemory> _memory = new Lazy<LegacyProcessGameMemory>(() => new LegacyProcessGameMemory());
+        private static readonly Lazy<DungeonMemoryLayout> _layout = new Lazy<DungeonMemoryLayout>(() => new DungeonMemoryLayout());
         static bool circlePressed = false;
         static bool hasClearMessageShown = false;
         public static bool monsterQuestMachoActive = false;
@@ -399,22 +401,15 @@ namespace DarkCloudEnhancedMod
             return new List<byte>(GetEventFloors(dungeon));
         }
 
-        public static void CheckEnemyKill(int currentEnemyAddress, CancellationToken cancellationToken = default)
+        public static void CheckEnemyKill(long currentEnemyAddress, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
                 return;
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Checking quest...");
 
-            var quests = new MonsterQuestDefinition[]
-            {
-                new MonsterQuestDefinition("Macho", 0x21CE4406, 0x21CE4405, 0x21CE4402, 2, "You completed Macho's quest!\nWell done!"),
-                new MonsterQuestDefinition("Gob", 0x21CE440B, 0x21CE440A, 0x21CE4407, 2, "You completed Gob's quest!\nWell done!"),
-                new MonsterQuestDefinition("Jake", 0x21CE4410, 0x21CE440F, 0x21CE440C, 2, "You completed Jake's quest!\nWell done!"),
-                new MonsterQuestDefinition("Chief Bonka", 0x21CE4415, 0x21CE4414, 0x21CE4411, 2, "You completed Chief Bonka´s quest!\nWell done!", 35),
-            };
-
-            var service = new MonsterQuestService(new LegacyProcessGameMemory(), quests);
+            IReadOnlyList<MonsterQuestDefinition> quests = _layout.Value.MonsterQuestDefinitions;
+            var service = new MonsterQuestService(_memory.Value, quests);
             var active = new[] { monsterQuestMachoActive, monsterQuestGobActive, monsterQuestJakeActive, monsterQuestChiefActive };
             MonsterQuestResult result = service.Process(currentEnemyAddress, active);
 
@@ -454,7 +449,7 @@ namespace DarkCloudEnhancedMod
 
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Checking spawns...");
 
-            var spawnService = new SpawnDetectionService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var spawnService = new SpawnDetectionService(_memory.Value, _layout.Value);
             enemiesSpawn = spawnService.WaitForSpawn(prevFloor, cancellationToken);
 
             //Get all the current floor enemy ids
@@ -537,7 +532,7 @@ namespace DarkCloudEnhancedMod
         {
             Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Working on the message...");
 
-            var service = new MiniBossMessageService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var service = new MiniBossMessageService(_memory.Value, _layout.Value);
             service.WaitAndDisplay(cancellationToken, (message, token) =>
                 Dayuppy.DisplayMessage(message, 2, 24, 4000, cancellationToken: token));
 
@@ -549,7 +544,7 @@ namespace DarkCloudEnhancedMod
         /// </summary>
         public static bool IsBypassBoneDoor()
         {
-            var service = new BoneDoorService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var service = new BoneDoorService(_memory.Value, _layout.Value);
             return service.IsOpen();
         }
 
@@ -559,13 +554,13 @@ namespace DarkCloudEnhancedMod
         /// <param name="flag">True if to activate the door</param>
         public static void SetBypassBoneDoor(bool flag)
         {
-            var service = new BoneDoorService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var service = new BoneDoorService(_memory.Value, _layout.Value);
             service.SetOpen(flag);
         }
 
         public static void FixUngagaDoors(byte currentdng)
         {
-            var service = new UngagaDoorService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var service = new UngagaDoorService(_memory.Value, _layout.Value);
             if (service.TryFixDoors(currentdng))
             {
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Fixed Ungaga Doors");
@@ -578,13 +573,16 @@ namespace DarkCloudEnhancedMod
 
         public static void CheckUngagaSwap(CancellationToken cancellationToken = default)
         {
-            currentCharCursor = Memory.ReadByte(0x202A2DE8); //current char
+            if (!TryReadByte(_layout.Value.CurrentCharacterCursorAddress, out byte currentChar))
+                return;
+
+            currentCharCursor = currentChar;
 
             if (currentCharCursor != prevCharCursor)
             {
                 if (currentCharCursor == 4)
                 {
-                    var service = new UngagaSwapService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+                    var service = new UngagaSwapService(_memory.Value, _layout.Value);
                     int timer = 0;
                     while (timer < 10)
                     {
@@ -594,7 +592,9 @@ namespace DarkCloudEnhancedMod
                         ThreadingHelper.Sleep(100, cancellationToken);
                         timer++;
 
-                        byte dungeon = Memory.ReadByte(0x202A2010);
+                        if (!TryReadByte(_layout.Value.DungeonIndicatorAddress, out byte dungeon))
+                            continue;
+
                         if (service.IsModelLoaded(dungeon))
                             break;
                     }
@@ -618,7 +618,7 @@ namespace DarkCloudEnhancedMod
             if (cancellationToken.IsCancellationRequested)
                 return;
 
-            var service = new SideQuestStateService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var service = new SideQuestStateService(_memory.Value, _layout.Value);
             var state = service.GetState((byte)currentDungeon, (byte)currentFloor);
             sambaChallengeQuest = state.SambaChallengeActive;
             mayorQuest = state.MayorQuestActive;
@@ -638,7 +638,7 @@ namespace DarkCloudEnhancedMod
                         if (cancellationToken.IsCancellationRequested)
                             return;
 
-                        currentAddress = 0x21E16BC4 + (i * 0x190);
+                        currentAddress = _layout.Value.GetEnemyHpAddress(i);
 
                         if (Memory.ReadUShort(currentAddress) > 0)
                         {
@@ -670,7 +670,7 @@ namespace DarkCloudEnhancedMod
 
         public static void SambaChallengeQuest(CancellationToken cancellationToken = default)
         {
-            var service = new SambaChallengeService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var service = new SambaChallengeService(_memory.Value, _layout.Value);
             SideQuestChallengeResult result = service.Process(sambaChallengeQuestCheck, sambaChallengeQuestActive, sambaChallengeQuest, monstersDead, cancellationToken);
 
             sambaChallengeQuestCheck = result.QuestCheck;
@@ -682,7 +682,7 @@ namespace DarkCloudEnhancedMod
 
         public static void MayorQuest(CancellationToken cancellationToken = default)
         {
-            var service = new MayorQuestService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var service = new MayorQuestService(_memory.Value, _layout.Value);
             SideQuestChallengeResult result = service.Process(mayorQuestCheck, mayorQuestActive, mayorQuest, monstersDead, cancellationToken);
 
             mayorQuestCheck = result.QuestCheck;
@@ -711,13 +711,13 @@ namespace DarkCloudEnhancedMod
 
         public static void FloorSelectionScreen()
         {
-            var service = new FloorSelectionService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var service = new FloorSelectionService(_memory.Value, _layout.Value);
             service.Update(ref circlePressed, out currentGilda);
         }
 
         public static void CheckActiveItems(CancellationToken cancellationToken)
         {
-            var service = new ActiveItemService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var service = new ActiveItemService(_memory.Value, _layout.Value);
             var result = service.Process(squareActive, dunEscapeConfirm, dunEscapeConfirmSpamCheck);
 
             squareActive = result.SquareActive;
@@ -764,7 +764,7 @@ namespace DarkCloudEnhancedMod
         {
             if (dunUsedActiveEscape == false && dunUsedEscapeCheck == false)
             {
-                if (Memory.ReadByte(0x202A35EC) == 171)
+                if (TryReadByte(_layout.Value.EscapeFlagAddress, out byte escapeFlag) && escapeFlag == 171)
                 {
                     CheckEscapePowders();
                     dunUsedEscapeCheck = true;
@@ -775,8 +775,8 @@ namespace DarkCloudEnhancedMod
         public static void CheckEscapePowders()
         {
             var service = new EscapePowderService(
-                new LegacyProcessGameMemory(),
-                new DungeonMemoryLayout(),
+                _memory.Value,
+                _layout.Value,
                 () => SideQuestManager.CheckItemQuestReward(175, true, false));
 
             if (service.TryConsumeEscapePowder())
@@ -787,7 +787,7 @@ namespace DarkCloudEnhancedMod
 
         public static void CheckMiniBossStamina()
         {
-            var service = new MiniBossStaminaService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var service = new MiniBossStaminaService(_memory.Value, _layout.Value);
             MiniBoss.miniBossRolled = service.Update(MiniBoss.enemyNumber, MiniBoss.miniBossRolled);
         }
 
@@ -795,8 +795,8 @@ namespace DarkCloudEnhancedMod
         {
             if (_weaponLevelUpService == null)
             {
-                var memory = new LegacyProcessGameMemory();
-                var layout = new DungeonMemoryLayout();
+                var memory = _memory.Value;
+                var layout = _layout.Value;
                 var sozService = new SwordOfZeusService(memory, layout);
                 _weaponLevelUpService = new WeaponLevelUpService(memory, layout, sozService, new ConsoleModLogger());
             }
@@ -804,16 +804,23 @@ namespace DarkCloudEnhancedMod
             _weaponLevelUpService.Update();
         }
 
-        public static void CheckSoZEffect(int wepOffset)
+        public static void RecalculateSwordOfZeusMaxAttack()
         {
-            var service = new SwordOfZeusService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
-            service.ApplyIfSwordOfZeus(wepOffset);
+            var service = new SwordOfZeusService(_memory.Value, _layout.Value);
+            service.RecalculateMaxAttack();
         }
 
-        public static void ChangeSoZMaxAtt(ushort storedThunder)
+        private static bool TryReadByte(long address, out byte value)
         {
-            ushort maxAttack = SwordOfZeusService.CalculateMaxAttack(storedThunder);
-            Memory.WriteUShort(0x2027B298, maxAttack);
+            var buffer = new byte[1];
+            if (!_memory.Value.TryRead(address, buffer, 0, 1))
+            {
+                value = 0;
+                return false;
+            }
+
+            value = buffer[0];
+            return true;
         }
 
     }

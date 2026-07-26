@@ -41,9 +41,10 @@ namespace DarkCloud.Core.Dungeon
             if (!TryReadUShort(_layout.StoredThunderAddress, out ushort storedThunder))
                 storedThunder = 0;
 
-            storedThunder += currentThunder;
-            if (storedThunder > MaxStoredThunder)
-                storedThunder = MaxStoredThunder;
+            int newStored = storedThunder + currentThunder;
+            if (newStored > MaxStoredThunder)
+                newStored = MaxStoredThunder;
+            storedThunder = (ushort)newStored;
 
             TryWriteByte(thunderAddress, 0);
 
@@ -55,8 +56,21 @@ namespace DarkCloud.Core.Dungeon
 
             TryWriteUShort(_layout.StoredThunderAddress, storedThunder);
 
+            WriteMaxAttack(storedThunder);
+        }
+
+        public void WriteMaxAttack(ushort storedThunder)
+        {
             ushort maxAttack = CalculateMaxAttack(storedThunder);
             TryWriteUShort(_layout.MaxAttackAddress, maxAttack);
+        }
+
+        public void RecalculateMaxAttack()
+        {
+            if (!TryReadUShort(_layout.StoredThunderAddress, out ushort storedThunder))
+                return;
+
+            WriteMaxAttack(storedThunder);
         }
 
         public static ushort CalculateMaxAttack(ushort storedThunder)

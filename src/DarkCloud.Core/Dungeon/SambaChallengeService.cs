@@ -21,6 +21,11 @@ namespace DarkCloud.Core.Dungeon
 
         public SideQuestChallengeResult Process(bool questCheck, bool questActive, bool quest, bool[] monstersDead, CancellationToken cancellationToken)
         {
+            if (monstersDead == null)
+                throw new ArgumentNullException(nameof(monstersDead));
+            if (monstersDead.Length < _layout.EnemyCount)
+                throw new ArgumentException($"Expected at least {_layout.EnemyCount} entries.", nameof(monstersDead));
+
             var result = new SideQuestChallengeResult
             {
                 QuestCheck = questCheck,
@@ -110,7 +115,7 @@ namespace DarkCloud.Core.Dungeon
 
         private void ResetMonstersDead(bool[] monstersDead)
         {
-            for (int i = 0; i < monstersDead.Length; i++)
+            for (int i = 0; i < _layout.EnemyCount; i++)
             {
                 monstersDead[i] = false;
             }

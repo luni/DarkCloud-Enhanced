@@ -70,6 +70,7 @@ namespace DarkCloud.Core.Tests.Dungeon
         private sealed class FakeUngagaSwapLayout : IUngagaSwapMemoryLayout
         {
             public long DungeonIndicatorAddress => 0x1010;
+            public long CurrentCharacterCursorAddress => 0x1015;
             public long ModelLoadedValueDungeon3Address => 0x1020;
             public long ModelLoadedValueOtherAddress => 0x1030;
             public long ModelWriteAddress1Dungeon3 => 0x1040;

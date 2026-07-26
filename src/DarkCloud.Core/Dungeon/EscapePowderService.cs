@@ -10,8 +10,6 @@ namespace DarkCloud.Core.Dungeon
     /// </summary>
     public sealed class EscapePowderService
     {
-        public const int EscapePowderItemId = 175;
-
         private readonly IGameMemory _memory;
         private readonly IEscapePowderMemoryLayout _layout;
         private readonly Func<bool> _shouldSkipConsumption;
@@ -34,7 +32,7 @@ namespace DarkCloud.Core.Dungeon
                 if (!TryReadUShort(itemAddress, out ushort itemId))
                     continue;
 
-                if (itemId != EscapePowderItemId)
+                if (itemId != ActiveItemConstants.EscapePowderItemId)
                     continue;
 
                 long countAddress = _layout.ActiveItemCountAddresses[i];
@@ -49,7 +47,7 @@ namespace DarkCloud.Core.Dungeon
 
                 if (count == 0)
                 {
-                    TryWriteUShort(itemAddress, 0);
+                    TryWriteUShort(itemAddress, ActiveItemConstants.EmptyItemValue);
                 }
 
                 return true;

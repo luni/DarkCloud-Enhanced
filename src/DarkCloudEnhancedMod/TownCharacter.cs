@@ -144,7 +144,7 @@ namespace DarkCloudEnhancedMod
             currentInGameDay = Memory.ReadUShort(0x21CD4318);
             demonshaftUnlocked = false;
 
-            Dungeon.ChangeSoZMaxAtt(Memory.ReadUShort(0x21CE446D)); //NEEDS TO BE APPLIED AFTER SAVE LOAD!
+            Dungeon.RecalculateSwordOfZeusMaxAttack(); //NEEDS TO BE APPLIED AFTER SAVE LOAD!
 
             //THE FOLLOWING CODE UP TO WHILE LOOP is for setting up ally switching in the overworld, by editing
             //some of the game's code that handles the character files

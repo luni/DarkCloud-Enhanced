@@ -11,9 +11,6 @@ namespace DarkCloud.Core.Dungeon
     public sealed class ActiveItemService
     {
         public const ushort SquareButton = 0x0080; // CheatCodes.InputBuffer.Button.Square
-        public const int EscapePowderItemId = 175;
-        public const int RepairPowderItemId = 177;
-        public const int EmptyItemValue = 65535;
         public const byte EscapeFlagValue = 170;
 
         private readonly IGameMemory _memory;
@@ -53,7 +50,13 @@ namespace DarkCloud.Core.Dungeon
                 return result;
             }
 
-            long currentActiveItem = _layout.ActiveItemBaseAddress + (_layout.ActiveItemSlotSize * currentSlot);
+            if (currentSlot < 1 || currentSlot > _layout.ActiveItemSlotCount)
+            {
+                result.SquareActive = false;
+                return result;
+            }
+
+            long currentActiveItem = _layout.ActiveItemBaseAddress + ((long)_layout.ActiveItemSlotSize * currentSlot);
             if (!TryReadShort(currentActiveItem, out short itemId))
             {
                 result.SquareActive = false;
@@ -78,11 +81,11 @@ namespace DarkCloud.Core.Dungeon
                 return result;
             }
 
-            if (itemId == EscapePowderItemId)
+            if (itemId == ActiveItemConstants.EscapePowderItemId)
             {
                 ProcessEscapePowder(currentSlot, currentActiveItem, dunEscapeConfirm, dunEscapeConfirmSpamCheck, result);
             }
-            else if (itemId == RepairPowderItemId)
+            else if (itemId == ActiveItemConstants.RepairPowderItemId)
             {
                 ProcessRepairPowder(currentSlot, currentActiveItem, result);
             }
@@ -126,7 +129,7 @@ namespace DarkCloud.Core.Dungeon
 
                 if (currentPowders == 0)
                 {
-                    TryWriteUShort(currentActiveItem, 0);
+                    TryWriteUShort(currentActiveItem, ActiveItemConstants.EmptyItemValue);
                 }
             }
 
@@ -179,7 +182,7 @@ namespace DarkCloud.Core.Dungeon
 
                 if (currentPowders == 0)
                 {
-                    TryWriteUShort(currentActiveItem, 0);
+                    TryWriteUShort(currentActiveItem, ActiveItemConstants.EmptyItemValue);
                 }
             }
 
