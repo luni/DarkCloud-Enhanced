@@ -44,23 +44,28 @@ Phase 14: Introduce the modern Windows host (in progress)
 - [x] Phase 14.1 — Create `DarkCloud.App.WinForms` modern host skeleton, extract shared `DarkCloud.Memory.Windows` process-memory library, and wire pilot session runner, status display, and `StatusLogFeature`.
 - [x] Phase 14.2 — Add build/CI profiles for legacy and modern hosts, document supported environments, and run shared memory contract suites for both host test projects.
 
+## Completed
+
+- [x] Phase 14.3 — Reach feature parity (completed for the batch that could be migrated). `ApplyChanges` and `Weapon Reroll` were moved to shared `DarkCloud.Core`/`DarkCloud.Memory.Windows` implementations and wired into both hosts.
+
 ## In progress
 
-- Phase 14.3 — Reach feature parity; migrated `ApplyChanges` and `Weapon Reroll` features to shared `DarkCloud.Core`/`DarkCloud.Memory.Windows` implementations. `Town Character` and `Dungeon` remain blocked on legacy domain extraction.
+- None
 
 ## Next
 
-- Phase 14.4 — Retire the legacy host
+- Phase 14.4 — Retire the legacy host (blocked until `Town Character` and `Dungeon` parity is resolved).
 - Phase 15 — Add optional emulator-level system tests
 
 ## Known blockers
 
-- None
+- `Town Character` and `Dungeon` modern-host parity is blocked on extracting or moving the legacy static script dependency graph (`Player`, `Dialogues`, `Dayuppy`, `CustomEffects`, `Enemies`, `MiniBoss`, `SideQuestManager`, `Resources`, etc.). These scripts are tightly coupled to each other and to the legacy `Memory`/`Addresses` static APIs.
 
 ## Deferred work
 
 - WinForms redesign
 - Modern Windows host migration
+- `Town Character` and `Dungeon` feature parity
 - Emulator-level public CI
 - Address-data generator and PNACH generation
 

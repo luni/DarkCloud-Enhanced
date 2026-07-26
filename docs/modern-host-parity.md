@@ -1,6 +1,6 @@
 # Modern Host Feature Parity
 
-This matrix tracks the migration of mod features from the legacy WinForms host (`DarkCloudEnhancedMod`) to the modern WinForms host (`DarkCloud.App.WinForms`). It is updated as features are moved in Phase 14.3.
+This matrix tracks the migration of mod features from the legacy WinForms host (`DarkCloudEnhancedMod`) to the modern WinForms host (`DarkCloud.App.WinForms`). Phase 14.3 is closed for the features that could be migrated without extracting the entire legacy static script graph.
 
 ## Matrix
 
