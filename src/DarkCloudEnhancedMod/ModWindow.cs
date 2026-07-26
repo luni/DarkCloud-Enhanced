@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using DarkCloud.Core.Configuration;
 using DarkCloud.Core.Logging;
 using DarkCloud.Core.Session;
+using DarkCloud.Memory.Windows;
 using DarkCloudEnhancedMod.Configuration;
 using DarkCloudEnhancedMod.Logging;
 

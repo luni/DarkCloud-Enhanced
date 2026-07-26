@@ -2,6 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DarkCloud.Core.Session;
 using DarkCloud.Memory.Abstractions;
+using DarkCloud.Memory.Windows;
 using Xunit;
 
 namespace DarkCloudEnhancedMod.IntegrationTests

@@ -2,27 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using DarkCloud.Core.Configuration;
 using DarkCloud.Core.Features;
 using DarkCloud.Core.Logging;
 using DarkCloud.Core.Players;
 using DarkCloud.Core.Session;
 using DarkCloud.Memory.Abstractions;
 using DarkCloud.Memory.Windows;
+using DarkCloudEnhancedMod;
 
-namespace DarkCloudEnhancedMod
+namespace DarkCloud.App.WinForms
 {
     /// <summary>
-    /// Adapts the new session state machine to the lifecycle-managed feature
-    /// modules and WinForms UI. It starts/stops the feature runner with a shared
-    /// cancellation token and reports progress through <see cref="IModStatusSink"/>.
+    /// Adapts the session state machine to the modern WinForms host. It reports
+    /// progress through <see cref="IModStatusSink"/> and runs a small pilot
+    /// feature set once the player is in-game.
     /// </summary>
-    internal sealed class ModWindowGameSessionObserver : IGameSessionObserver
+    public sealed class ModernHostGameSessionObserver : IGameSessionObserver
     {
         private readonly IModStatusSink _sink;
         private readonly IClock _clock;
         private readonly IModLogger _logger;
-        private readonly ModConfiguration _configuration;
         private CancellationTokenSource _featureCts;
 
         private bool _bootedAndInitialized;
@@ -33,12 +32,11 @@ namespace DarkCloudEnhancedMod
         private Task _featureRunnerTask;
         private PlayerPresenceService _playerPresence;
 
-        public ModWindowGameSessionObserver(IModStatusSink sink, IClock clock, IModLogger logger = null, ModConfiguration configuration = null)
+        public ModernHostGameSessionObserver(IModStatusSink sink, IClock clock, IModLogger logger = null)
         {
             _sink = sink ?? throw new ArgumentNullException(nameof(sink));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             _logger = logger ?? NullModLogger.Instance;
-            _configuration = configuration ?? ModConfigurationDefaults.Create();
             _featureCts = new CancellationTokenSource();
         }
 
@@ -74,26 +72,22 @@ namespace DarkCloudEnhancedMod
                     break;
 
                 case GameSessionState.MainMenu:
-                    MainMenuThread.userMode = true;
                     await StopFeatureRunner();
                     HandleMainMenuOrTitle();
                     _sink.ReportMainMenu();
                     break;
 
                 case GameSessionState.TitleScreen:
-                    MainMenuThread.userMode = true;
                     await StopFeatureRunner();
                     HandleMainMenuOrTitle();
                     _sink.ReportTitleScreen();
                     break;
 
                 case GameSessionState.InGame:
-                    MainMenuThread.userMode = true;
                     await HandleInGameAsync(memory, cancellationToken);
                     break;
 
                 case GameSessionState.SaveStateDetected:
-                    MainMenuThread.userMode = true;
                     HandleSaveState(memory);
                     _sink.ReportSaveStateDetected();
                     break;
@@ -102,7 +96,7 @@ namespace DarkCloudEnhancedMod
 
         public void OnError(Exception exception, GameSessionState state)
         {
-            Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + $" Session error in {state}: {exception}");
+            _logger.Error(exception, $"Session error in {state}.");
         }
 
         public async Task OnShutdown(CancellationToken cancellationToken = default)
@@ -115,7 +109,6 @@ namespace DarkCloudEnhancedMod
             if (!_bootedAndInitialized)
             {
                 _sink.ReportBooted();
-                TownCharacter.InitializeCharacterOffsetValues();
                 _bootedAndInitialized = true;
             }
 
@@ -128,17 +121,10 @@ namespace DarkCloudEnhancedMod
             if (_waitingForGameReset || cancellationToken.IsCancellationRequested)
                 return;
 
-            // If the very first thing we see is in-game, the mod was launched
-            // while a save was already running. Ask the user to reset.
-            // Once the mod has booted from a menu, transient disconnects should
-            // not re-trigger this prompt.
             if (!_sawMenuSinceLastInGame && !_bootedAndInitialized)
             {
                 _waitingForGameReset = true;
-
-                if (!cancellationToken.IsCancellationRequested && await _sink.PromptForGameReset(cancellationToken))
-                    WriteGameReset(memory, Addresses.townSoftReset);
-
+                _logger.Warning("Mod launched while a save was already running; please reset to the main menu.");
                 return;
             }
 
@@ -159,14 +145,9 @@ namespace DarkCloudEnhancedMod
             if (!TryReadByte(memory, Addresses.mode, out byte mode))
                 return;
 
-            // Re-check that the game is still in an in-game mode, mirroring the
-            // original main-menu thread behavior.
             if (mode != 2 && mode != 3 && mode != 5)
                 return;
 
-            // New game (mode 5) writes the Enhanced Mod save flag, then shows
-            // the custom opening text. The delays mirror the original timing
-            // but now flow through IClock so the runner thread is not blocked.
             if (mode == 5)
             {
                 try
@@ -183,7 +164,7 @@ namespace DarkCloudEnhancedMod
 
                 if (!TryWriteByte(memory, 0x21CE448A, 1))
                 {
-                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + " Failed to write Enhanced Mod save flag for new game.");
+                    _logger.Warning("Failed to write Enhanced Mod save flag for new game.");
                 }
 
                 try
@@ -197,16 +178,8 @@ namespace DarkCloudEnhancedMod
 
                 if (cancellationToken.IsCancellationRequested)
                     return;
-
-                Dialogues.IntroTextAtNorune();
             }
 
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            // Loading an existing save (or a new game) requires an Enhanced Mod
-            // save flag at 0x21CE448A. If it is not present, reset the game and
-            // warn the user.
             if (!TryReadByte(memory, 0x21CE448A, out byte enhancedFlag) || enhancedFlag != 1)
             {
                 _waitingForGameReset = true;
@@ -231,8 +204,6 @@ namespace DarkCloudEnhancedMod
 
         private void WriteGameReset(IGameMemory memory, long nonDungeonResetAddress)
         {
-            // If the player is inside a dungeon, use the dungeon reset path so
-            // the save state does not leave them stuck on an unpopulated floor.
             if (!TryReadByte(memory, (long)Addresses.checkFloor + 1, out byte currentFloor) || currentFloor == 255)
             {
                 TryWriteByte(memory, nonDungeonResetAddress, 1);
@@ -254,17 +225,8 @@ namespace DarkCloudEnhancedMod
                 new List<ModFeature>
                 {
                     new ModFeature(
-                        new ApplyChangesFeature(new ApplyChangesService()),
-                        new ModFeatureDescriptor("apply-changes", "Apply Changes", IsFeatureEnabled("apply-changes"))),
-                    new ModFeature(
-                        new TownCharacterFeature(),
-                        new ModFeatureDescriptor("town-character", "Town Character", IsFeatureEnabled("town-character"))),
-                    new ModFeature(
-                        new DungeonFeature(),
-                        new ModFeatureDescriptor("dungeon", "Dungeon", IsFeatureEnabled("dungeon"))),
-                    new ModFeature(
-                        new WeaponsFeature(),
-                        new ModFeatureDescriptor("weapons-reroll", "Weapon Reroll", IsFeatureEnabled("weapons-reroll"))),
+                        new StatusLogFeature(_logger),
+                        new ModFeatureDescriptor("status-log", "Status Log", true)),
                 },
                 _clock,
                 new ModLoggerExceptionHandler(_logger),
@@ -273,13 +235,13 @@ namespace DarkCloudEnhancedMod
             _featureRunnerTask = Task.Run(() => _featureRunner.RunAsync(
                 new GameFeatureContext(memory),
                 CreateGameSnapshot,
-                _configuration.PollInterval,
+                TimeSpan.FromMilliseconds(1000),
                 token), token);
         }
 
         private bool IsFeatureEnabled(string featureId)
         {
-            return _configuration.Features.TryGetValue(featureId, out bool enabled) ? enabled : true;
+            return true;
         }
 
         private async Task ShutdownFeatureRunnerAsync(CancellationTokenSource nextFeatureCts)
@@ -298,11 +260,10 @@ namespace DarkCloudEnhancedMod
                 }
                 catch (OperationCanceledException)
                 {
-                    // Expected when the feature runner is stopped.
                 }
                 catch (Exception exception)
                 {
-                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + $" Feature runner shutdown error: {exception}");
+                    _logger.Error(exception, "Feature runner shutdown error.");
                 }
             }
 
@@ -373,7 +334,5 @@ namespace DarkCloudEnhancedMod
             byte[] buffer = BitConverter.GetBytes(value);
             return memory.TryWrite(address, buffer, 0, 4);
         }
-
-
     }
 }

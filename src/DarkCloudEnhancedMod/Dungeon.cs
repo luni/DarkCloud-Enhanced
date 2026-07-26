@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Collections.Generic;
 using DarkCloud.Core.Dungeon;
+using DarkCloud.Memory.Windows;
 using DarkCloudEnhancedMod.Logging;
 using static DarkCloud.Core.Dungeon.DungeonProgression;
 

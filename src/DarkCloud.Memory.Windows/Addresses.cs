@@ -1,6 +1,6 @@
 ﻿namespace DarkCloudEnhancedMod
 {
-    class Addresses
+    public class Addresses
     {
         /// <summary>
         ///     0 = Main title

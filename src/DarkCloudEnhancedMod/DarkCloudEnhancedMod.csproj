@@ -36,6 +36,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DarkCloud.Memory.Abstractions\DarkCloud.Memory.Abstractions.csproj" />
     <ProjectReference Include="..\DarkCloud.Core\DarkCloud.Core.csproj" />
+    <ProjectReference Include="..\DarkCloud.Memory.Windows\DarkCloud.Memory.Windows.csproj" />
   </ItemGroup>
 
   <ItemGroup>

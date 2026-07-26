@@ -1,5 +1,6 @@
 using DarkCloud.Memory.Abstractions;
 using DarkCloud.Memory.ContractTests;
+using DarkCloud.Memory.Windows;
 
 namespace DarkCloudEnhancedMod.IntegrationTests
 {

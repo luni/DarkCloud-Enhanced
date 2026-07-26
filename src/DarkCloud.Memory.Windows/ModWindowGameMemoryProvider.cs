@@ -3,14 +3,15 @@ using System.Diagnostics;
 using DarkCloud.Core.Logging;
 using DarkCloud.Core.Session;
 using DarkCloud.Memory.Abstractions;
+using GameMemory = DarkCloudEnhancedMod.Memory;
 
-namespace DarkCloudEnhancedMod
+namespace DarkCloud.Memory.Windows
 {
     /// <summary>
     /// Provides the current <see cref="IGameMemory"/> for the session runner,
     /// refreshing the underlying emulator connection when it is missing or dead.
     /// </summary>
-    internal sealed class ModWindowGameMemoryProvider : IGameMemoryProvider
+    public sealed class ModWindowGameMemoryProvider : IGameMemoryProvider
     {
         private int _lastProcessId;
         private LegacyProcessGameMemory _cachedMemory;
@@ -29,10 +30,10 @@ namespace DarkCloudEnhancedMod
             bool reinitialized = NeedsReinitialization();
             if (reinitialized)
             {
-                Memory.Initialize();
+                GameMemory.Initialize();
             }
 
-            Process process = Memory.emulatorProcess;
+            Process process = GameMemory.emulatorProcess;
             if (process == null)
             {
                 _isConnected = false;
@@ -62,8 +63,8 @@ namespace DarkCloudEnhancedMod
                 _lastProcessId = currentId;
 
                 _logger.Information(
-                    $"Attached to {Memory.emulatorName} process {currentId}; " +
-                    $"EEMem address = 0x{Memory.EEMemAddress:X}, offset = 0x{Memory.EEMemOffset:X}.");
+                    $"Attached to {GameMemory.emulatorName} process {currentId}; " +
+                    $"EEMem address = 0x{GameMemory.EEMemAddress:X}, offset = 0x{GameMemory.EEMemOffset:X}.");
             }
 
             if (processChanged)
@@ -78,12 +79,12 @@ namespace DarkCloudEnhancedMod
 
         private static bool NeedsReinitialization()
         {
-            if (Memory.emulatorProcess == null)
+            if (GameMemory.emulatorProcess == null)
                 return true;
 
             try
             {
-                if (Memory.emulatorProcess.HasExited)
+                if (GameMemory.emulatorProcess.HasExited)
                     return true;
             }
             catch (InvalidOperationException)

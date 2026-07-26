@@ -180,11 +180,19 @@
           "xunit": "[2.9.0, )"
         }
       },
+      "darkcloud.memory.windows": {
+        "type": "Project",
+        "dependencies": {
+          "DarkCloud.Core": "[1.0.0, )",
+          "DarkCloud.Memory.Abstractions": "[1.0.0, )"
+        }
+      },
       "darkcloudenhancedmod": {
         "type": "Project",
         "dependencies": {
           "DarkCloud.Core": "[1.0.0, )",
           "DarkCloud.Memory.Abstractions": "[1.0.0, )",
+          "DarkCloud.Memory.Windows": "[1.0.0, )",
           "Newtonsoft.Json": "[13.0.3, )",
           "System.Resources.Extensions": "[4.6.0, )"
         }

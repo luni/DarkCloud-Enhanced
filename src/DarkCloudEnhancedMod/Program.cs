@@ -10,6 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 using System.Collections;
 using System.Collections.Generic;
+using DarkCloud.Core.Session;
 using DarkCloudEnhancedMod.Logging;
 
 namespace DarkCloudEnhancedMod

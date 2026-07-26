@@ -1,7 +1,8 @@
 using System;
 using DarkCloud.Memory.Abstractions;
+using GameMemory = DarkCloudEnhancedMod.Memory;
 
-namespace DarkCloudEnhancedMod
+namespace DarkCloud.Memory.Windows
 {
     /// <summary>
     /// Adapter that exposes the existing static <see cref="Memory"/> class through
@@ -9,13 +10,13 @@ namespace DarkCloudEnhancedMod
     /// the abstraction while the legacy WinForms application continues to own the
     /// process handle and platform-specific I/O.
     /// </summary>
-    internal sealed class LegacyProcessGameMemory : IProcessIdentifiableGameMemory
+    public sealed class LegacyProcessGameMemory : IProcessIdentifiableGameMemory
     {
         public int ProcessId => GetCurrentProcessId();
 
         private static int GetCurrentProcessId()
         {
-            var process = Memory.emulatorProcess;
+            var process = GameMemory.emulatorProcess;
             if (process == null)
                 return -1;
 
@@ -50,7 +51,7 @@ namespace DarkCloudEnhancedMod
             if (!IsCurrentProcess())
                 return false;
 
-            if (!Memory.TryReadByteArray(address, count, out byte[] data))
+            if (!GameMemory.TryReadByteArray(address, count, out byte[] data))
                 return false;
 
             Buffer.BlockCopy(data, 0, destination, offset, count);
@@ -69,7 +70,7 @@ namespace DarkCloudEnhancedMod
 
             byte[] segment = new byte[count];
             Buffer.BlockCopy(source, offset, segment, 0, count);
-            return Memory.Write(address, segment);
+            return GameMemory.Write(address, segment);
         }
 
         private static void ValidateBufferArgs(byte[] buffer, int offset, int count)

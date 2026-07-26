@@ -64,6 +64,13 @@
       },
       "darkcloud.memory.abstractions": {
         "type": "Project"
+      },
+      "darkcloud.memory.windows": {
+        "type": "Project",
+        "dependencies": {
+          "DarkCloud.Core": "[1.0.0, )",
+          "DarkCloud.Memory.Abstractions": "[1.0.0, )"
+        }
       }
     }
   }

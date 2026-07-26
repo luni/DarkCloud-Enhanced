@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <RootNamespace>DarkCloud.App.WinForms</RootNamespace>
+    <AssemblyName>DarkCloud.App.WinForms</AssemblyName>
+    <Nullable>disable</Nullable>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DarkCloud.Core\DarkCloud.Core.csproj" />
+    <ProjectReference Include="..\DarkCloud.Memory.Abstractions\DarkCloud.Memory.Abstractions.csproj" />
+    <ProjectReference Include="..\DarkCloud.Memory.Windows\DarkCloud.Memory.Windows.csproj" />
+  </ItemGroup>
+
+</Project>

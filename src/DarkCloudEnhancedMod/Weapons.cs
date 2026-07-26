@@ -4,6 +4,7 @@ using System.Threading;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using DarkCloud.Core.Weapons;
+using DarkCloud.Memory.Windows;
 
 namespace DarkCloudEnhancedMod
 {

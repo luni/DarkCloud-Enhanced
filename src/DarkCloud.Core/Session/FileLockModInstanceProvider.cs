@@ -1,8 +1,7 @@
 using System;
 using System.IO;
-using DarkCloud.Core.Session;
 
-namespace DarkCloudEnhancedMod
+namespace DarkCloud.Core.Session
 {
     /// <summary>
     /// Uses an exclusive file lock to determine whether this process is the only
@@ -11,7 +10,7 @@ namespace DarkCloudEnhancedMod
     /// This works cross-platform, including on Mono, where named mutexes are not
     /// process-global.
     /// </summary>
-    internal sealed class FileLockModInstanceProvider : IModInstanceProvider, IDisposable
+    public sealed class FileLockModInstanceProvider : IModInstanceProvider, IDisposable
     {
         private readonly FileStream _lockFile;
         private bool _isOwned;

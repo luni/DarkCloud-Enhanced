@@ -1,6 +1,7 @@
 ﻿using System;
 using DarkCloud.Core.Inventory;
 using DarkCloud.Core.Players;
+using DarkCloud.Memory.Windows;
 
 namespace DarkCloudEnhancedMod
 {

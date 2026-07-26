@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using DarkCloud.Memory.Windows;
 
 namespace DarkCloudEnhancedMod
 {
@@ -362,7 +363,7 @@ namespace DarkCloudEnhancedMod
             bool successful = Platform.WriteMemory(ProcessHandle, address + EEMemOffset, byteArray, byteArray.LongLength, out ulong _);
 
             if (!successful)
-                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + GetLastError() + " - " + GetSystemMessage(GetLastError()));
+                Console.WriteLine(LogTimestamp.Now() + GetLastError() + " - " + GetSystemMessage(GetLastError()));
         }
 
         internal static bool WriteUShort(long address, ushort value) => Write(address, BitConverter.GetBytes(value));
@@ -382,7 +383,7 @@ namespace DarkCloudEnhancedMod
 
             Platform.ProtectMemory(ProcessHandle, startOffset, stopOffset - startOffset, (uint)WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
 
-            Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchString + ". This may take awhile.");
+            Console.WriteLine(LogTimestamp.Now() + "Searching for " + searchString + ". This may take awhile.");
 
             for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++)
             {
@@ -400,7 +401,7 @@ namespace DarkCloudEnhancedMod
 
             Platform.ProtectMemory(ProcessHandle, startOffset, stopOffset - startOffset, (uint)WinAPIFlags.MemoryPageProtectionModes.ExecuteReadWrite, out uint _); //Change our protection first
 
-            Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Searching for " + searchValue + ". This may take awhile.");
+            Console.WriteLine(LogTimestamp.Now() + "Searching for " + searchValue + ". This may take awhile.");
 
             for (long currentOffset = startOffset; currentOffset < stopOffset; currentOffset++)
             {
