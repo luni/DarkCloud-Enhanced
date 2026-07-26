@@ -42,14 +42,15 @@ Phase 14: Introduce the modern Windows host (in progress)
 - [x] Phase 10.3 — Extract weapons domain logic (special-attribute rolls, synth-sphere upgrade rules, balance table) into `DarkCloud.Core/Weapons`
 - [x] Phase 10.4 — Extract remaining dungeon domain behavior into `DarkCloud.Core/Dungeon`: Ungaga door/swap, clown, escape powder, miniboss stamina, Sword of Zeus, side-quest state, floor selection, spawn detection, mini-boss message, active item usage, weapon level-up, monster-kill quests, and Samba/Mayor side-quest challenges.
 - [x] Phase 14.1 — Create `DarkCloud.App.WinForms` modern host skeleton, extract shared `DarkCloud.Memory.Windows` process-memory library, and wire pilot session runner, status display, and `StatusLogFeature`.
+- [x] Phase 14.2 — Add build/CI profiles for legacy and modern hosts, document supported environments, and run shared memory contract suites for both host test projects.
 
 ## In progress
 
-- None
+- Phase 14.3 — Reach feature parity
 
 ## Next
 
-- Phase 14.2 — Run legacy and modern hosts in parallel
+- Phase 14.4 — Retire the legacy host
 - Phase 15 — Add optional emulator-level system tests
 
 ## Known blockers

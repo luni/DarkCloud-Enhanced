@@ -4,7 +4,7 @@ using DarkCloud.Memory.Abstractions.Generated;
 
 namespace DarkCloudEnhancedMod
 {
-    internal enum Region
+    public enum Region
     {
         NTSC,
         PAL

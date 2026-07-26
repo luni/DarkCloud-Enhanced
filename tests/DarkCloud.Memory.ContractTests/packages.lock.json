@@ -67,8 +67,21 @@
           "xunit.extensibility.core": "[2.9.0]"
         }
       },
+      "darkcloud.core": {
+        "type": "Project",
+        "dependencies": {
+          "DarkCloud.Memory.Abstractions": "[1.0.0, )"
+        }
+      },
       "darkcloud.memory.abstractions": {
         "type": "Project"
+      },
+      "darkcloud.memory.windows": {
+        "type": "Project",
+        "dependencies": {
+          "DarkCloud.Core": "[1.0.0, )",
+          "DarkCloud.Memory.Abstractions": "[1.0.0, )"
+        }
       }
     }
   }

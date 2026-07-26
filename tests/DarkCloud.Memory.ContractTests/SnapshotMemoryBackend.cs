@@ -1,13 +1,13 @@
 using System;
 
-namespace DarkCloudEnhancedMod.IntegrationTests
+namespace DarkCloudEnhancedMod
 {
     /// <summary>
     /// Test-focused <see cref="IMemoryBackend"/> backed by an in-memory byte
     /// array. The supplied <paramref name="address"/> is treated as a PS2
     /// virtual address and mapped relative to <see cref="BaseAddress"/>.
     /// </summary>
-    internal sealed class SnapshotMemoryBackend : IMemoryBackend
+    public sealed class SnapshotMemoryBackend : IMemoryBackend
     {
         public const long DefaultBaseAddress = 0x20000000L;
 

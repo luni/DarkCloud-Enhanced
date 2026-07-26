@@ -32,3 +32,5 @@ dotnet test "DarkCloud-Enhanced.sln" --no-build
 - `FileLockModInstanceProvider` lives in `DarkCloud.Core.Session`.
 - The modern WinForms host is `src/DarkCloud.App.WinForms` and targets `net8.0-windows` with `<EnableWindowsTargeting>true</EnableWindowsTargeting>` so it builds on Linux too.
 - The legacy `DarkCloudEnhancedMod` still targets .NET Framework and builds on Linux; both hosts share `DarkCloud.Memory.Windows` and `DarkCloud.Core`.
+- Supported environments, build profiles, and CI artifacts for both hosts are documented in `docs/supported-environments.md`.
+- The shared memory contract tests run for both the legacy host (`DarkCloudEnhancedMod.IntegrationTests`) and the modern host's memory layer (`DarkCloud.Memory.Windows.IntegrationTests`).

@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/DarkCloud.Memory.Abstractions/DarkCloud.Memory.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DarkCloud.Memory.Windows/DarkCloud.Memory.Windows.csproj" />
   </ItemGroup>
 
 </Project>

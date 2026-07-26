@@ -177,6 +177,7 @@
         "type": "Project",
         "dependencies": {
           "DarkCloud.Memory.Abstractions": "[1.0.0, )",
+          "DarkCloud.Memory.Windows": "[1.0.0, )",
           "xunit": "[2.9.0, )"
         }
       },

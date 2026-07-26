@@ -1,8 +1,8 @@
 using System.Diagnostics;
 
-namespace DarkCloudEnhancedMod.IntegrationTests
+namespace DarkCloudEnhancedMod
 {
-    internal static class SnapshotTestHelper
+    public static class SnapshotTestHelper
     {
         public const long Ps2BaseAddress = 0x20000000L;
 
