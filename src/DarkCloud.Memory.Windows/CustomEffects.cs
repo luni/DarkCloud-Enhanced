@@ -599,9 +599,9 @@ namespace DarkCloudEnhancedMod
                 currentTotalAttack = 350;
             }
 
-            ushort hpAttackBoost = (ushort)((currentTotalAttack / 100) * hpPercentage);
+            ushort hpAttackBoost = (ushort)((currentTotalAttack / 100f) * hpPercentage);
 
-            ushort thirstAttackBoost = (ushort)((currentTotalAttack / 100) * (thirstPercentage / 2));
+            ushort thirstAttackBoost = (ushort)((currentTotalAttack / 100f) * (thirstPercentage / 2f));
 
             Memory.WriteUShort(0x21EA7594, (ushort)(currentTotalAttack + hpAttackBoost + thirstAttackBoost));
         }

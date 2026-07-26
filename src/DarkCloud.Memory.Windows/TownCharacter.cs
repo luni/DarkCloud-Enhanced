@@ -546,7 +546,7 @@ namespace DarkCloudEnhancedMod
                             }
                         }
                         else {
-                            if (currentArea != 38 || currentArea != 19) {
+                            if (currentArea != 38 && currentArea != 19) {
                                 Memory.WriteUShort(0x21D3D434, townDialogueIDs[currentArea]);
                             }
                             if (sidequestOptionFlag == false && (Memory.ReadByte(0x21D1CC0C) == 11 || (currentArea == 2 && Memory.ReadByte(0x21D1CC0C) == 15))) {

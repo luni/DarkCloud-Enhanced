@@ -28,7 +28,7 @@ namespace DarkCloud.Core.Dungeon
             if (!TryReadFloat(_layout.GetDoorCheckAddress(dungeon), out float value))
                 return false;
 
-            if (value != TriggerValue)
+            if (Math.Abs(value - TriggerValue) > 0.0001f)
                 return false;
 
             TryWriteByte(_layout.GetDoorByte1Address(dungeon), DoorByteValue);

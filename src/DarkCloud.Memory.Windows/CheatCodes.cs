@@ -65,7 +65,7 @@ namespace DarkCloudEnhancedMod
             internal static void Monitor(CancellationToken cancellationToken)
             {
                 InitializeBD();
-                while (1 == 1)
+                while (true)
                 {
                     if (cancellationToken.IsCancellationRequested)
                         return;
@@ -186,9 +186,6 @@ namespace DarkCloudEnhancedMod
 
             public static bool CheckSequence(Button[] cheatCodeArray)
             {
-                Button[] tmp = { };
-
-                
                 if (inputs.SequenceEqual(cheatCodeArray)) //Matched sequence
                 {
                     inputs.Clear();

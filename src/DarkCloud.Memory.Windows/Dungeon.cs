@@ -415,7 +415,7 @@ namespace DarkCloudEnhancedMod
             var active = new[] { monsterQuestMachoActive, monsterQuestGobActive, monsterQuestJakeActive, monsterQuestChiefActive };
             MonsterQuestResult result = service.Process(currentEnemyAddress, active);
 
-            foreach (int index in result.ProgressedQuestIndices)
+            foreach (int _ in result.ProgressedQuestIndices)
             {
                 Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Quest progress +1!");
             }
@@ -621,7 +621,7 @@ namespace DarkCloudEnhancedMod
                 return;
 
             var service = new SideQuestStateService(_memory.Value, _layout.Value);
-            var state = service.GetState((byte)currentDungeon, (byte)currentFloor);
+            var state = service.GetState(currentDungeon, currentFloor);
             sambaChallengeQuest = state.SambaChallengeActive;
             mayorQuest = state.MayorQuestActive;
         }

@@ -134,7 +134,7 @@ namespace DarkCloudEnhancedMod
             byte[] itemTable = ItemTbl0;
             byte[] backfloorItemTable = ItemTbl0_1;
 
-            while (1 == 1)
+            while (true)
             {
                 Thread.Sleep(1000);
                 if (Player.InDungeonFloor() == true)
@@ -274,7 +274,7 @@ namespace DarkCloudEnhancedMod
             byte[] itemTable = ItemTbl0;
             byte[] backfloorItemTable = ItemTbl0_1;
 
-            while (1 == 1)
+            while (true)
             {
                 Thread.Sleep(750);
                 if (Player.InDungeonFloor() == true)
@@ -591,7 +591,6 @@ namespace DarkCloudEnhancedMod
                                         }
 
                                         elementSelected = Memory.ReadByte(currentWepElemAddr);
-                                        int weaponElemAmount = currentWepElemAddr + 0x00000001;
                                         bool validElement = false;
                                         if (Memory.ReadUShort(Addresses.buttonInputs) == (ushort)CheatCodes.InputBuffer.Button.DPad_Up ||
                                             Memory.ReadUShort(Addresses.buttonInputs) == 4104)  //DPad_Up + R1
@@ -615,11 +614,6 @@ namespace DarkCloudEnhancedMod
                                                 }
                                                 //byte elemAmount = Memory.ReadByte(weaponElemAmount + (elementSelected * 0x1));
                                                 byte elemAmount = Memory.ReadByte(0x21EA75A7 + (elementSelected * 0x1));
-
-                                                if (elementSelected < 0)
-                                                {
-                                                    break;
-                                                }
 
                                                 if (elementSelected > 4)
                                                 {
@@ -711,7 +705,7 @@ namespace DarkCloudEnhancedMod
                                         }
                                         if (validElement == true)
                                         {
-                                            if (elementSelected >= 0 && elementSelected <= 5)
+                                            if (elementSelected <= 5)
                                             {
 
                                                 Memory.WriteByte(currentWepElemAddr, elementSelected); //Set element in HUD for weapon
@@ -799,9 +793,6 @@ namespace DarkCloudEnhancedMod
 
         public static void CheckElements(byte currentElem)
         {
-
-            string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-
             byte[] bytes;
             int addressPointer = Memory.ReadInt(0x202A2DDC);
             
@@ -1325,7 +1316,7 @@ namespace DarkCloudEnhancedMod
             //CallGameFunction(Addresses.functionBGMStop);
             //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "New Function value: " + BitConverter.ToString(Memory.ReadByteArray(Addresses.functionEntryPoint, 4)));
 
-            while (1 == 1)
+            while (true)
             {
                 Memory.WriteFloat(Player.Ungaga.WeaponSlot4.whp, 5000);
 

@@ -173,12 +173,12 @@ namespace DarkCloudEnhancedMod
                     br.ReadUInt16(); // e_machine
                     br.ReadUInt32(); // e_version
                     br.ReadUInt64(); // e_entry
-                    ulong ePhoff = br.ReadUInt64();
+                    br.ReadUInt64(); // e_phoff
                     ulong eShoff = br.ReadUInt64();
                     br.ReadUInt32(); // e_flags
                     br.ReadUInt16(); // e_ehsize
                     br.ReadUInt16(); // e_phentsize
-                    ushort ePhnum = br.ReadUInt16();
+                    br.ReadUInt16(); // e_phnum
                     br.ReadUInt16(); // e_shentsize
                     ushort eShnum = br.ReadUInt16();
                     ushort eShstrndx = br.ReadUInt16();
