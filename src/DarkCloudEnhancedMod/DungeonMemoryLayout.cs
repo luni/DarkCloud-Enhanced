@@ -6,7 +6,7 @@ namespace DarkCloudEnhancedMod
     /// Provides the memory addresses used by dungeon domain services for the
     /// Dark Cloud Enhanced mod.
     /// </summary>
-    internal sealed class DungeonMemoryLayout : IDungeonMemoryLayout, IUngagaDoorMemoryLayout, IUngagaSwapMemoryLayout, IEscapePowderMemoryLayout
+    internal sealed class DungeonMemoryLayout : IDungeonMemoryLayout, IUngagaDoorMemoryLayout, IUngagaSwapMemoryLayout, IEscapePowderMemoryLayout, IMiniBossStaminaMemoryLayout, ISwordOfZeusMemoryLayout, ISideQuestStateMemoryLayout
     {
         public long BoneDoorOpenTypeAddress => Addresses.BoneDoorOpenType;
 
@@ -95,5 +95,37 @@ namespace DarkCloudEnhancedMod
         public System.Collections.Generic.IReadOnlyList<long> ActiveItemAddresses { get; } = new long[] { 0x21CDD8AE, 0x21CDD8B0, 0x21CDD8B2 };
 
         public System.Collections.Generic.IReadOnlyList<long> ActiveItemCountAddresses { get; } = new long[] { 0x21CDD8B4, 0x21CDD8B6, 0x21CDD8B8 };
+
+        public long GetStaminaTimerAddress(int enemyNumber)
+        {
+            return Enemies.Enemy0.staminaTimer + (0x190 * enemyNumber);
+        }
+
+        public long BackFloorFlagAddress => Addresses.dunBackFloorFlag;
+
+        public long GetWeaponIdAddress(int weaponOffset)
+        {
+            return Player.Toan.WeaponSlot0.id + (0xF8 * weaponOffset);
+        }
+
+        public long GetWeaponThunderAddress(int weaponOffset)
+        {
+            return Player.Toan.WeaponSlot0.thunder + (0xF8 * weaponOffset);
+        }
+
+        public long GetWeaponElementHudAddress(int weaponOffset)
+        {
+            return Player.Toan.WeaponSlot0.elementHUD + (0xF8 * weaponOffset);
+        }
+
+        public long StoredThunderAddress => 0x21CE446D;
+
+        public long MaxAttackAddress => 0x2027B298;
+
+        public long SambaChallengeFlagAddress => 0x21CE445E;
+
+        public long MayorQuestFlagAddress => 0x21CE4468;
+
+        public long MayorQuestFloorAddress => 0x21CE4469;
     }
 }

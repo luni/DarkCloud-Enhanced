@@ -706,39 +706,10 @@ namespace DarkCloudEnhancedMod
             if (cancellationToken.IsCancellationRequested)
                 return;
 
-            if (currentDungeon == 4 && currentFloor == 6 && Memory.ReadByte(0x21CE445E) == 1)
-            {
-                //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Yellow drops challenge active");
-                sambaChallengeQuest = true;
-            }
-            else
-            {
-                sambaChallengeQuest = false;
-            }
-
-            if (currentDungeon == 6)
-            {
-                if (Memory.ReadByte(0x21CE4468) == 1) //Mayor quest flag
-                {
-                    if (currentFloor == Memory.ReadByte(0x21CE4469) -1)
-                    {
-                        mayorQuest = true;
-                        //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Mayor quest active in this floor");
-                    }
-                    else
-                    {
-                        mayorQuest = false;
-                    }
-                }
-                else
-                {
-                    mayorQuest = false;
-                }
-            }
-            else
-            {
-                mayorQuest = false;
-            }
+            var service = new SideQuestStateService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            var state = service.GetState((byte)currentDungeon, (byte)currentFloor);
+            sambaChallengeQuest = state.SambaChallengeActive;
+            mayorQuest = state.MayorQuestActive;
         }
 
         public static void CheckCurrentSidequests(CancellationToken cancellationToken = default)
@@ -1096,18 +1067,8 @@ namespace DarkCloudEnhancedMod
 
         public static void CheckMiniBossStamina()
         {
-            if (MiniBoss.miniBossRolled == true)
-            {
-                if (Memory.ReadInt(Enemies.Enemy0.staminaTimer + (0x190 * MiniBoss.enemyNumber)) < 60)
-                {
-                    Memory.WriteInt(Enemies.Enemy0.staminaTimer + (0x190 * MiniBoss.enemyNumber), 60000);
-                }
-            }
-
-            if (Memory.ReadByte(Addresses.dunBackFloorFlag) != 0)
-            {
-                MiniBoss.miniBossRolled = false;    //if player enters backfloor, remove miniboss stamina value
-            }
+            var service = new MiniBossStaminaService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            MiniBoss.miniBossRolled = service.Update(MiniBoss.enemyNumber, MiniBoss.miniBossRolled);
         }
 
         public static void CheckWepLvlUp()
@@ -1174,79 +1135,13 @@ namespace DarkCloudEnhancedMod
 
         public static void CheckSoZEffect(int wepOffset)
         {
-            ushort wepID = Memory.ReadUShort(Player.Toan.WeaponSlot0.id + (0xF8 * wepOffset));
-
-            if (wepID == 296)
-            {
-                //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "SoZ leveled up!");
-                byte currentThunder = Memory.ReadByte(Player.Toan.WeaponSlot0.thunder + (0xF8 * wepOffset));
-                ushort storedThunder = (ushort)(Memory.ReadUShort(0x21CE446D) + currentThunder);
-                if (storedThunder > 30000)
-                {
-                    storedThunder = 30000;
-                }
-                Memory.WriteByte(Player.Toan.WeaponSlot0.thunder + (0xF8 * wepOffset), 0);
-                if (Memory.ReadByte(Player.Toan.WeaponSlot0.elementHUD + (0xF8 * wepOffset)) == 2)
-                {
-                    Memory.WriteByte(Player.Toan.WeaponSlot0.elementHUD + (0xF8 * wepOffset), 5);
-                }
-                Memory.WriteUShort(0x21CE446D, storedThunder);
-                ChangeSoZMaxAtt(storedThunder);
-
-            }
+            var service = new SwordOfZeusService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            service.ApplyIfSwordOfZeus(wepOffset);
         }
 
         public static void ChangeSoZMaxAtt(ushort storedThunder)
         {
-            ushort maxAttack = 199;
-            if (storedThunder > 200)
-            {
-                if (storedThunder > 500)
-                {
-                    if (storedThunder > 1000)
-                    {
-                        if (storedThunder > 2000)
-                        {
-                            maxAttack = 599;
-                            storedThunder -= 2000;
-
-                            ushort attackboost = (ushort)(storedThunder / 20);
-                            maxAttack = (ushort)(maxAttack + attackboost);
-                        }
-                        else
-                        {
-                            maxAttack = 499;
-                            storedThunder -= 1000;
-
-                            ushort attackboost = (ushort)(storedThunder / 10);
-                            maxAttack = (ushort)(maxAttack + attackboost);
-                        }
-                    }
-                    else
-                    {
-                        maxAttack = 399;
-                        storedThunder -= 500;
-
-                        ushort attackboost = (ushort)(storedThunder / 5);
-                        maxAttack = (ushort)(maxAttack + attackboost);
-                    }
-                }
-                else
-                {
-                    maxAttack = 299;
-                    storedThunder -= 200;
-
-                    ushort attackboost = (ushort)(storedThunder / 3);
-                    maxAttack = (ushort)(maxAttack + attackboost);
-                }
-            }
-            else
-            {
-                ushort attackboost = (ushort)(storedThunder / 2);
-                maxAttack = (ushort)(maxAttack + attackboost);
-                //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "maxattack: " + maxAttack);
-            }
-            //Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "SoZ max attack changed!");
+            ushort maxAttack = SwordOfZeusService.CalculateMaxAttack(storedThunder);
             Memory.WriteUShort(0x2027B298, maxAttack);
         }
 
