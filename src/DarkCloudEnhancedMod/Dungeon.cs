@@ -653,59 +653,14 @@ namespace DarkCloudEnhancedMod
 
         public static void FixUngagaDoors(byte currentdng)
         {
-            switch (currentdng)
+            var service = new UngagaDoorService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            if (service.TryFixDoors(currentdng))
             {
-                case 3:
-                    if (Memory.ReadFloat(0x20928670) == 150)
-                    {
-                        Memory.WriteByte(0x20985E0, 30);
-                        Memory.WriteFloat(0x20928670, 50);
-                        Memory.WriteFloat(0x20928928, 50);
-                        Memory.WriteByte(0x20928B14, 30);
-                        Memory.WriteByte(0x20928AE4, 30);
-                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Fixed Ungaga Doors");
-                    }
-                    else
-                    {
-                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Couldn't fix ungaga doors, or they were fixed already");
-                    }
-                    break;
-
-                case 4:
-                    if (Memory.ReadFloat(0x2092FA08) == 150)
-                    {
-                        Memory.WriteByte(0x2092F978, 30);
-                        Memory.WriteFloat(0x2092FA08, 50);
-                        Memory.WriteFloat(0x2092FCC0, 50);
-                        Memory.WriteByte(0x2092FEAC, 30);
-                        Memory.WriteByte(0x2092FE7C, 30);
-                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Fixed Ungaga Doors");
-                    }
-                    else
-                    {
-                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Couldn't fix ungaga doors, or they were fixed already");
-                    }
-                    break;
-
-                case 5:
-                    if (Memory.ReadFloat(0x209244AC) == 150)
-                    {
-                        Memory.WriteByte(0x2092441C, 30);
-                        Memory.WriteFloat(0x209244AC, 50);
-                        Memory.WriteFloat(0x20924764, 50);
-                        Memory.WriteByte(0x20924920, 30);
-                        Memory.WriteByte(0x20924950, 30);
-                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Fixed Ungaga Doors");
-                    }
-                    else
-                    {
-                        Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Couldn't fix ungaga doors, or they were fixed already");
-                    }
-                    break;
-
-                default:
-                    break;
-
+                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Fixed Ungaga Doors");
+            }
+            else
+            {
+                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Couldn't fix ungaga doors, or they were fixed already");
             }
         }
 
@@ -717,6 +672,7 @@ namespace DarkCloudEnhancedMod
             {
                 if (currentCharCursor == 4)
                 {
+                    var service = new UngagaSwapService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
                     int timer = 0;
                     while (timer < 10)
                     {
@@ -726,60 +682,23 @@ namespace DarkCloudEnhancedMod
                         ThreadingHelper.Sleep(100, cancellationToken);
                         timer++;
 
-                        if (Memory.ReadByte(0x202A2010) == 3)
-                        {
-                            if (Memory.ReadUShort(0x2193A013) == 12850)
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            if (Memory.ReadUShort(0x217E5453) == 12850)
-                            {
-                                break;
-                            }
-                        }
-
-                        
+                        byte dungeon = Memory.ReadByte(0x202A2010);
+                        if (service.IsModelLoaded(dungeon))
+                            break;
                     }
 
-                    if (Memory.ReadByte(0x202A2010) == 3)
-                    {
-                        Memory.WriteByte(0x2193A013, 52);
-                        Memory.WriteByte(0x2193A014, 52);
-                    }
-                    else
-                    {
-                        Memory.WriteByte(0x217E5453, 52);
-                        Memory.WriteByte(0x217E5454, 52);
-                    }
+                    service.TryWriteUngagaModel();
                 }
             }
 
             prevCharCursor = currentCharCursor;
         }
-        
-
 
         public static void CheckClown()
         {
-            //Check if clown is triggered, then change loot table
-            if (Memory.ReadInt(Addresses.clownCheck) == 30707852 && clownOnScreen == false && eventfloor == false)
-            {
-                CustomChests.ClownRandomizer(chronicle2);
-                clownOnScreen = true;
-            }
-            else
-            {
-                if (clownOnScreen)
-                {
-                    if (Memory.ReadInt(Addresses.clownCheck) != 30707852)
-                    {
-                        clownOnScreen = false;
-                    }
-                }
-            }
+            int clownValue = Memory.ReadInt(Addresses.clownCheck);
+            var service = new ClownService();
+            clownOnScreen = service.Check(clownValue, eventfloor, clownOnScreen, () => CustomChests.ClownRandomizer(chronicle2));
         }
 
         public static void CheckSidequests(CancellationToken cancellationToken = default)
@@ -1164,44 +1083,14 @@ namespace DarkCloudEnhancedMod
 
         public static void CheckEscapePowders()
         {
-            bool hasEscapeP = SideQuestManager.CheckItemQuestReward(175, true, false);
+            var service = new EscapePowderService(
+                new LegacyProcessGameMemory(),
+                new DungeonMemoryLayout(),
+                () => SideQuestManager.CheckItemQuestReward(175, true, false));
 
-            if (hasEscapeP == false)
+            if (service.TryConsumeEscapePowder())
             {
-                if (Memory.ReadByte(0x21CDD8AE) == 175)
-                {
-                    byte currentPowders = Memory.ReadByte(0x21CDD8B4);
-                    currentPowders--;
-                    Memory.WriteByte(0x21CDD8B4, currentPowders);
-                    if (currentPowders == 0)
-                    {
-                        Memory.WriteUShort(0x21CDD8AE, 0);
-                    }
-                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Consumed escape powder from active slots");
-                }
-                else if (Memory.ReadByte(0x21CDD8B0) == 175) 
-                {
-                    byte currentPowders = Memory.ReadByte(0x21CDD8B6);
-                    currentPowders--;
-                    Memory.WriteByte(0x21CDD8B6, currentPowders);
-                    if (currentPowders == 0)
-                    {
-                        Memory.WriteUShort(0x21CDD8B0, 0);
-                    }
-                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Consumed escape powder from active slots");
-
-                }
-                else if (Memory.ReadByte(0x21CDD8B2) == 175)
-                {
-                    byte currentPowders = Memory.ReadByte(0x21CDD8B8);
-                    currentPowders--;
-                    Memory.WriteByte(0x21CDD8B8, currentPowders);
-                    if (currentPowders == 0)
-                    {
-                        Memory.WriteUShort(0x21CDD8B2, 0);
-                    }
-                    Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Consumed escape powder from active slots");
-                }
+                Console.WriteLine(ReusableFunctions.GetDateTimeForLog() + "Consumed escape powder from active slots");
             }
         }
 
