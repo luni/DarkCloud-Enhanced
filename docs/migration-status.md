@@ -40,10 +40,11 @@ Phase 10: Extract domain logic (in progress)
 - [x] Phase 13 — Add `ModConfiguration`, `IModConfigurationStore`, `JsonModConfigurationStore` with versioning/unknown-key preservation, and wire configuration into `ModWindow`/`GameSessionRunner`/`ModWindowGameSessionObserver`
 - [x] Phase 10.4 pilot — Extract dungeon gate-key, back-floor key, event-floor, enemy key-drop, and bone-door services into `DarkCloud.Core/Dungeon`
 - [x] Phase 10.3 — Extract weapons domain logic (special-attribute rolls, synth-sphere upgrade rules, balance table) into `DarkCloud.Core/Weapons`
+- [~] Phase 10.4 — Partial extraction: added Ungaga door/swap, clown, escape powder, miniboss stamina, Sword of Zeus, side-quest state, and floor-selection services in `DarkCloud.Core/Dungeon`
 
 ## In progress
 
-- Phase 10.4 completion — Remaining dungeon behavior (floor-state rules, enemy/event state calculations, reward logic)
+- Phase 10.4 completion — Remaining dungeon behavior (`InsideDungeonThread`, `CheckEnemyKill`, `CheckSpawns`/`DoMinibossSpawn`/`MiniBossMessage`, `CheckCurrentSidequests`/`SambaChallengeQuest`/`MayorQuest`, `CheckActiveItems`, `CheckWepLvlUp`, `CheckDungeonLeaving`)
 
 ## Next
 
@@ -63,4 +64,4 @@ Phase 10: Extract domain logic (in progress)
 
 ---
 
-*Last updated: 2026-07-25*
+*Last updated: 2026-07-26*
