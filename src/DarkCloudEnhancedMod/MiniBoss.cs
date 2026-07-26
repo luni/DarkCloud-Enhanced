@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using static DarkCloud.Core.Dungeon.DungeonProgression;
 
 namespace DarkCloudEnhancedMod
 {
@@ -120,7 +121,7 @@ namespace DarkCloudEnhancedMod
                         if (rnd.Next(100) < 35)
                         {
                             //Fetch the backfloor key
-                            byte backFloorKey = Dungeon.GetDungeonBackFloorKey(dungeon);
+                            byte backFloorKey = GetBackFloorKeyItem(dungeon);
 
                             //Set the miniboss item as the backfloor key
                             Memory.WriteUShort(Enemies.Enemy0.forceItemDrop + (varOffset * enemyNumber), backFloorKey);

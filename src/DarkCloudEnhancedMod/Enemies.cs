@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using static DarkCloud.Core.Dungeon.DungeonProgression;
 
 namespace DarkCloudEnhancedMod
 {
@@ -186,7 +187,7 @@ namespace DarkCloudEnhancedMod
         /// <returns></returns>
         public static bool EnemyHasKey(int enemyNumber, byte dungeon)
         {
-            return Dungeon.GetDungeonGateKey(dungeon).Contains(Memory.ReadByte(Enemy0.forceItemDrop + (offset * enemyNumber)));
+            return EnemyDropsGateKey(dungeon, Memory.ReadByte(Enemy0.forceItemDrop + (offset * enemyNumber)));
         }
 
         internal class EnemyList

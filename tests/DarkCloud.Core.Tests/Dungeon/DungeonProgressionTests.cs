@@ -47,5 +47,26 @@ namespace DarkCloud.Core.Tests.Dungeon
         {
             Assert.Equal(expected, DungeonProgression.GetEventFloors(dungeon));
         }
+
+        [Theory]
+        [InlineData(0, 3, true)]
+        [InlineData(0, 4, false)]
+        [InlineData(1, 8, true)]
+        [InlineData(1, 7, false)]
+        [InlineData(255, 1, false)]
+        public void IsEventFloor_ReturnsExpectedResult(byte dungeon, byte floor, bool expected)
+        {
+            Assert.Equal(expected, DungeonProgression.IsEventFloor(dungeon, floor));
+        }
+
+        [Theory]
+        [InlineData(0, 195, true)]
+        [InlineData(1, 198, true)]
+        [InlineData(1, 195, false)]
+        [InlineData(255, 1, false)]
+        public void EnemyDropsGateKey_ReturnsExpectedResult(byte dungeon, byte itemId, bool expected)
+        {
+            Assert.Equal(expected, DungeonProgression.EnemyDropsGateKey(dungeon, itemId));
+        }
     }
 }

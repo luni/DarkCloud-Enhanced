@@ -4,8 +4,8 @@ namespace DarkCloud.Core.Dungeon
 {
     /// <summary>
     /// Pure progression rules for dungeons: gate-key items, back-floor keys,
-    /// and event floors. These lookups contain no memory I/O and can be tested
-    /// against plain dungeon identifiers.
+    /// event floors, and enemy key-drops. These lookups contain no memory I/O
+    /// and can be tested against plain dungeon identifiers.
     /// </summary>
     public static class DungeonProgression
     {
@@ -76,6 +76,28 @@ namespace DarkCloud.Core.Dungeon
                 default:
                     return new byte[0];
             }
+        }
+
+        public static bool IsEventFloor(byte dungeon, byte floor)
+        {
+            foreach (byte eventFloor in GetEventFloors(dungeon))
+            {
+                if (eventFloor == floor)
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static bool EnemyDropsGateKey(byte dungeon, byte itemId)
+        {
+            foreach (byte keyItem in GetGateKeyItems(dungeon))
+            {
+                if (keyItem == itemId)
+                    return true;
+            }
+
+            return false;
         }
     }
 }

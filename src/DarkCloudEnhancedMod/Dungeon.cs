@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Collections.Generic;
+using DarkCloud.Core.Dungeon;
 using static DarkCloud.Core.Dungeon.DungeonProgression;
 
 namespace DarkCloudEnhancedMod
@@ -44,7 +45,6 @@ namespace DarkCloudEnhancedMod
         public static bool enemiesSpawn = false;
         public static bool doorIsOpen = false;
         public static bool magicCircleChanged = false;
-        public static List<byte> excludeFloors;
 
         //THREADS
         //Runs at the start of each floor
@@ -287,9 +287,6 @@ namespace DarkCloudEnhancedMod
                     //Get current Dungeon
                     currentDungeon = Memory.ReadByte(Addresses.checkDungeon);
 
-                    //Define event and boss floors
-                    excludeFloors = GetDungeonEventFloors(currentDungeon);
-
                    
                     //Get current Floor
                     currentFloor = Memory.ReadByte(Addresses.checkFloor);
@@ -312,7 +309,7 @@ namespace DarkCloudEnhancedMod
                             MiniBoss.miniBossRolled = false;
 
                             //Check if player is not on an event floor and call the Mini Boss
-                            if (!excludeFloors.Contains(currentFloor))
+                            if (!IsEventFloor(currentDungeon, currentFloor))
                             {
                                 //Initialize the spawns check
                                 Memory.WriteInt(Enemies.Enemy14.hp, 1);
@@ -640,7 +637,8 @@ namespace DarkCloudEnhancedMod
         /// </summary>
         public static bool IsBypassBoneDoor()
         {
-            return Memory.ReadByte(Addresses.BoneDoorOpenType) == 5 ? true: false;
+            var service = new BoneDoorService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            return service.IsOpen();
         }
 
         /// <summary>
@@ -649,10 +647,8 @@ namespace DarkCloudEnhancedMod
         /// <param name="flag">True if to activate the door</param>
         public static void SetBypassBoneDoor(bool flag)
         {
-            byte n;
-            if (flag) n = 5;
-            else n = 21;
-            Memory.WriteByte(Addresses.BoneDoorOpenType, n);
+            var service = new BoneDoorService(new LegacyProcessGameMemory(), new DungeonMemoryLayout());
+            service.SetOpen(flag);
         }
 
         public static void FixUngagaDoors(byte currentdng)
