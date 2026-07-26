@@ -2,6 +2,8 @@
 
 This document records the state of the repository **before** the migration described in `migration.md` begins. It contains no production behavior changes and is used to verify that later pull requests preserve existing functionality.
 
+> **Note:** As of Phase 14.4, the legacy `DarkCloudEnhancedMod` WinForms host has been retired and removed from the solution. This document is kept as a historical baseline and describes the pre-migration layout and build commands.
+
 ## 1. Current build commands
 
 ### Windows

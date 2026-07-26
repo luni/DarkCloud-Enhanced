@@ -1,4 +1,4 @@
-# Real Integration Tests for DarkCloudEnhancedMod
+# Real Integration Tests for Dark Cloud Enhanced Mod
 
 This document describes how to add deterministic, repository-safe integration tests that exercise the mod's actual memory-read/write logic against captured or synthetic PS2 EE RAM snapshots.
 
