@@ -70,10 +70,10 @@ namespace DarkCloudEnhancedMod
 
         }
 
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true, EntryPoint = "GetLastError")]
         private static extern uint GetLastErrorWin();
 
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true, EntryPoint = "FormatMessageA")]
         private static extern int FormatMessageWin(uint dwFlags, IntPtr lpSource, uint dwMessageId, uint dwLanguageId, ref IntPtr lpBuffer, uint nSize, IntPtr Arguments);
 
         [DllImport("kernel32.dll", SetLastError = true)]
