@@ -4,7 +4,7 @@ This document tracks progress through the migration plan defined in `migration.m
 
 ## Current phase
 
-Phase 14.4 — Retire the legacy host (in progress; pending release validation)
+Phase 15 — Add optional emulator-level system tests
 
 ## Completed
 
@@ -43,14 +43,13 @@ Phase 14.4 — Retire the legacy host (in progress; pending release validation)
 - [x] Phase 10.4 — Extract remaining dungeon domain behavior into `DarkCloud.Core/Dungeon`: Ungaga door/swap, clown, escape powder, miniboss stamina, Sword of Zeus, side-quest state, floor selection, spawn detection, mini-boss message, active item usage, weapon level-up, monster-kill quests, and Samba/Mayor side-quest challenges.
 - [x] Phase 14.1 — Create `DarkCloud.App.WinForms` modern host skeleton, extract shared `DarkCloud.Memory.Windows` process-memory library, and wire pilot session runner, status display, and `StatusLogFeature`.
 - [x] Phase 14.2 — Add build/CI profiles for legacy and modern hosts, document supported environments, and run shared memory contract suites for both host test projects.
-
-## Completed
-
 - [x] Phase 14.3 — Reach feature parity. `ApplyChanges`, `Weapon Reroll`, `Town Character`, and `Dungeon` were moved to shared `DarkCloud.Core`/`DarkCloud.Memory.Windows` implementations and wired into both hosts.
+- [x] Phase 14.4 — Retire the legacy host from the solution. `src/DarkCloudEnhancedMod` has been removed, `DarkCloud.App.WinForms` is the only host, `JsonModConfigurationStore` was moved into the modern host, and runtime resources (`Resources/PNACH/*.pnach`, `pcsx2_offsetreader.dll`, icon) are packaged with the modern host. CI and release workflows now build and publish only the modern host.
 
 ## In progress
 
-- Phase 14.4 — Retire the legacy host: code is ready; remaining work is release validation, packaging updates, rollback instructions, and a stable modern-host release.
+- Release validation of the modern host on supported Windows environments.
+- Shipping a stable release that uses the modern host before considering Phase 14 fully closed in production.
 
 ## Next
 
@@ -58,18 +57,21 @@ Phase 14.4 — Retire the legacy host (in progress; pending release validation)
 
 ## Known blockers
 
-- None (Phase 14.3 parity blockers resolved by moving the legacy static script graph to `DarkCloud.Memory.Windows`).
+- None.
 
 ## Deferred work
 
 - WinForms redesign
 - Emulator-level public CI
 - Address-data generator and PNACH generation
+- Rename or extract the remaining `DarkCloudEnhancedMod` namespace script graph into `DarkCloud.Core`
 
 ---
 
 ## Notes
 
 - `Dungeon.cs` still contains `InsideDungeonThread`, which is the legacy feature-thread orchestrator that wires the newly extracted Core dungeon services together with the remaining `CustomEffects` weapon-specific feature threads. This orchestrator is intentionally left in the legacy host layer; migrating it will happen as part of the broader feature-thread/host modernization rather than as additional Phase 10.4 domain extraction.
+- Phase 14.3 feature parity is complete: the modern host now mirrors the legacy boot/new-game hooks for `TownCharacter` and sets `MainMenuThread.userMode` for both `TownCharacter` and `Dungeon` scripts. `ConsoleModLogger` and `Resources` have been moved to `DarkCloud.Memory.Windows.*` namespaces; the remaining legacy static script graph still uses the `DarkCloudEnhancedMod` namespace and is tracked as deferred cleanup.
+- Phase 14.4 code retirement is complete in the working tree; the remaining external step is to validate the packaged modern host on Windows and ship a stable release.
 
 *Last updated: 2026-07-26*

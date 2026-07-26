@@ -2,7 +2,7 @@
 using System.IO;
 using System.Reflection;
 
-namespace DarkCloudEnhancedMod
+namespace DarkCloud.Memory.Windows
 {
     internal class Resources
     {

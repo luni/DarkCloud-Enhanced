@@ -2,26 +2,27 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DarkCloud.Core.Configuration;
 using DarkCloud.Core.Features;
 using DarkCloud.Core.Logging;
 using DarkCloud.Core.Players;
 using DarkCloud.Core.Session;
 using DarkCloud.Memory.Abstractions;
-using DarkCloud.Memory.Windows;
 using DarkCloudEnhancedMod;
 
-namespace DarkCloud.App.WinForms
+namespace DarkCloud.Memory.Windows
 {
     /// <summary>
-    /// Adapts the session state machine to the modern WinForms host. It reports
-    /// progress through <see cref="IModStatusSink"/> and runs a small pilot
-    /// feature set once the player is in-game.
+    /// Adapts the session state machine to the modern host. It reports progress
+    /// through <see cref="IModStatusSink"/> and runs the shared feature set once
+    /// the player is in-game.
     /// </summary>
     public sealed class ModernHostGameSessionObserver : IGameSessionObserver
     {
         private readonly IModStatusSink _sink;
         private readonly IClock _clock;
         private readonly IModLogger _logger;
+        private readonly ModConfiguration _configuration;
         private CancellationTokenSource _featureCts;
 
         private bool _bootedAndInitialized;
@@ -32,11 +33,12 @@ namespace DarkCloud.App.WinForms
         private Task _featureRunnerTask;
         private PlayerPresenceService _playerPresence;
 
-        public ModernHostGameSessionObserver(IModStatusSink sink, IClock clock, IModLogger logger = null)
+        public ModernHostGameSessionObserver(IModStatusSink sink, IClock clock, IModLogger logger = null, ModConfiguration configuration = null)
         {
             _sink = sink ?? throw new ArgumentNullException(nameof(sink));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             _logger = logger ?? NullModLogger.Instance;
+            _configuration = configuration ?? ModConfigurationDefaults.Create();
             _featureCts = new CancellationTokenSource();
         }
 
@@ -72,22 +74,26 @@ namespace DarkCloud.App.WinForms
                     break;
 
                 case GameSessionState.MainMenu:
+                    MainMenuThread.userMode = true;
                     await StopFeatureRunner();
                     HandleMainMenuOrTitle();
                     _sink.ReportMainMenu();
                     break;
 
                 case GameSessionState.TitleScreen:
+                    MainMenuThread.userMode = true;
                     await StopFeatureRunner();
                     HandleMainMenuOrTitle();
                     _sink.ReportTitleScreen();
                     break;
 
                 case GameSessionState.InGame:
+                    MainMenuThread.userMode = true;
                     await HandleInGameAsync(memory, cancellationToken);
                     break;
 
                 case GameSessionState.SaveStateDetected:
+                    MainMenuThread.userMode = true;
                     HandleSaveState(memory);
                     _sink.ReportSaveStateDetected();
                     break;
@@ -109,6 +115,7 @@ namespace DarkCloud.App.WinForms
             if (!_bootedAndInitialized)
             {
                 _sink.ReportBooted();
+                TownCharacter.InitializeCharacterOffsetValues();
                 _bootedAndInitialized = true;
             }
 
@@ -178,6 +185,8 @@ namespace DarkCloud.App.WinForms
 
                 if (cancellationToken.IsCancellationRequested)
                     return;
+
+                Dialogues.IntroTextAtNorune();
             }
 
             if (!TryReadByte(memory, 0x21CE448A, out byte enhancedFlag) || enhancedFlag != 1)
@@ -226,19 +235,19 @@ namespace DarkCloud.App.WinForms
                 {
                     new ModFeature(
                         new ApplyChangesFeature(new ApplyChangesService()),
-                        new ModFeatureDescriptor("apply-changes", "Apply Changes", true)),
+                        new ModFeatureDescriptor("apply-changes", "Apply Changes", IsFeatureEnabled("apply-changes"))),
                     new ModFeature(
                         new TownCharacterFeature(),
-                        new ModFeatureDescriptor("town-character", "Town Character", true)),
+                        new ModFeatureDescriptor("town-character", "Town Character", IsFeatureEnabled("town-character"))),
                     new ModFeature(
                         new DungeonFeature(),
-                        new ModFeatureDescriptor("dungeon", "Dungeon", true)),
+                        new ModFeatureDescriptor("dungeon", "Dungeon", IsFeatureEnabled("dungeon"))),
                     new ModFeature(
                         new WeaponsFeature(),
-                        new ModFeatureDescriptor("weapons-reroll", "Weapon Reroll", true)),
+                        new ModFeatureDescriptor("weapons-reroll", "Weapon Reroll", IsFeatureEnabled("weapons-reroll"))),
                     new ModFeature(
                         new StatusLogFeature(_logger),
-                        new ModFeatureDescriptor("status-log", "Status Log", true)),
+                        new ModFeatureDescriptor("status-log", "Status Log", IsFeatureEnabled("status-log"))),
                 },
                 _clock,
                 new ModLoggerExceptionHandler(_logger),
@@ -247,12 +256,15 @@ namespace DarkCloud.App.WinForms
             _featureRunnerTask = Task.Run(() => _featureRunner.RunAsync(
                 new GameFeatureContext(memory),
                 CreateGameSnapshot,
-                TimeSpan.FromMilliseconds(1000),
+                _configuration.PollInterval,
                 token), token);
         }
 
         private bool IsFeatureEnabled(string featureId)
         {
+            if (_configuration.Features.TryGetValue(featureId, out bool enabled))
+                return enabled;
+
             return true;
         }
 

@@ -37,7 +37,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DarkCloud-Enhanced-Mod-Windows
-          path: "src/DarkCloudEnhancedMod/bin/Release"
+          path: "src/DarkCloud.App.WinForms/bin/Release/net8.0-windows"
 
   build-linux:
     name: Build and Test (Linux)
@@ -61,20 +61,18 @@ jobs:
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mono-runtime mono-mcs gcc python3 libgdiplus
 
       - name: Restore dependencies (locked)
-        run: |
-          dotnet restore "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" --locked-mode
-          dotnet restore "tests/DarkCloud.Memory.Abstractions.Tests/DarkCloud.Memory.Abstractions.Tests.csproj" --locked-mode
-          dotnet restore "tests/DarkCloud.Memory.ContractTests/DarkCloud.Memory.ContractTests.csproj" --locked-mode
-          dotnet restore "tests/DarkCloudEnhancedMod.IntegrationTests/DarkCloudEnhancedMod.IntegrationTests.csproj" --locked-mode
-          dotnet restore "tests/DarkCloud.Memory.Windows.IntegrationTests/DarkCloud.Memory.Windows.IntegrationTests.csproj" --locked-mode
-          dotnet restore "tests/windows_smoke/FakeProcess.csproj" --locked-mode
+        run: dotnet restore "DarkCloud-Enhanced.sln" --locked-mode
 
-      - name: Build C# project
-        run: dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release --no-restore
-
-      - name: Run unit tests
+      - name: Run Core, Abstractions, and integration tests
         run: |
-          dotnet test "tests/DarkCloud.Memory.Abstractions.Tests/DarkCloud.Memory.Abstractions.Tests.csproj" --no-restore
+          dotnet test "tests/DarkCloud.Core.Tests/DarkCloud.Core.Tests.csproj" -c Release --no-restore
+          dotnet test "tests/DarkCloud.Memory.Abstractions.Tests/DarkCloud.Memory.Abstractions.Tests.csproj" -c Release --no-restore
+          dotnet test "tests/DarkCloudEnhancedMod.IntegrationTests/DarkCloudEnhancedMod.IntegrationTests.csproj" -c Release --no-restore
+          dotnet test "tests/DarkCloud.Memory.Windows.IntegrationTests/DarkCloud.Memory.Windows.IntegrationTests.csproj" -c Release --no-restore
+
+      - name: Build modern host
+        run: |
+          dotnet build "src/DarkCloud.App.WinForms/DarkCloud.App.WinForms.csproj" -c Release --no-restore
 
       - name: Verify generated files are current
         run: |
@@ -100,7 +98,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DarkCloud-Enhanced-Mod-Linux
-          path: "src/DarkCloudEnhancedMod/bin/Release"
+          path: "src/DarkCloud.App.WinForms/bin/Release/net8.0-windows"
 
   release:
     name: Create GitHub Release
@@ -141,5 +139,5 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: DarkCloud-Enhanced-Mod-${{ github.ref_name }}-*.zip
+          files: DarkCloud-Enhanced-Mod-${{ github.ref_name }}-*zip
           generate_release_notes: true

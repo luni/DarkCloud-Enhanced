@@ -14,7 +14,7 @@ The mod is primarily built for Windows, with a Linux compatibility layer that re
 
 ```
 .
-├── src/DarkCloudEnhancedMod/      # Main C# WinForms mod
+├── src/DarkCloud.App.WinForms/    # Main C# WinForms mod
 ├── native/pcsx2_offsetreader/     # Windows helper DLL (Visual C++)
 ├── tests/                         # PAL port and Linux smoke tests
 ├── DarkCloud-Enhanced.sln         # Top-level Visual Studio solution
@@ -33,48 +33,38 @@ Open `DarkCloud-Enhanced.sln` in Visual Studio 2019+ (or use the .NET SDK / MSBu
 msbuild -restore "DarkCloud-Enhanced.sln" /p:Configuration=Release /p:Platform=x64
 ```
 
-Output is written to `src/DarkCloudEnhancedMod/bin/Release/`.
+Output is written to `src/DarkCloud.App.WinForms/bin/Release/net8.0-windows/`.
 
 ### Linux
 
 Install the .NET 8 SDK (or newer), the Mono runtime, `gcc`, and `python3`, then build with `dotnet`:
 
 ```bash
-dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release
+dotnet build "src/DarkCloud.App.WinForms/DarkCloud.App.WinForms.csproj" -c Release
 ```
 
-## Running on Linux
+## Running
 
 The mod discovers the PCSX2 process by name (`pcsx2`, `pcsx2-qt`, or the Flatpak app ID `net.pcsx2.PCSX2`) and reads the `EEmem` exported symbol from the PCSX2 ELF.
 
-```bash
-mono "src/DarkCloudEnhancedMod/bin/Release/DarkCloudEnhancedMod.exe"
+On Windows, start the built `DarkCloud.App.WinForms` executable:
+
+```powershell
+src/DarkCloud.App.WinForms/bin/Release/net8.0-windows/DarkCloud.App.WinForms.exe
 ```
 
-### Memory access permissions
+### Memory access permissions (Linux testing)
 
-Reading and writing PCSX2 memory through `/proc/PID/mem` requires `PTRACE_MODE_ATTACH`. On systems with `kernel.yama.ptrace_scope = 1` (the default on Ubuntu), a process may only access its descendants. If you start PCSX2 and the mod separately, run one of the following first:
+Reading and writing PCSX2 memory through `/proc/PID/mem` requires `PTRACE_MODE_ATTACH`. On systems with `kernel.yama.ptrace_scope = 1` (the default on Ubuntu), a process may only access its descendants. The Linux smoke test and integration tests use this path; if you run them against a real PCSX2 process, you may need:
 
 ```bash
 # Less secure, but simplest for a normal desktop
 sudo sysctl kernel.yama.ptrace_scope=0
 ```
 
-Or grant the mod `CAP_SYS_PTRACE`:
-
-```bash
-sudo setcap cap_sys_ptrace+ep "src/DarkCloudEnhancedMod/bin/Release/DarkCloudEnhancedMod.exe"
-```
-
 ### Flatpak PCSX2
 
 Flatpak builds are supported. The mod tries `/proc/PID/exe` first and falls back through `/proc/PID/root/<exe-path>` and `/proc/PID/root/<path-from-maps>` to read the ELF inside the sandbox.
-
-```bash
-flatpak run net.pcsx2.PCSX2 &
-# then start the mod
-mono "src/DarkCloudEnhancedMod/bin/Release/DarkCloudEnhancedMod.exe"
-```
 
 ## Verification
 

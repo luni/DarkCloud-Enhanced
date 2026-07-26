@@ -1,7 +1,7 @@
 using System;
 using DarkCloud.Core.Logging;
 
-namespace DarkCloudEnhancedMod.Logging
+namespace DarkCloud.Memory.Windows.Logging
 {
     /// <summary>
     /// Routes structured log messages to the console. This is the default

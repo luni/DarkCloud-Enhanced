@@ -17,7 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" />
+    <ProjectReference Include="../../src/DarkCloud.Memory.Abstractions/DarkCloud.Memory.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DarkCloud.Memory.Windows/DarkCloud.Memory.Windows.csproj" />
     <ProjectReference Include="../DarkCloud.Memory.ContractTests/DarkCloud.Memory.ContractTests.csproj" />
     <ProjectReference Include="../windows_smoke/FakeProcess.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

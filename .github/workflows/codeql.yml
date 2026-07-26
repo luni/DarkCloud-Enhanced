@@ -38,15 +38,10 @@ jobs:
           build-mode: manual
           queries: security-extended,security-and-quality
 
-      - name: Install Mono
-        run: |
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mono-runtime
-
       - name: Build C# project
         run: |
-          dotnet restore "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" --locked-mode
-          dotnet build "src/DarkCloudEnhancedMod/DarkCloudEnhancedMod.csproj" -c Release --no-restore
+          dotnet restore "src/DarkCloud.App.WinForms/DarkCloud.App.WinForms.csproj" --locked-mode
+          dotnet build "src/DarkCloud.App.WinForms/DarkCloud.App.WinForms.csproj" -c Release --no-restore
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

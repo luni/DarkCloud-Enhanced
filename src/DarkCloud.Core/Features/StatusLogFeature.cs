@@ -3,11 +3,11 @@ using System.Threading.Tasks;
 using DarkCloud.Core.Features;
 using DarkCloud.Core.Logging;
 
-namespace DarkCloud.App.WinForms
+namespace DarkCloud.Core.Features
 {
     /// <summary>
     /// Pilot <see cref="IModFeature"/> that logs when it starts and on each tick.
-    /// This demonstrates the feature-runner infrastructure in the modern host
+    /// This demonstrates the feature-runner infrastructure in the host
     /// without depending on legacy game logic.
     /// </summary>
     public sealed class StatusLogFeature : IModFeature

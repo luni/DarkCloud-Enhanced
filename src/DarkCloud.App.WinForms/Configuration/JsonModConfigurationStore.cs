@@ -5,7 +5,7 @@ using DarkCloud.Core.Configuration;
 using DarkCloud.Core.Logging;
 using Newtonsoft.Json.Linq;
 
-namespace DarkCloudEnhancedMod.Configuration
+namespace DarkCloud.App.WinForms.Configuration
 {
     /// <summary>
     /// Stores <see cref="ModConfiguration"/> as JSON in the user's local

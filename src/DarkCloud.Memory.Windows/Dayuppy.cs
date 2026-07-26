@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Collections.Generic;
 using DarkCloud.Core.Threading;
+using DarkCloud.Memory.Windows;
 
 namespace DarkCloudEnhancedMod
 {

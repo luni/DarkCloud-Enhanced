@@ -16,27 +16,27 @@ dotnet test "DarkCloud-Enhanced.sln" --no-build
 
 - Build with `dotnet build`.
 - Run `dotnet test` for Core, Memory Abstractions, and integration test projects.
-- The WinForms project targets .NET Framework and builds on Linux with Mono/.NET reference assemblies.
+- The WinForms project targets `net8.0-windows` with `<EnableWindowsTargeting>true</EnableWindowsTargeting>` so it builds on Linux too.
 
 ## Domain migration notes
 
-- Place new domain abstractions in `src/DarkCloud.Core` and keep legacy WinForms/process-specific code in `src/DarkCloudEnhancedMod`.
+- Place new domain abstractions in `src/DarkCloud.Core` and keep process-specific code in `src/DarkCloud.Memory.Windows`.
 - `DarkCloud.Core` targets .NET Standard 2.0 with `LangVersion` 7.3; avoid capturing `ref`/`out` parameters in lambdas.
-- The legacy `Player` static methods are being preserved as thin facades that delegate to `DarkCloud.Core.Players` services and repositories.
-- New inventory abstractions live in `DarkCloud.Core/Inventory`; memory layouts remain in `DarkCloudEnhancedMod`.
-- New mod-feature abstractions live in `DarkCloud.Core/Features`; legacy feature threads in `DarkCloudEnhancedMod` should be migrated to `IModFeature` implementations and driven by `ModFeatureRunner`.
+- The legacy `Player` static methods are preserved as thin facades that delegate to `DarkCloud.Core.Players` services and repositories.
+- New inventory abstractions live in `DarkCloud.Core/Inventory`; memory layouts remain in the `DarkCloudEnhancedMod` namespace inside `DarkCloud.Memory.Windows`.
+- New mod-feature abstractions live in `DarkCloud.Core/Features`; legacy feature threads are replaced by `IModFeature` implementations driven by `ModFeatureRunner`.
 
-## Modern host (Phase 14)
+## Modern host
 
-- Process-memory and platform code lives in `src/DarkCloud.Memory.Windows` (shared `netstandard2.0`) so both the legacy and modern hosts can use it.
+- The legacy `DarkCloudEnhancedMod` WinForms host has been retired; `src/DarkCloud.App.WinForms` is the only remaining host.
+- Process-memory and platform code lives in `src/DarkCloud.Memory.Windows` (shared `netstandard2.0`) and is used by the modern host.
 - `FileLockModInstanceProvider` lives in `DarkCloud.Core.Session`.
 - The modern WinForms host is `src/DarkCloud.App.WinForms` and targets `net8.0-windows` with `<EnableWindowsTargeting>true</EnableWindowsTargeting>` so it builds on Linux too.
-- The legacy `DarkCloudEnhancedMod` still targets .NET Framework and builds on Linux; both hosts share `DarkCloud.Memory.Windows` and `DarkCloud.Core`.
-- Supported environments, build profiles, and CI artifacts for both hosts are documented in `docs/supported-environments.md`.
-- The shared memory contract tests run for both the legacy host (`DarkCloudEnhancedMod.IntegrationTests`) and the modern host's memory layer (`DarkCloud.Memory.Windows.IntegrationTests`).
-- Feature parity between hosts is tracked in `docs/modern-host-parity.md`.
-- `ApplyChangesFeature` lives in `DarkCloud.Core.Features`; its implementation (`ApplyChangesService`) lives in `DarkCloud.Memory.Windows` and is shared by both hosts.
+- Runtime resources (`Resources/PNACH/*.pnach`, `Resources/pcsx2_offsetreader.dll`, and the application icon) are packaged by `DarkCloud.App.WinForms`.
+- Supported environments, build profiles, and CI artifacts for the modern host are documented in `docs/supported-environments.md`.
+- The integration test project `tests/DarkCloudEnhancedMod.IntegrationTests` now tests the modern host and shared memory layer.
+- `ApplyChangesFeature` lives in `DarkCloud.Core.Features`; its implementation (`ApplyChangesService`) lives in `DarkCloud.Memory.Windows`.
 - `WeaponsFeature` lives in `DarkCloud.Memory.Windows` and uses `WeaponRerollService`; the legacy `Weapons.RerollWeaponSpecialAttributes` method has been removed.
-- Shared utilities moved to support feature migration: `ThreadingHelper` in `DarkCloud.Core.Threading`, `MainMenuThread` and `Items` in `DarkCloud.Memory.Windows`.
-- Phase 14.3 is closed: `ApplyChanges`, `Weapon Reroll`, `TownCharacter`, and `Dungeon` are shared in `DarkCloud.Memory.Windows` and wired into both hosts. Phase 14.4 (retire legacy host) is pending release validation.
-- The legacy non-UI script graph (`Player`, `Dialogues`, `Dayuppy`, `CustomEffects`, `Enemies`, `MiniBoss`, `SideQuestManager`, `Resources`, etc.) now lives in `DarkCloud.Memory.Windows`.
+- Shared utilities moved to support migration: `ThreadingHelper` in `DarkCloud.Core.Threading`, `MainMenuThread` and `Items` in `DarkCloud.Memory.Windows`.
+- `ConsoleModLogger` and `Resources` live in `DarkCloud.Memory.Windows.*` namespaces.
+- Phase 14 is closed: parity is achieved and the legacy host has been retired from the solution. `ModernHostGameSessionObserver` lives in `DarkCloud.Memory.Windows`, `StatusLogFeature` lives in `DarkCloud.Core.Features`, and the modern host in `DarkCloud.App.WinForms` loads `JsonModConfigurationStore` and wires the observer. The runtime script graph (`TownCharacter`, `Dungeon`, `Player`, `Dialogues`, `Dayuppy`, `CustomEffects`, `Enemies`, `MiniBoss`, `SideQuestManager`, `Items`, `Shop`, `Weapons`, `Memory`, `Addresses`, etc.) still uses the `DarkCloudEnhancedMod` namespace while living in `DarkCloud.Memory.Windows`; renaming or extracting these into `DarkCloud.Core` is deferred.

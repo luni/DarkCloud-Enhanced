@@ -7,14 +7,32 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <RootNamespace>DarkCloud.App.WinForms</RootNamespace>
     <AssemblyName>DarkCloud.App.WinForms</AssemblyName>
+    <ApplicationIcon>ModIcon.ico</ApplicationIcon>
     <Nullable>disable</Nullable>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DarkCloud.Core\DarkCloud.Core.csproj" />
     <ProjectReference Include="..\DarkCloud.Memory.Abstractions\DarkCloud.Memory.Abstractions.csproj" />
     <ProjectReference Include="..\DarkCloud.Memory.Windows\DarkCloud.Memory.Windows.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\PNACH\*.pnach">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\pcsx2_offsetreader.dll" Condition="'$(OS)' == 'Windows_NT'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="CopyFreshPcsx2OffsetReader" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <Copy SourceFiles="$(MSBuildProjectDirectory)/../../native/pcsx2_offsetreader/x64/Release/pcsx2_offsetreader.dll" DestinationFiles="$(TargetDir)Resources/pcsx2_offsetreader.dll" Condition="Exists('$(MSBuildProjectDirectory)/../../native/pcsx2_offsetreader/x64/Release/pcsx2_offsetreader.dll')" />
+  </Target>
 
 </Project>

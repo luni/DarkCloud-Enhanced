@@ -7,14 +7,14 @@ using Xunit;
 
 namespace DarkCloudEnhancedMod.IntegrationTests
 {
-    public class ModWindowGameSessionObserverTests
+    public class ModernHostGameSessionObserverTests
     {
         [Fact]
         public async Task OnStateChanged_NoEmulator_ReportsNoEmulatorsAndResets()
         {
             var sink = new RecordingModStatusSink();
             var clock = new NoDelayClock();
-            var observer = new ModWindowGameSessionObserver(sink, clock);
+            var observer = new ModernHostGameSessionObserver(sink, clock);
             var context = new GameSessionContext(null, new PassthroughAddressTranslator());
 
             await observer.OnStateChanged(GameSessionState.None, GameSessionState.NoEmulator, context);
@@ -37,7 +37,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             SetupMainMenu(out var context);
             var sink = new RecordingModStatusSink();
             var clock = new NoDelayClock();
-            var observer = new ModWindowGameSessionObserver(sink, clock);
+            var observer = new ModernHostGameSessionObserver(sink, clock);
 
             await observer.OnStateChanged(GameSessionState.None, GameSessionState.MainMenu, context);
             sink.Calls.Clear();
@@ -57,7 +57,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             SetupMainMenu(out var context);
             var sink = new RecordingModStatusSink();
             var clock = new NoDelayClock();
-            var observer = new ModWindowGameSessionObserver(sink, clock);
+            var observer = new ModernHostGameSessionObserver(sink, clock);
 
             await observer.OnStateChanged(GameSessionState.None, GameSessionState.MainMenu, context);
             sink.Calls.Clear();
@@ -84,7 +84,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
 
             var sink = new RecordingModStatusSink();
             var clock = new NoDelayClock();
-            var observer = new ModWindowGameSessionObserver(sink, clock);
+            var observer = new ModernHostGameSessionObserver(sink, clock);
             var context = new GameSessionContext(new LegacyProcessGameMemory(), new PassthroughAddressTranslator());
 
             await observer.OnStateChanged(GameSessionState.None, GameSessionState.MainMenu, context);
@@ -116,7 +116,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
 
             var sink = new RecordingModStatusSink();
             var clock = new NoDelayClock();
-            var observer = new ModWindowGameSessionObserver(sink, clock);
+            var observer = new ModernHostGameSessionObserver(sink, clock);
             var context = new GameSessionContext(new LegacyProcessGameMemory(), new PassthroughAddressTranslator());
 
             await observer.OnStateChanged(GameSessionState.None, GameSessionState.MainMenu, context);
@@ -135,7 +135,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
         }
 
         [Fact]
-        public async Task OnStateChanged_FirstLaunchInGame_WritesTownSoftResetWhenPromptAccepted()
+        public async Task OnStateChanged_FirstLaunchInGame_DoesNotWriteResetAndWaits()
         {
             var ram = SnapshotTestHelper.CreateEmptyRam();
             SnapshotTestHelper.UseSnapshot(ram, Region.NTSC);
@@ -143,17 +143,19 @@ namespace DarkCloudEnhancedMod.IntegrationTests
             var writer = new GameMemoryWriter(new LegacyProcessGameMemory());
             writer.WriteByte((long)Addresses.checkFloor + 1, 255);
 
-            var sink = new RecordingModStatusSink { PromptForGameResetResult = true };
+            var sink = new RecordingModStatusSink();
             var clock = new NoDelayClock();
-            var observer = new ModWindowGameSessionObserver(sink, clock);
+            var observer = new ModernHostGameSessionObserver(sink, clock);
             var context = new GameSessionContext(new LegacyProcessGameMemory(), new PassthroughAddressTranslator());
 
             await observer.OnStateChanged(GameSessionState.None, GameSessionState.InGame, context);
 
-            Assert.Equal(nameof(RecordingModStatusSink.PromptForGameReset), sink.LastCallName);
+            // The modern host does not prompt for reset; it waits for the user to return to the main menu.
+            Assert.DoesNotContain(sink.Calls, c => c.Name == nameof(RecordingModStatusSink.PromptForGameReset));
+            Assert.DoesNotContain(sink.Calls, c => c.Name == nameof(RecordingModStatusSink.ReportNotEnhancedModSaveFile));
 
             var reader = new GameMemoryReader(new LegacyProcessGameMemory());
-            Assert.Equal(1, reader.ReadByte(Addresses.townSoftReset));
+            Assert.Equal(0, reader.ReadByte(Addresses.townSoftReset));
 
             await observer.OnShutdown();
         }
@@ -171,7 +173,7 @@ namespace DarkCloudEnhancedMod.IntegrationTests
 
             var sink = new RecordingModStatusSink();
             var clock = new NoDelayClock();
-            var observer = new ModWindowGameSessionObserver(sink, clock);
+            var observer = new ModernHostGameSessionObserver(sink, clock);
             var context = new GameSessionContext(new LegacyProcessGameMemory(), new PassthroughAddressTranslator());
 
             // Boot from the main menu, then enter in-game.

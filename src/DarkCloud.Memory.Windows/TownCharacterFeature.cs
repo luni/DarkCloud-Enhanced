@@ -1,9 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DarkCloud.Core.Features;
-using DarkCloudEnhancedMod;
 
-namespace DarkCloud.Memory.Windows
+namespace DarkCloudEnhancedMod
 {
     /// <summary>
     /// Lifecycle-managed module that runs the legacy town/overworld script on a

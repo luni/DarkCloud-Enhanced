@@ -2,6 +2,8 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DarkCloud.App.WinForms.Configuration;
+using DarkCloud.Core.Configuration;
 using DarkCloud.Core.Logging;
 using DarkCloud.Core.Session;
 using DarkCloud.Memory.Windows;
@@ -29,10 +31,15 @@ namespace DarkCloud.App.WinForms
             _statusSink = new MainFormStatusSink(this);
             _modInstanceProvider = new FileLockModInstanceProvider();
 
+            var configStore = new JsonModConfigurationStore(_logger);
+            ModConfiguration configuration = configStore.TryLoad(out ModConfiguration loaded)
+                ? loaded
+                : ModConfigurationDefaults.Create();
+
             var memoryProvider = new ModWindowGameMemoryProvider(_logger);
             var detector = new GameSessionDetector(_modInstanceProvider);
             var clock = new SystemClock();
-            var observer = new ModernHostGameSessionObserver(_statusSink, clock, _logger);
+            var observer = new ModernHostGameSessionObserver(_statusSink, clock, _logger, configuration);
             var runner = new GameSessionRunner(
                 memoryProvider,
                 detector,
